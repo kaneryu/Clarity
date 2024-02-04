@@ -6,7 +6,7 @@ It will also come with a few new features, like a smarter reccomendation engine,
 In the future, there may be an ability for your mobile Inntertune to sync with InnerTuneDestkop, leading to a more cohesive experience, but that's still in the works.
 
 ## Release Date
-Soon™. I'll be giving updates soon, but right now I'm still designing the desktop app while working on the backend youtube music api intergration. I'll start working on the most difficult part, the UI coding later on. All in all, this sets a semi-likely beta release to around September of this year.
+Soon™. I'll be giving more updates on development in the future, but right now I'm still designing the desktop app while working on the backend youtube music api intergration. I'll start working on the most difficult part, the UI coding later on. All in all, this sets a semi-likely beta release to around September of this year.
 
 ## Platforms
 I'm targeting all desktop platforms (Linux, MacOS, Windows), although most likely only Windows will be available at the beta launch.
