@@ -1,0 +1,640 @@
+[
+    {
+        "category": "Top result",
+        "resultType": "album",
+        "videoId": null,
+        "videoType": null,
+        "title": "Hardcore Syndrome X",
+        "artists": [
+            {
+                "name": "Album",
+                "id": null
+            },
+            {
+                "name": "Various Artists",
+                "id": null
+            }
+        ],
+        "browseId": "MPREb_MsbrU10uem7",
+        "thumbnails": [
+            {
+                "url": "https://lh3.googleusercontent.com/uavvZoreVqMoBm__j0i1lPLV0X_cdjR7i3jvygpMNsyjz5_7uNfCSSdFkr8XRiK-pYZCjaP_gUjZ_xmv2A=w60-h60-l90-rj",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/uavvZoreVqMoBm__j0i1lPLV0X_cdjR7i3jvygpMNsyjz5_7uNfCSSdFkr8XRiK-pYZCjaP_gUjZ_xmv2A=w120-h120-l90-rj",
+                "width": 120,
+                "height": 120
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/uavvZoreVqMoBm__j0i1lPLV0X_cdjR7i3jvygpMNsyjz5_7uNfCSSdFkr8XRiK-pYZCjaP_gUjZ_xmv2A=w226-h226-l90-rj",
+                "width": 226,
+                "height": 226
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/uavvZoreVqMoBm__j0i1lPLV0X_cdjR7i3jvygpMNsyjz5_7uNfCSSdFkr8XRiK-pYZCjaP_gUjZ_xmv2A=w544-h544-l90-rj",
+                "width": 544,
+                "height": 544
+            }
+        ]
+    },
+    {
+        "category": "Songs",
+        "resultType": "song",
+        "title": "10's Syndrome",
+        "album": {
+            "name": "Hardcore Syndrome X",
+            "id": "MPREb_MsbrU10uem7"
+        },
+        "inLibrary": false,
+        "feedbackTokens": {
+            "add": null,
+            "remove": null
+        },
+        "videoId": "jGoLUIo2-8k",
+        "videoType": "MUSIC_VIDEO_TYPE_ATV",
+        "duration": "5:01",
+        "year": null,
+        "artists": [
+            {
+                "name": "DJ Shimamura",
+                "id": "UCWfCTrJeck7brBrbGYOrk9A"
+            }
+        ],
+        "duration_seconds": 301,
+        "isExplicit": false,
+        "thumbnails": [
+            {
+                "url": "https://lh3.googleusercontent.com/uavvZoreVqMoBm__j0i1lPLV0X_cdjR7i3jvygpMNsyjz5_7uNfCSSdFkr8XRiK-pYZCjaP_gUjZ_xmv2A=w60-h60-l90-rj",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/uavvZoreVqMoBm__j0i1lPLV0X_cdjR7i3jvygpMNsyjz5_7uNfCSSdFkr8XRiK-pYZCjaP_gUjZ_xmv2A=w120-h120-l90-rj",
+                "width": 120,
+                "height": 120
+            }
+        ]
+    },
+    {
+        "category": "Songs",
+        "resultType": "song",
+        "title": "Now and Forever (feat. Kuroa*)",
+        "album": {
+            "name": "Hardcore Syndrome X",
+            "id": "MPREb_MsbrU10uem7"
+        },
+        "inLibrary": false,
+        "feedbackTokens": {
+            "add": null,
+            "remove": null
+        },
+        "videoId": "n1TNOX7rqak",
+        "videoType": "MUSIC_VIDEO_TYPE_ATV",
+        "duration": "4:55",
+        "year": null,
+        "artists": [
+            {
+                "name": "Minamotoya",
+                "id": "UCVZ0UcZ7yAvT9uxIEGC0xow"
+            }
+        ],
+        "duration_seconds": 295,
+        "isExplicit": false,
+        "thumbnails": [
+            {
+                "url": "https://lh3.googleusercontent.com/uavvZoreVqMoBm__j0i1lPLV0X_cdjR7i3jvygpMNsyjz5_7uNfCSSdFkr8XRiK-pYZCjaP_gUjZ_xmv2A=w60-h60-l90-rj",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/uavvZoreVqMoBm__j0i1lPLV0X_cdjR7i3jvygpMNsyjz5_7uNfCSSdFkr8XRiK-pYZCjaP_gUjZ_xmv2A=w120-h120-l90-rj",
+                "width": 120,
+                "height": 120
+            }
+        ]
+    },
+    {
+        "category": "Songs",
+        "resultType": "song",
+        "title": "Techno Syndrome (Mortal Kombat)",
+        "album": {
+            "name": "Mortal Kombat: The Album",
+            "id": "MPREb_9OvOBL3gfgh"
+        },
+        "inLibrary": false,
+        "feedbackTokens": {
+            "add": null,
+            "remove": null
+        },
+        "videoId": "Sr1bLLvsbh0",
+        "videoType": "MUSIC_VIDEO_TYPE_ATV",
+        "duration": "3:26",
+        "year": null,
+        "artists": [
+            {
+                "name": "The Immortals",
+                "id": "UC4rlZmNfeLPa915-AbUSqeg"
+            }
+        ],
+        "duration_seconds": 206,
+        "isExplicit": false,
+        "thumbnails": [
+            {
+                "url": "https://lh3.googleusercontent.com/g0EDECzn42FiqKY3n4gh0siczZ00ltAmTS6h2mz7Y9LWCroSSmdEDQyWWbYKJKBWEmU7fHcTbAQ32-A=w60-h60-l90-rj",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/g0EDECzn42FiqKY3n4gh0siczZ00ltAmTS6h2mz7Y9LWCroSSmdEDQyWWbYKJKBWEmU7fHcTbAQ32-A=w120-h120-l90-rj",
+                "width": 120,
+                "height": 120
+            }
+        ]
+    },
+    {
+        "category": "Videos",
+        "resultType": "video",
+        "title": "HiGHER",
+        "videoId": "CRx00ugfjug",
+        "videoType": "MUSIC_VIDEO_TYPE_OMV",
+        "duration": "2:46",
+        "year": null,
+        "artists": [
+            {
+                "name": "Video",
+                "id": null
+            },
+            {
+                "name": "REDALiCE",
+                "id": "UC86DdNS6AifyabE_0Fd7r6Q"
+            }
+        ],
+        "views": "16K",
+        "duration_seconds": 166,
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/vi/CRx00ugfjug/sddefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCghqEJQEGHgg6AJIWg&rs=AMzJL3lrz9COS4c6FU_YpL4rE5s4CEC9bA",
+                "width": 400,
+                "height": 225
+            }
+        ]
+    },
+    {
+        "category": "Videos",
+        "resultType": "video",
+        "title": "Nhato - Put Your F*cking Phone Down",
+        "videoId": "8gMhOF0BQ4I",
+        "videoType": "MUSIC_VIDEO_TYPE_UGC",
+        "duration": "4:59",
+        "year": null,
+        "artists": [
+            {
+                "name": "Video",
+                "id": null
+            },
+            {
+                "name": "\u30a2\u30ed\u30f3",
+                "id": "UC3tis_7KzFHj6i14vRUpD_w"
+            }
+        ],
+        "views": "80K",
+        "duration_seconds": 299,
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/vi/8gMhOF0BQ4I/sddefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCghqEJQEGHgg6AJIWg&rs=AMzJL3lX4jfu3DglK7UyuLW8IkelAjreyQ",
+                "width": 400,
+                "height": 225
+            }
+        ]
+    },
+    {
+        "category": "Videos",
+        "resultType": "video",
+        "title": "\u300cJ-Core\u300dNhato - Put Your F*cking Phone Down (HARDCORE SYNDROME X)",
+        "videoId": "9-SdWiXrZ_E",
+        "videoType": "MUSIC_VIDEO_TYPE_UGC",
+        "duration": "4:58",
+        "year": null,
+        "artists": [
+            {
+                "name": "Video",
+                "id": null
+            },
+            {
+                "name": "Burnwolf Promotions",
+                "id": "UCVB73f5qtwMwoSCr9SQ0-Fw"
+            }
+        ],
+        "views": "282",
+        "duration_seconds": 298,
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/vi/9-SdWiXrZ_E/sddefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCghqEJQEGHgg6AJIWg&rs=AMzJL3kNA2QqBruY_sgxGYJuO9IzhHpAfQ",
+                "width": 400,
+                "height": 225
+            }
+        ]
+    },
+    {
+        "category": "Albums",
+        "resultType": "album",
+        "title": "HARDCORE SYNDROME 6",
+        "type": "Album",
+        "duration": null,
+        "year": "2012",
+        "artists": [
+            {
+                "name": "Album",
+                "id": null
+            },
+            {
+                "name": "Various Artists",
+                "id": null
+            }
+        ],
+        "browseId": "MPREb_iYMIy0hdUP0",
+        "isExplicit": false,
+        "thumbnails": [
+            {
+                "url": "https://lh3.googleusercontent.com/8Fmjqrs4KmMIbx7qql8OfFdctF-SJ_Br3uuIgm3pPaZGQ81sJq3gvm76mrp4hPICaTm7mOJHXEp5sLXj=w60-h60-l90-rj",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/8Fmjqrs4KmMIbx7qql8OfFdctF-SJ_Br3uuIgm3pPaZGQ81sJq3gvm76mrp4hPICaTm7mOJHXEp5sLXj=w120-h120-l90-rj",
+                "width": 120,
+                "height": 120
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/8Fmjqrs4KmMIbx7qql8OfFdctF-SJ_Br3uuIgm3pPaZGQ81sJq3gvm76mrp4hPICaTm7mOJHXEp5sLXj=w226-h226-l90-rj",
+                "width": 226,
+                "height": 226
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/8Fmjqrs4KmMIbx7qql8OfFdctF-SJ_Br3uuIgm3pPaZGQ81sJq3gvm76mrp4hPICaTm7mOJHXEp5sLXj=w544-h544-l90-rj",
+                "width": 544,
+                "height": 544
+            }
+        ]
+    },
+    {
+        "category": "Albums",
+        "resultType": "album",
+        "title": "Hardcore Syndrome 4",
+        "type": "Album",
+        "duration": null,
+        "year": "2011",
+        "artists": [
+            {
+                "name": "Album",
+                "id": null
+            },
+            {
+                "name": "Various Artists",
+                "id": null
+            }
+        ],
+        "browseId": "MPREb_bNqJm66y4Rd",
+        "isExplicit": false,
+        "thumbnails": [
+            {
+                "url": "https://lh3.googleusercontent.com/Np_ip9A-JAq3s9CbzsROIQQE-YozWAQtY5TleTBVh_eilDVpUgMkbbAR_rYekNGKsO9Uyy5sUcJIQT0=w60-h60-l90-rj",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/Np_ip9A-JAq3s9CbzsROIQQE-YozWAQtY5TleTBVh_eilDVpUgMkbbAR_rYekNGKsO9Uyy5sUcJIQT0=w120-h120-l90-rj",
+                "width": 120,
+                "height": 120
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/Np_ip9A-JAq3s9CbzsROIQQE-YozWAQtY5TleTBVh_eilDVpUgMkbbAR_rYekNGKsO9Uyy5sUcJIQT0=w226-h226-l90-rj",
+                "width": 226,
+                "height": 226
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/Np_ip9A-JAq3s9CbzsROIQQE-YozWAQtY5TleTBVh_eilDVpUgMkbbAR_rYekNGKsO9Uyy5sUcJIQT0=w544-h544-l90-rj",
+                "width": 544,
+                "height": 544
+            }
+        ]
+    },
+    {
+        "category": "Albums",
+        "resultType": "album",
+        "title": "False Memory Syndrome",
+        "type": "Album",
+        "duration": null,
+        "year": "2020",
+        "artists": [
+            {
+                "name": "Album",
+                "id": null
+            },
+            {
+                "name": "PeanutsKun",
+                "id": "UC23YwFQ7rWL2xL39T-qz4yg"
+            }
+        ],
+        "browseId": "MPREb_SfFTh14ToG9",
+        "isExplicit": true,
+        "thumbnails": [
+            {
+                "url": "https://lh3.googleusercontent.com/C51qQ4tOIBClJT_CbtYAm2f6BYFKPTRG2u1ube5ZuVy4G-drQjnn0vzXUn0E42AZO5pa0x8nb-m4DA=w60-h60-l90-rj",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/C51qQ4tOIBClJT_CbtYAm2f6BYFKPTRG2u1ube5ZuVy4G-drQjnn0vzXUn0E42AZO5pa0x8nb-m4DA=w120-h120-l90-rj",
+                "width": 120,
+                "height": 120
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/C51qQ4tOIBClJT_CbtYAm2f6BYFKPTRG2u1ube5ZuVy4G-drQjnn0vzXUn0E42AZO5pa0x8nb-m4DA=w226-h226-l90-rj",
+                "width": 226,
+                "height": 226
+            },
+            {
+                "url": "https://lh3.googleusercontent.com/C51qQ4tOIBClJT_CbtYAm2f6BYFKPTRG2u1ube5ZuVy4G-drQjnn0vzXUn0E42AZO5pa0x8nb-m4DA=w544-h544-l90-rj",
+                "width": 544,
+                "height": 544
+            }
+        ]
+    },
+    {
+        "category": "Community playlists",
+        "resultType": "playlist",
+        "title": "Hardcore Syndrome X",
+        "itemCount": "379",
+        "author": "\u6c34\u6238\u8fbc * \u30c9* Rear",
+        "browseId": "VLPLEwtlYGry4xt7vqUoaOB1_LRWgDdAb2ci",
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/vi/AAzCbGxQE_c/sddefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCghqEJQEGHgg6AJIWg&rs=AMzJL3kUZGmT2sHEM3_AX-VaEySih741iQ",
+                "width": 400,
+                "height": 225
+            },
+            {
+                "url": "https://i.ytimg.com/vi/AAzCbGxQE_c/hq720.jpg?sqp=-oaymwEXCKAGEMIDIAQqCwjVARCqCBh4INgESFo&rs=AMzJL3kkuFMvkgGZP3O5D_2BI4Rzy7uMjw",
+                "width": 800,
+                "height": 450
+            },
+            {
+                "url": "https://i.ytimg.com/vi/AAzCbGxQE_c/hq720.jpg?sqp=-oaymwEXCNUGEOADIAQqCwjVARCqCBh4INgESFo&rs=AMzJL3mWV4Adem-WYQpwB6umhxtYBHC6Qg",
+                "width": 853,
+                "height": 480
+            }
+        ]
+    },
+    {
+        "category": "Community playlists",
+        "resultType": "playlist",
+        "title": "TANO*C Classic",
+        "itemCount": "52K",
+        "author": "HARDCORE TANO*C",
+        "browseId": "VLPLbtnQobcmc6JSGfv-S2pXuu4mUZu7xjON",
+        "thumbnails": [
+            {
+                "url": "https://yt3.googleusercontent.com/Fv7A2EshWLA56hrEfVDXkxvN6o-aaF9P0jsoBrsprS2gQu75zhzfBvWgcRzPMOjBxCHxGI9zDMIS=s192",
+                "width": 192,
+                "height": 192
+            },
+            {
+                "url": "https://yt3.googleusercontent.com/Fv7A2EshWLA56hrEfVDXkxvN6o-aaF9P0jsoBrsprS2gQu75zhzfBvWgcRzPMOjBxCHxGI9zDMIS=s576",
+                "width": 576,
+                "height": 576
+            },
+            {
+                "url": "https://yt3.googleusercontent.com/Fv7A2EshWLA56hrEfVDXkxvN6o-aaF9P0jsoBrsprS2gQu75zhzfBvWgcRzPMOjBxCHxGI9zDMIS=s1200",
+                "width": 1200,
+                "height": 1200
+            }
+        ]
+    },
+    {
+        "category": "Community playlists",
+        "resultType": "playlist",
+        "title": "female hardcore",
+        "itemCount": "61",
+        "author": "Laurin Wilke",
+        "browseId": "VLPL0HqVgV4Ks2uRwj2xLOR61uO6F5z4oO2P",
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/vi/3BF9TgFQGGk/sddefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCghqEJQEGHgg6AJIWg&rs=AMzJL3kfI6FJggY6yF8RTXhvWbEVkxB25Q",
+                "width": 400,
+                "height": 225
+            },
+            {
+                "url": "https://i.ytimg.com/vi/3BF9TgFQGGk/hq720.jpg?sqp=-oaymwEXCKAGEMIDIAQqCwjVARCqCBh4INgESFo&rs=AMzJL3lcTgkV5BtUyNYwKl0NEEl-vbvyVg",
+                "width": 800,
+                "height": 450
+            },
+            {
+                "url": "https://i.ytimg.com/vi/3BF9TgFQGGk/hq720.jpg?sqp=-oaymwEXCNUGEOADIAQqCwjVARCqCBh4INgESFo&rs=AMzJL3nQFKjthPm9LISs6-H7LyAQ655zIA",
+                "width": 853,
+                "height": 480
+            }
+        ]
+    },
+    {
+        "category": "Podcasts",
+        "resultType": "podcast",
+        "title": "EURODANCE 90s Revolution",
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/pl_c/PL-fwpFxM3aheoeXKI-exxWoIzJ-EkwMwn/studio_square_thumbnail.jpg?sqp=CO762a0G-oaymwEICDwQPCAASFo&rs=AMzJL3ntUXkuf3QXWiLKpzoJJe0kLKseRw",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://i.ytimg.com/pl_c/PL-fwpFxM3aheoeXKI-exxWoIzJ-EkwMwn/studio_square_thumbnail.jpg?sqp=CO762a0G-oaymwEICHgQeCAASFo&rs=AMzJL3kwxCxY_uLNGEp1HLR-oQRBuAUx1A",
+                "width": 120,
+                "height": 120
+            },
+            {
+                "url": "https://i.ytimg.com/pl_c/PL-fwpFxM3aheoeXKI-exxWoIzJ-EkwMwn/studio_square_thumbnail.jpg?sqp=CO762a0G-oaymwEKCOIBEOIBIABIWg&rs=AMzJL3lJxl9ZY3n2b56q_QGe3IJuKCmNhg",
+                "width": 226,
+                "height": 226
+            },
+            {
+                "url": "https://i.ytimg.com/pl_c/PL-fwpFxM3aheoeXKI-exxWoIzJ-EkwMwn/studio_square_thumbnail.jpg?sqp=CO762a0G-oaymwEKCKAEEKAEIABIWg&rs=AMzJL3nRjFnae5J02A6V21hoPuK--rq6mQ",
+                "width": 544,
+                "height": 544
+            }
+        ]
+    },
+    {
+        "category": "Podcasts",
+        "resultType": "podcast",
+        "title": "Filmhaus Podcast",
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/vi/6jR4Sq_W8Rw/hqdefault.jpg?sqp=-oaymwExCI4CEI4CIAQqCggAEOADGC0guwJIWvKriqkDFZoCEgg4EC4YDCABLQAAoEE1zcxMPw&rs=AMzJL3lerC_HN__nUodzSMCuPU9_L5FW6w",
+                "width": 270,
+                "height": 270
+            },
+            {
+                "url": "https://i.ytimg.com/vi/6jR4Sq_W8Rw/hq720.jpg?sqp=-oaymwElCNAFENAFIAZIWvKriqkDFZoCEgg4EC4YDCABLQAAoEE1zcxMPw&rs=AMzJL3kBnNYHfyMbvdS78ukLkv_s9Z3YhA",
+                "width": 720,
+                "height": 720
+            }
+        ]
+    },
+    {
+        "category": "Podcasts",
+        "resultType": "podcast",
+        "title": "REAL ACTIVIST Kevin D. blanch GETS RESULTS POST IGNORANCE TRUE REAL ACCOMPLISHED ACTIVIST that GETS RESULTS they FEAR;;",
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/pl_c/PLGhBOubTK9smGneVQa9PoDP3iADaq-8oW/studio_square_thumbnail.jpg?sqp=CO762a0G-oaymwEICDwQPCAASFo&rs=AMzJL3ljN5R2doiohmFlGI8eNC2Qr3Xn4g",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://i.ytimg.com/pl_c/PLGhBOubTK9smGneVQa9PoDP3iADaq-8oW/studio_square_thumbnail.jpg?sqp=CO762a0G-oaymwEICHgQeCAASFo&rs=AMzJL3lMHuelztT4p4mZfU4ppt39MLdcbQ",
+                "width": 120,
+                "height": 120
+            },
+            {
+                "url": "https://i.ytimg.com/pl_c/PLGhBOubTK9smGneVQa9PoDP3iADaq-8oW/studio_square_thumbnail.jpg?sqp=CO762a0G-oaymwEKCOIBEOIBIABIWg&rs=AMzJL3lsx1RMjjCnlopoCLBq4_gwHGnreQ",
+                "width": 226,
+                "height": 226
+            },
+            {
+                "url": "https://i.ytimg.com/pl_c/PLGhBOubTK9smGneVQa9PoDP3iADaq-8oW/studio_square_thumbnail.jpg?sqp=CO762a0G-oaymwEKCKAEEKAEIABIWg&rs=AMzJL3m2yjnIT3fsn8CfBjjABUlE-lOHSA",
+                "width": 544,
+                "height": 544
+            }
+        ]
+    },
+    {
+        "category": "Episodes",
+        "resultType": "video",
+        "title": "131 | Digital Punk - Unleashed Powered By Roughstate",
+        "videoId": "xk9xksNmVso",
+        "videoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE",
+        "duration": null,
+        "year": null,
+        "artists": [
+            {
+                "name": "Episode",
+                "id": null
+            },
+            {
+                "name": "Jan 11, 2024",
+                "id": null
+            },
+            {
+                "name": "Roughstate",
+                "id": "UCD4xcf_9aRUSJeuQRvHkY4w"
+            }
+        ],
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/vi/xk9xksNmVso/sddefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCghqEJQEGHgg6AJIWg&rs=AMzJL3lcHKe5kqjIxRMrK8O2VY1xw6sRLA",
+                "width": 400,
+                "height": 225
+            }
+        ]
+    },
+    {
+        "category": "Episodes",
+        "resultType": "video",
+        "title": "116 | Digital Punk - Unleashed Powered By Roughstate (Hardstyle Podcast)",
+        "videoId": "CXpJg__Jh6c",
+        "videoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE",
+        "duration": null,
+        "year": null,
+        "artists": [
+            {
+                "name": "Episode",
+                "id": null
+            },
+            {
+                "name": "Oct 14, 2022",
+                "id": null
+            },
+            {
+                "name": "Roughstate",
+                "id": "UCD4xcf_9aRUSJeuQRvHkY4w"
+            }
+        ],
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/vi/CXpJg__Jh6c/sddefault.jpg?sqp=-oaymwEWCJADEOEBIAQqCghqEJQEGHgg6AJIWg&rs=AMzJL3mIV2Cihk5nzP159WmkpLseF-b98g",
+                "width": 400,
+                "height": 225
+            }
+        ]
+    },
+    {
+        "category": "Episodes",
+        "resultType": "video",
+        "title": "The Dark Side of L-citrulline and L-arginine Combination",
+        "videoId": "aVlPp_45ZVw",
+        "videoType": "MUSIC_VIDEO_TYPE_PODCAST_EPISODE",
+        "duration": null,
+        "year": null,
+        "artists": [
+            {
+                "name": "Episode",
+                "id": null
+            },
+            {
+                "name": "Feb 15, 2023",
+                "id": null
+            },
+            {
+                "name": "The best treatment to get rid of ERECTILE DYSFUNCTION",
+                "id": "MPSPPLACJ5FdynT5MUe_9qHqsXYQveQwGnqSUQ"
+            }
+        ],
+        "thumbnails": [
+            {
+                "url": "https://i.ytimg.com/vi/aVlPp_45ZVw/hqdefault.jpg?sqp=-oaymwEWCOADEI4CIAQqCggAEOADGC0guwJIWg&rs=AMzJL3nnUicn5b1SO9v9Uo7vex0N43GzPQ",
+                "width": 480,
+                "height": 270
+            }
+        ]
+    },
+    {
+        "category": "Profiles",
+        "resultType": "profile",
+        "title": "\u9b5a\u9b5a",
+        "name": "@WVFishFish",
+        "browseId": "UCkNLY7lgewgOCJhuc1cuDAQ",
+        "thumbnails": [
+            {
+                "url": "https://yt3.googleusercontent.com/GBiynOngxDGEvLdcPQFuez76tgYT5eerhwNAhUUipvyPKFe3e3YPJUWj_FDNYFOfMRxtHtq67w=w60-c-h60-k-c0x00ffffff-no-l90-rj",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://yt3.googleusercontent.com/GBiynOngxDGEvLdcPQFuez76tgYT5eerhwNAhUUipvyPKFe3e3YPJUWj_FDNYFOfMRxtHtq67w=w120-c-h120-k-c0x00ffffff-no-l90-rj",
+                "width": 120,
+                "height": 120
+            }
+        ]
+    },
+    {
+        "category": "Profiles",
+        "resultType": "profile",
+        "title": "\ub9c8\ub298\uc624\ub9ac",
+        "name": "@ruaLritrea",
+        "browseId": "UCKgblnADBsT2YK40jt-cCdQ",
+        "thumbnails": [
+            {
+                "url": "https://yt3.googleusercontent.com/ytc/AIf8zZRSyPy7HXZhlEHiMCqcyCLyaGYIim9vONIV8sNh=w60-c-h60-k-c0x00ffffff-no-l90-rj",
+                "width": 60,
+                "height": 60
+            },
+            {
+                "url": "https://yt3.googleusercontent.com/ytc/AIf8zZRSyPy7HXZhlEHiMCqcyCLyaGYIim9vONIV8sNh=w120-c-h120-k-c0x00ffffff-no-l90-rj",
+                "width": 120,
+                "height": 120
+            }
+        ]
+    }
+]
