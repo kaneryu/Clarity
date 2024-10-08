@@ -23,11 +23,8 @@ def convert_to_timestamp(date_str: str) -> float:
 
     return timestamp
 
-API = ytm.YTMusic()
-
-
-class song:
-    def __init__(self, yt_id: str, autoGetInfo: bool = False, givenInfo: dict = {"None": None}):
+class Song:
+    def __init__(self, yt_id: str = "", autoGetInfo: bool = False, givenInfo: dict = {"None": None}):
         """
         A class that represents a youtube music song.
         To actually get the info of the song, use the get_info_short or get_info_full method after initializing the class, or set auto_get_info to True.
@@ -41,54 +38,30 @@ class song:
         get_info_full: Gets the full info of the song.
         get_lyrics: Gets the lyrics of the song.
         """
-        self.api = API
         self.id = yt_id
-        
-        if autoGetInfo:
-            self.get_info_short()
+        self.source = None
     
-        try:
-            if not givenInfo["None"] == None:
-                self.parseGivenInfo(givenInfo)
-        except KeyError:
-            pass
-            
-    def parseGivenInfo(self, givenInfo: dict) -> None:
-        pass
-    
-    def get_info_short(self) -> None:
-        self.rawData: dict = self.api.get_song(self.id)
-
-        self.rawVideoDetails: dict = self.rawData["videoDetails"]
-                
-        self.title: str = self.rawVideoDetails["title"]
-        self.videoId = self.rawVideoDetails["videoId"]
-        self.lengthSeconds: int = int(self.rawVideoDetails["lengthSeconds"])
+    def from_search_result(self, search_result: dict) -> None:
+        self.source = "search"
         
-        self.author: str = self.rawVideoDetails["author"]
-        self.artist: str = self.rawVideoDetails["author"]
-        self.channel: str = self.rawVideoDetails["author"]
-        self.channelId: str = self.rawVideoDetails["channelId"]
-        self.artistId: str = self.rawVideoDetails["channelId"]
+        self.title = search_result["title"]
+        self.id = search_result["videoId"]
         
-        self.thumbails: dict = self.rawVideoDetails["thumbnail"]["thumbnails"]
-        self.largestThumbail: dict = self.thumbails[-1]
-        self.largestThumbailUrl: str = self.largestThumbail["url"]
-        
-        self.views: int = int(self.rawVideoDetails["viewCount"])
-        
-    def get_info_full(self) -> None:
+    async def get_info(self, api) -> None:
         """
         Gets the info of the song.
         """
+        api: ytm.YTMusic = api
         
-        self.rawData: dict = self.api.get_song(self.id)
+        self.rawData: dict = await api.get_song(self.id)
 
+        self.source = "full"
+        
         self.rawVideoDetails: dict = self.rawData["videoDetails"]
         
         self.title: str = self.rawVideoDetails["title"]
-        self.videoId = self.rawVideoDetails["videoId"]
-        self.lengthSeconds: int = int(self.rawVideoDetails["lengthSeconds"]) 
+        self.id = self.rawVideoDetails["videoId"]
+        self.duration: int = int(self.rawVideoDetails["lengthSeconds"]) 
         
         self.author: str = self.rawVideoDetails["author"]
         self.artist: str = self.rawVideoDetails["author"]
@@ -103,7 +76,6 @@ class song:
         self.largestThumbailUrl: str = self.largestThumbail["url"]
         
         self.views: int = int(self.rawVideoDetails["viewCount"])
-        
         
         self.rawMicroformatData = self.rawData["microformat"]
         self.rectangleThumbnail: dict = self.rawMicroformatData["microformatDataRenderer"]["thumbnail"]["thumbnails"][-1]
@@ -128,11 +100,10 @@ class song:
         
         self.isFamilySafe: bool = self.rawMicroformatData["microformatDataRenderer"]["familySafe"]
         
-    def get_lyrics(self) -> dict:
+    async def get_lyrics(self, api) -> dict:
         """
         Gets the lyrics of the song.
         """
-        self.lyrics = self.api.get_lyrics(self.id)
+        api: ytm.YTMusic = api
+        self.lyrics = await self.api.get_lyrics(self.id)
         return self.lyrics
-
-
