@@ -10,46 +10,33 @@ import "../colobjs" as ColObjs
 Item {
     id: searchbar
     width: parent.width
-    height: 40
+    height: 35
     visible: true
+    property bool settingsButton: true
 
     ColObjs.ColRect {
         id: searchbarBackground
         width: parent.width
         height: parent.height
         color: Theme.primaryContainer
-        radius: 31
+        radius: 35
     }
 
     Item {
         id: searchbarIcon
-        width: 24
-        height: 24
+        width: 20
+        height: 20
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
         anchors.leftMargin: 10
 
-        Image {
+        ColObjs.ColImg {
             id: searchIcon
             source: "../../assets/icons/searchbar/search.svg"
             anchors.fill: parent
             fillMode: Image.PreserveAspectFit
+            color: Theme.onPrimaryContainer
         }
-
-        MultiEffect {
-            anchors.fill: searchIcon
-            source: searchIcon
-            colorizationColor: Theme.onPrimaryContainer
-
-            Behavior on colorizationColor {
-                ColorAnimation {
-                    easing.type: Easing.InOutQuad
-                    duration: 200
-                }
-            }
-        }
-
-
     }
 
     TextField {
@@ -81,7 +68,6 @@ Item {
             color: "transparent"
         }
 
-
         Behavior on pholder {
             SequentialAnimation {
                 NumberAnimation {
@@ -108,15 +94,46 @@ Item {
 
         Timer {
             id: placeholderTimer
-            interval: 10000
+            interval: 150
             running: true
             repeat: true
             onTriggered: {
-                searchbarField.placeholderIndex++
-                if (searchbarField.placeholderIndex >= searchbarField.placeholders.length) {
-                    searchbarField.placeholderIndex = 0
+                if (searchbarField.text.length == 0) {
+                    searchbarField.placeholderIndex++
+                    if (searchbarField.placeholderIndex >= searchbarField.placeholders.length) {
+                        searchbarField.placeholderIndex = 0
+                    }
+                    searchbarField.pholder = searchbarField.placeholders[searchbarField.placeholderIndex]
                 }
-                searchbarField.pholder = searchbarField.placeholders[searchbarField.placeholderIndex]
+            }
+        }
+    }
+
+    Rectangle {
+        id: settingsButton
+        height: 24
+        width: 24
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.right: parent.right
+        anchors.rightMargin: 10
+        color: "transparent"
+
+        ColObjs.ColImg {
+            id: settingsIcon
+            source: "../../assets/icons/searchbar/settings.svg"
+
+            fillMode: Image.PreserveAspectFit
+            anchors.fill: parent
+
+            color: Theme.onPrimaryContainer
+            signal clicked
+
+            opacity: (searchbarField.text.length > 15) ? 0 : 1
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 500 // Duration of the animation in milliseconds
+                    easing.type: Easing.InOutQuad // Easing type for the animation
+                }
             }
         }
     }

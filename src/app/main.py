@@ -93,7 +93,7 @@ def main():
     backend = Backend()
 
     theme = materialInterface.Theme()
-    theme.get_dynamicColors(0x18130B, True, 0.0)
+    theme.get_dynamicColors(0x1A1D1D, True, 0.0)
     
     engine.rootContext().setContextProperty("Theme", theme)
     engine.rootContext().setContextProperty("Backend", backend)
@@ -103,10 +103,10 @@ def main():
     if not engine.rootObjects():
         sys.exit(-1)
 
-    tim = QTimer()
-    tim.setInterval(1000)
-    tim.timeout.connect(lambda: theme.get_dynamicColors(generateRandomHexColor(), random.choice([True, False]), 0.0))
-    tim.start()
+    # tim = QTimer()
+    # tim.setInterval(10000)
+    # tim.timeout.connect(lambda: theme.get_dynamicColors(generateRandomHexColor(), random.choice([True, False]), 0.0))
+    # tim.start()
     
     print(QDir.currentPath())
     backend.loadComplete.emit()

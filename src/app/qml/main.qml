@@ -11,7 +11,7 @@ ApplicationWindow {
     visible: true
     minimumWidth: 840
     minimumHeight: 480
-
+    visibility: "FullScreen"
     title: "InnerTuneDesktop"
 
     Connections {
@@ -31,10 +31,39 @@ ApplicationWindow {
         color: Theme.background
     }
 
-    Components.SearchBar {
-        id: searchbar
-        width: parent.width
-        visible: true
+
+    ColObjs.ColRect {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+        anchors.topMargin: 7
+        anchors.leftMargin: 7
+        anchors.rightMargin: 7
+        height: 44
+
+        radius: 10
+
+        color: Theme.surfaceContainerLow
+
+        Components.Logo {
+            id: logo
+            anchors.left: parent.left
+            anchors.leftMargin: 5
+            anchors.verticalCenter: parent.verticalCenter
+            width: 35
+            height: 35
+        }
+
+        Components.SearchBar {
+            id: searchbar
+            anchors.left: logo.right
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.leftMargin: 10
+            anchors.rightMargin: 5
+            visible: true
+        }
     }
 
     function onClosing(event) {
