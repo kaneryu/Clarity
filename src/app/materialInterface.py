@@ -4,7 +4,8 @@ from materialyoucolor.scheme.scheme_tonal_spot import SchemeTonalSpot
 from PySide6.QtCore import QObject, Qt, Slot, Property, Signal
 
 import json
-
+import src.app.baseModels as baseModels
+import dataclasses
 
 class Theme(QObject):
     themeChanged = Signal(name="themeChanged")
@@ -68,13 +69,35 @@ class Theme(QObject):
 
     @Slot(result=str)
     def getAllColors(self):
+        retlist = []
+        for color in vars(MaterialDynamicColors).keys():
+            color_name = getattr(MaterialDynamicColors, color)
+            if hasattr(color_name, "get_hct"):
+                retlist.append({color: str(eval(f"self.{color}"))})
+                print(retlist[-1])
+                
+        return json.dumps(retlist)
+
+    @Slot(result=baseModels.ListModel)
+    def getAllColorsAsModel(self):
         retdict = {}
         for color in vars(MaterialDynamicColors).keys():
             color_name = getattr(MaterialDynamicColors, color)
             if hasattr(color_name, "get_hct"):
                 retdict[color] = eval(f"self.{color}")
-                
-        return json.dumps(retdict)
+               
+        @dataclasses.dataclass 
+        class Color:
+            name: str
+            color: str
+            
+        model = baseModels.ListModel(Color)
+        for k,v in retdict.items():
+            model.addItem(Color(k, v))
+        
+        print(model.count())
+        print(model.data(model.index(0)))
+        return model
             
     @Property(str, notify=themeChanged)
     def primary_paletteKeyColor(self):
@@ -201,9 +224,6 @@ class Theme(QObject):
     def surfaceContainerLowest(self, value):
         self._surfaceContainerLowest = value
         self.themeChanged.emit()
-
-
-
 
     @Property(str, notify=themeChanged)
     def surfaceContainerLow(self):

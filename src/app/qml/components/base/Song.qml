@@ -17,6 +17,7 @@ Item {
     property string songArtist: "the tester"
     property string songLength: "2:04"
     property string imageUrl: "https://img.youtube.com/vi/tI7e34KfwB4/maxresdefault.jpg"
+
     enum DownloadStatus { NotDownloaded, Downloading, Downloaded }
     property int songDownloadStatus: DownloadStatus.NotDownloaded
 
@@ -42,12 +43,25 @@ Item {
 
     width: 330
     height: 80
-    Components.RoundedImage {
+    
+
+    Image {
         id: songImage
-        source: imageUrl
-        radius: 20
+        property int radius: 60
+        source: Backend.convertToCover(imageUrl, radius, width)
         width: 80
         height: 80
+    }
+    
+    Timer {
+        id: coverChangeTimer
+        interval: 5000
+        running: true
+        repeat: false
+        onTriggered: {
+            console.log("changing cover")
+            root.imageUrl = "https://images.unsplash.com/photo-1721332155637-8b339526cf4c?q=80&w=1935&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        }
     }
 
     ColumnLayout {

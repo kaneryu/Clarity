@@ -89,14 +89,14 @@ ApplicationWindow {
             }
         }
     }
-    Button {
-        id: reloadButton
-        text: "Reload"
-        anchors.top: parent.top
-        anchors.right: parent.right
-        onClicked: webview.reload()
-        z: 999
-    }
+    // Button {
+    //     id: reloadButton
+    //     text: "Reload"
+    //     anchors.top: parent.top
+    //     anchors.right: parent.right
+    //     onClicked: webview.reload()
+    //     z: 999
+    // }
     Item {
         id: content
         anchors.top: header.bottom
@@ -135,51 +135,63 @@ ApplicationWindow {
             }
         }
 
-        WebEngineView {
-            id: webview
-            anchors.fill: parent
-            // get full path of the file from backend
-            
-            url: Backend.getPage("pages/home")
-
-            backgroundColor: "#000"
-
-            onJavaScriptConsoleMessage: {
-                console.log("JS: " + message)
-            }
-            webChannel: WebChannel {
-                id: webChannel
-            }
-
-            Component.onCompleted: {
-                webChannel.registerObject("backend", Backend)
-                webChannel.registerObject("theme", Theme)
-            }
-
-            
-        }
-        // ColObjs.ColRect {
-        //     id: contentBackground
+        // WebEngineView {
+        //     id: webview
         //     anchors.fill: parent
-        //     radius: content.windowTooSmall ? 0 : 10
-        //     color: Theme.surfaceContainerLow
+        //     // get full path of the file from backend
+            
+        //     url: Backend.getPage("pages/home")
+
+        //     backgroundColor: "#000"
+
+        //     onJavaScriptConsoleMessage: {
+        //         console.log("JS: " + message)
+        //     }
+        //     webChannel: WebChannel {
+        //         id: webChannel
+        //     }
+
+        //     Component.onCompleted: {
+        //         webChannel.registerObject("backend", Backend)
+        //         webChannel.registerObject("theme", Theme)
+        //     }
+
+            
         // }
+        ColObjs.ColRect {
+            id: contentBackground
+            anchors.fill: parent
+            radius: content.windowTooSmall ? 0 : 10
+            color: Theme.surfaceContainerLow
+        }
         
-        // Base.Song {
-        //     id: song
-        // }
+        Base.Song {
+            id: song
+        }
 
-        // // StackLayout {
-        // //     id: stackLayout
-        // //     anchors.fill: parent
-        // //     currentIndex: 1
+        Components.Button {
+            id: button
+            text: "Go to auto-generated playlists page"
+            anchors.top: song.bottom
+            width: 411
+            enabled: true
+            height: 39
+            onClicked: {
+                console.log("Button clicked")
+            }
+        }
 
-        // //     Pages.HomePage {
-        // //         id: homePage
-        // //         visible: true
-        // //         anchors.fill: parent
-        // //     }
-        // // }
+        StackLayout {
+            id: stackLayout
+            anchors.fill: parent
+            currentIndex: 1
+
+            Pages.HomePage {
+                id: homePage
+                visible: true
+                anchors.fill: parent
+            }
+        }
     }
 
     ColObjs.ColRect {

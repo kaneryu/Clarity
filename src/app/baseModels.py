@@ -1,4 +1,4 @@
-from PySide6.QtCore import QAbstractListModel, QByteArray, QModelIndex, Qt
+from PySide6.QtCore import QAbstractListModel, QByteArray, QModelIndex, Qt, QAbstractTableModel
 
 import dataclasses
 
@@ -8,6 +8,18 @@ class listModelItem:
     things: str = ""
     objects: str = ""
     multi: str = ""
+
+
+class TableModel(QAbstractTableModel):
+    def __init__(self, contains: object):
+        super().__init__()
+        self._contentsList = []
+        self.contains = contains
+    
+    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole):
+        if index.row > 0 and index.row() < self.rowCount():
+            item = self._contentsList[index.row()]
+            
     
 class ListModel(QAbstractListModel):
     def __init__(self, contains = listModelItem):
@@ -15,7 +27,7 @@ class ListModel(QAbstractListModel):
         self._contentsList = []
 
         self.contains = contains
-        
+    
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole):
         if 0 <= index.row() < self.rowCount():
             item = self._contentsList[index.row()]
@@ -26,7 +38,7 @@ class ListModel(QAbstractListModel):
     def roleNames(self) -> dict[int, QByteArray]:
         d = {}
         for i, field in enumerate(dataclasses.fields(self.contains)):
-            d[Qt.ItemDataRole.DisplayRole + i] = field.name.encode()
+            d[Qt.ItemDataRole.DisplayRole] = field.name.encode()
         return d
 
     def rowCount(self, parent=None):

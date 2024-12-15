@@ -5,13 +5,25 @@ import os
 import pathlib
 import random
 import sys
-import threading
+import asyncio
 import time
 import requests
 
 
 # library imports
-from PySide6.QtCore import QAbstractListModel, QByteArray, QModelIndex, QObject, Qt, QTimer, QThread, QEvent, QFile
+from PySide6.QtCore import (
+    QAbstractListModel,
+    QByteArray,
+    QModelIndex,
+    QObject,
+    Qt,
+    QTimer,
+    QThread,
+    QEvent,
+    QFile,
+    QRunnable,
+    QThreadPool
+)
 from PySide6.QtCore import Signal as QSignal
 from PySide6.QtCore import Slot as Slot, QDir
 from PySide6.QtGui import QAction, QFont, QIcon
@@ -27,8 +39,10 @@ from PySide6.QtCore import Property as Property
 from PySide6.QtWidgets import QApplication
 
 # local imports
-import materialInterface
-import baseModels as baseModels
+import src.app.materialInterface as materialInterface
+import src.app.baseModels as baseModels
+from src.app.pyutils import (roundimage, downloadimage, convertTocover)
+import src.globals as globals
 
 class BackgroundWorker(QThread):
     def __init__(self):
@@ -42,6 +56,25 @@ class BackgroundWorker(QThread):
 
     def stop(self):
         self.running = False
+        
+
+class ConvertToCoverWorker(QRunnable):
+    def __init__(self, link, radius, size):
+        super().__init__()
+        self.link = link
+        self.radius = radius
+        self.size = size
+        self.hsh = None
+        
+    def run(self):
+        self.hsh = asyncio.run(convertTocover.convertToCover(link=self.link, radius=self.radius, size=self.size))
+        
+    def getHash(self):
+        return self.hsh
+    
+    def getpath(self):
+        return globals.imageCache.sgetKeyPath(self.hsh)
+
 
 def startBackgroundWorker():
     worker = BackgroundWorker()
@@ -84,6 +117,25 @@ class Backend(QObject):
     @Slot(result=str)
     def ping(self) -> str:
         return "pong"
+    
+    @Slot(str, int, result=str)
+    def roundImage(self, path, radius = 20) -> str:
+        
+        hsh = globals.ghash(path + "rounded" + str(radius))
+        if globals.globalCache.scheckInCache(hsh): # check if the rounded image is cached
+            return "file:///" + globals.imageCache.sgetKeyPath(hsh) # return the path of the image
+        
+        # check if source image is cached
+        
+        path = asyncio.run(downloadimage.downloadimage(path))
+        hsh = asyncio.run(roundimage.roundimage(path, radius))
+    
+        return "file:///" + globals.imageCache.sgetKeyPath(hsh) # return the path of the image
+                
+        
+    @Slot(str, int, int, result=str)
+    def convertToCover(self, link: str, radius: str, size: int) -> str:
+        return "file:///" + globals.imageCache.sgetKeyPath(asyncio.run(convertTocover.convertToCover(link=link, radius=radius, size=size)))
             
 def generateRandomHexColor():
     return random.randint(0, 0xFFFFFF)
@@ -100,15 +152,17 @@ def appQuitOverride(event: QEvent):
     
 def main():
     global app, engine, backend, theme
-    webengine = QtWebEngineQuick()
-    webengine.initialize()
+    # webengine = QtWebEngineQuick()
+    # webengine.initialize()
     
 
     
+    globals.globalCache.sput("test", "test", byte=False)
+    asyncio.run(downloadimage.downloadimage("https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png"))
     app = QApplication()
     app.setStyle("Material")
     app.aboutToQuit.connect(appQuitOverride)
-    
+
     engine = QQmlApplicationEngine()
     engine.quit.connect(app.quit)
     
@@ -137,5 +191,6 @@ def main():
     
     sys.exit(app.exec())
     
-
-main()
+if __name__ == "__main__":
+    print("Please use run.py to run this application, but we'll try anyway:")
+    main()
