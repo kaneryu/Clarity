@@ -3,6 +3,9 @@ from materialyoucolor.hct import Hct
 from materialyoucolor.scheme.scheme_tonal_spot import SchemeTonalSpot
 from PySide6.QtCore import QObject, Qt, Slot, Property, Signal
 
+import json
+
+
 class Theme(QObject):
     themeChanged = Signal(name="themeChanged")
     
@@ -63,7 +66,16 @@ class Theme(QObject):
         self._onTertiaryFixed: str
         self._onTertiaryFixedVariant: str
 
-    
+    @Slot(result=str)
+    def getAllColors(self):
+        retdict = {}
+        for color in vars(MaterialDynamicColors).keys():
+            color_name = getattr(MaterialDynamicColors, color)
+            if hasattr(color_name, "get_hct"):
+                retdict[color] = eval(f"self.{color}")
+                
+        return json.dumps(retdict)
+            
     @Property(str, notify=themeChanged)
     def primary_paletteKeyColor(self):
         return self._primary_paletteKeyColor
@@ -72,9 +84,6 @@ class Theme(QObject):
     def primary_paletteKeyColor(self, value):
         self._primary_paletteKeyColor = value
         self.themeChanged.emit()
-
-
-
 
     @Property(str, notify=themeChanged)
     def secondary_paletteKeyColor(self):

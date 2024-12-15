@@ -94,7 +94,7 @@ Item {
 
         Timer {
             id: placeholderTimer
-            interval: 150
+            interval: 10000
             running: true
             repeat: true
             onTriggered: {

@@ -2,6 +2,7 @@
 import dataclasses
 import random
 import os
+import pathlib
 import random
 import sys
 import threading
@@ -10,10 +11,11 @@ import requests
 
 
 # library imports
-from PySide6.QtCore import QAbstractListModel, QByteArray, QModelIndex, QObject, Qt, QTimer, QThread, QEvent
+from PySide6.QtCore import QAbstractListModel, QByteArray, QModelIndex, QObject, Qt, QTimer, QThread, QEvent, QFile
 from PySide6.QtCore import Signal as QSignal
 from PySide6.QtCore import Slot as Slot, QDir
 from PySide6.QtGui import QAction, QFont, QIcon
+from PySide6.QtWebEngineQuick import QtWebEngineQuick
 from PySide6.QtQml import (
     QmlElement,
     QmlSingleton,
@@ -25,9 +27,8 @@ from PySide6.QtCore import Property as Property
 from PySide6.QtWidgets import QApplication
 
 # local imports
-import materialInterface, base_models as base_models
-
-
+import materialInterface
+import baseModels as baseModels
 
 class BackgroundWorker(QThread):
     def __init__(self):
@@ -38,7 +39,6 @@ class BackgroundWorker(QThread):
         while self.running:
             time.sleep(1)
             print("Background Worker Running")
-
 
     def stop(self):
         self.running = False
@@ -65,6 +65,25 @@ class Backend(QObject):
         if not hasattr(self, 'initialized'):
             self.initialized = True
             self._value = 0
+    
+    @Slot(str, result=str)
+    def getPage(self, url: str) -> str:
+        
+        # parse the url
+        # possible roots as of now:
+        # page
+        # then we have the page name after, so like page/home
+        
+        # pages are stored locally in the html folder (src/app/html)
+        
+        url = url.split("/")
+        print(url)
+        print("file:///" + os.path.join(os.path.dirname(__file__), "html", url[0], url[1], "index.html").replace("\\","/"))
+        return "file:///" + os.path.join(os.path.dirname(__file__), "html", url[0], url[1], "index.html").replace("\\","/")
+        
+    @Slot(result=str)
+    def ping(self) -> str:
+        return "pong"
             
 def generateRandomHexColor():
     return random.randint(0, 0xFFFFFF)
@@ -81,8 +100,13 @@ def appQuitOverride(event: QEvent):
     
 def main():
     global app, engine, backend, theme
-    app = QApplication()
+    webengine = QtWebEngineQuick()
+    webengine.initialize()
     
+
+    
+    app = QApplication()
+    app.setStyle("Material")
     app.aboutToQuit.connect(appQuitOverride)
     
     engine = QQmlApplicationEngine()
@@ -98,15 +122,15 @@ def main():
     engine.rootContext().setContextProperty("Theme", theme)
     engine.rootContext().setContextProperty("Backend", backend)
 
-
+    
     engine.load(qml)
     if not engine.rootObjects():
         sys.exit(-1)
 
-    # tim = QTimer()
-    # tim.setInterval(10000)
-    # tim.timeout.connect(lambda: theme.get_dynamicColors(generateRandomHexColor(), random.choice([True, False]), 0.0))
-    # tim.start()
+    tim = QTimer()
+    tim.setInterval(1000)
+    tim.timeout.connect(lambda: theme.get_dynamicColors(generateRandomHexColor(), random.choice([True]), 0.0))
+    tim.start()
     
     print(QDir.currentPath())
     backend.loadComplete.emit()
