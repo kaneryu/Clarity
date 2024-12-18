@@ -1,8 +1,9 @@
-import yt_dlp.YoutubeDL as yt_dlp
 import yt_dlp as yt_dlp_module
 import vlc
 
 from PySide6.QtCore import QObject, Slot, Signal, Property as QProperty
+from PySide6.QtCore import QAbstractListModel, Qt, QModelIndex
+from PySide6.QtGui import QStandardItem, QStandardItemModel
 
 import io
 import enum
@@ -14,8 +15,13 @@ from src.app import baseModels
 import time
 import asyncio
 
+ydlOpts = {
+    "external_downloader_args": ['-loglevel', 'panic'],
+    "quiet": True
+}
+
 ytdl: yt_dlp_module.YoutubeDL
-ytdl = yt_dlp()
+ytdl = yt_dlp_module.YoutubeDL(ydlOpts)
 
 class LoopType(enum.Enum):
     """Loop Types"""
@@ -27,13 +33,68 @@ class LoopType(enum.Enum):
 class QueueModel():
     pass
 
-queue = None
+class QueueModel(QAbstractListModel):
+    def __init__(self, queue):
+        super().__init__()
+        self._queue = queue if not None else []
+
+    def rowCount(self, parent=QModelIndex()):
+        print("asked for rowCount")
+        return len(self._queue)
+
+    def count(self):
+        return len(self._queue)
     
+    def data(self, index, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole and index.isValid():
+            print("returning data at", index.row())
+            print("data:", self._queue[index.row()])
+            return self._queue[index.row()]
+        return None
+
+    def roleNames(self):
+        return {
+            Qt.DisplayRole: b"song"
+        }
+    
+    def headerData(self, section, orientation, role = ...):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return "Song"
+            else:
+                return f"Song {section}"
+        return None
+    
+    def setData(self, index, value, role=Qt.EditRole):
+        if role == Qt.EditRole and index.isValid():
+            self._queue[index.row()] = value
+            self.dataChanged.emit(index, index)
+            return True
+        return False
+
+    def setQueue(self, queue):
+        self.beginResetModel()
+        self._queue = queue
+        self.endResetModel()
+
+    def removeItem(self, index):
+        if 0 <= index < len(self._queue):
+            self.beginRemoveRows(QModelIndex(), index, index)
+            del self._queue[index]
+            self.endRemoveRows()
+
+    def moveItem(self, from_index, to_index):
+        if 0 <= from_index < len(self._queue) and 0 <= to_index < len(self._queue):
+            self.beginMoveRows(QModelIndex(), from_index, from_index, QModelIndex(), to_index)
+            self._queue.insert(to_index, self._queue.pop(from_index))
+            self.endMoveRows()
+            
 class Queue(QObject):
     """Combined Queue and Player"""
 
     queueChanged = Signal()
     songChanged = Signal()
+    
     
     @staticmethod
     def getInstance():
@@ -46,7 +107,7 @@ class Queue(QObject):
         
     def __init__(self):
         super().__init__()
-        self._queue = []
+        
         self.queueData = {}
         self.pointer = 0
         self.player: vlc.MediaPlayer = vlc.MediaPlayer()
@@ -54,7 +115,7 @@ class Queue(QObject):
         self.eventMgr.event_attach(vlc.EventType.MediaPlayerEndReached, self.songFinished)
         self.player.set_hwnd(0)
         self.loop: LoopType = LoopType.NONE
-        
+        self.queueModel = QueueModel([])
         
         if not cacheManager.cacheExists("queueCache"):
             cache = cacheManager.CacheManager(name="queueCache")
@@ -63,10 +124,9 @@ class Queue(QObject):
         
         self.cache = cache
     
-    
     @QProperty(list, notify=queueChanged)
     def queue(self):
-        return self._queue
+        return self.queueModel._queue
     
     @queue.setter
     def queue(self, value):
@@ -146,11 +206,13 @@ class Queue(QObject):
     
     @Slot(str, bool)
     def setQueue(self, queue: list, skipSetData: bool = False):
-        self._queue = queue
+        
         if not skipSetData:
-            for i in self._queue:
-                self.queueData[i] = self.getSongData(i) 
-    
+            for i in self.queue:
+                self.queueData[i] = self.getSongData(i)
+                
+        self.queueModel.setQueue(queue)
+
     def songFinished(self, event):
         print("Song Finished")
         if self.loop == LoopType.SINGLE:
@@ -254,11 +316,10 @@ class Queue(QObject):
             raise ValueError("Percentage must be between 0 and 100")
         len = self.player.get_length()
         self.player.set_time(len * percentage // 100)
-    
 
 
-        
-        
+queue = Queue()   
+
 def main():
     print("Queue Player")
     player = Queue()

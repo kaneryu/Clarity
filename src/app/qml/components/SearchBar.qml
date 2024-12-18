@@ -42,13 +42,13 @@ Item {
     TextField {
         property string searchField: ""
         property list<string> placeholders: [
-            "Search for your favorite song",
-            "Search for that one album",
-            "Search for the best podcast",
-            "Search for a new artist",
-            "Search for a mood",
-            "Search for your friend's playlist",
-            "Search for anything"
+            qsTr("Search for your favorite song"),
+            qsTr("Search for that one album"),
+            qsTr("Search for the best podcast"),
+            qsTr("Search for a new artist"),
+            qsTr("Search for a mood"),
+            qsTr("Search for your friend's playlist"),
+            qsTr("Search for anything")
         ]
         property int placeholderIndex: 0
 
@@ -65,6 +65,8 @@ Item {
         font.pixelSize: 15
         focus: true
         background: Rectangle {
+            id: searchbarFieldBackground
+            anchors.fill: parent
             color: "transparent"
         }
 

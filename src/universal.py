@@ -14,6 +14,7 @@ globalCache = cacheManager_module.CacheManager(name="cache")
 songCache = cacheManager_module.CacheManager(name="songs_cache")
 imageCache = cacheManager_module.CacheManager(name="images_cache")
 
+queueInstance = queue.queue
 
 class BackgroundWorker(threading.Thread):
     def __init__(self):
@@ -34,9 +35,9 @@ class BackgroundWorker(threading.Thread):
                 kwargs = i["kwargs"]
                 if args:
                     if kwargs:
-                        fun(args,kwargs)
+                        fun(*args, **kwargs)
                     else:
-                        fun(args)
+                        fun(*args)
                 else:
                     fun()
                 self.jobs.remove(i)

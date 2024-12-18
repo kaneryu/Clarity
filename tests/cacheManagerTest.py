@@ -2,6 +2,7 @@ import unittest
 import asyncio
 import os
 from src.cacheManager.cacheManager import CacheManager
+import time
 
 class TestCacheManager(unittest.TestCase):
 
@@ -26,10 +27,10 @@ class TestCacheManager(unittest.TestCase):
 
     def test_put_with_expiry(self):
         async def run_test():
-            await self.cache_manager.put("key2", "value2", expires_in=1)
+            await self.cache_manager.put("key2", "value2", byte=False, expiration=0)
             # await asyncio.sleep(2)
             value = await self.cache_manager.get("key2")
-            self.assertIsNone(value)
+            self.assertEqual(value, False)
 
         self.loop.run_until_complete(run_test())
 
@@ -64,13 +65,13 @@ class TestCacheManager(unittest.TestCase):
 
     def test_collect(self):
         async def run_test():
-            await self.cache_manager.put("key7", "value7", expires_in=1)
-            await self.cache_manager.put("key8", "value8", expires_in=3)
+            await self.cache_manager.put("key7", "value7", byte=False, expiration=0)
+            await self.cache_manager.put("key8", "value8", byte=False, expiration=time.time() + 10000)
             # await asyncio.sleep(2)
             await self.cache_manager.collect()
             value1 = await self.cache_manager.get("key7")
             value2 = await self.cache_manager.get("key8")
-            self.assertIsNone(value1)
+            self.assertEqual(value1, False)
             self.assertEqual(value2, "value8")
 
         self.loop.run_until_complete(run_test())

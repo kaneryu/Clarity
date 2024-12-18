@@ -1,0 +1,7 @@
+{
+    "version": 2,
+    "cache_path_map": "{\"key7\": \"c:\\\\Users\\\\kaneryu\\\\Projects\\\\InnerTuneDesktop\\\\.;test_cache\\\\key7\", \"key8\": \"c:\\\\Users\\\\kaneryu\\\\Projects\\\\InnerTuneDesktop\\\\.;test_cache\\\\key8\"}",
+    "metadata": "{\"key7\": {\"filext\": \"\", \"expiration\": 0, \"accessCount\": 0, \"bytes\": false, \"dict\": false, \"size\": 6}, \"key8\": {\"filext\": \"\", \"expiration\": 1734504384.3272948, \"accessCount\": 0, \"bytes\": false, \"dict\": false, \"size\": 6}}",
+    "last_used": "{\"key7\": 1734494384.325298, \"key8\": 1734494384.3272948}",
+    "statistics": "{\"hits\": 0, \"misses\": 0, \"saves\": 7, \"evictons\": 0, \"deletions\": 1, \"size\": 36}"
+}

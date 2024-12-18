@@ -168,16 +168,16 @@ ApplicationWindow {
             color: Theme.surfaceContainerLow
         }
         
-        Base.Song {
-            id: song
-        }
+        // Base.Song {
+        //     id: song
+        // }
 
         Components.Button {
             anchors.left: parent.left
             anchors.leftMargin: 52
             id: button
             text: "Go to auto-generated playlists page"
-            anchors.top: song.bottom
+            anchors.top: parent.bottom
             width: 411
             enabled: true
             height: 39
@@ -194,6 +194,34 @@ ApplicationWindow {
             Pages.HomePage {
                 id: homePage
                 visible: true
+            }
+        }
+        ListView {
+            id: queueListView
+            anchors.fill: parent
+            model: Backend.queueModel
+
+            Component.onCompleted: {
+                console.log("Queue model: ", model)
+                console.log("itemAt(0): ", model[1])
+            }
+
+            delegate: Item {
+                width: parent.width
+                height: 50
+                Text {
+                    text: song
+                    anchors.centerIn: parent
+                }
+                Component.onCompleted: {
+                    console.log("Model data: ", song)
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        Backend.queueCall("setPointer", index)
+                    }
+                }
             }
         }
     }

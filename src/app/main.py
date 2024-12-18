@@ -64,10 +64,6 @@ class ConvertToCoverWorker(QRunnable):
         return universal.imageCache.sgetKeyPath(self.hsh)
 
 
-def startBackgroundWorker():
-    worker = BackgroundWorker()
-    worker.start()
-    return worker
     
     
 QML_IMPORT_NAME = "CreateTheSun"
@@ -81,17 +77,29 @@ class Backend(QObject):
     # tabModelChanged = QSignal(name="tabModelChanged")
     _instance = None
     
+    
+    
     def __init__(self):
         super().__init__()
         if not hasattr(self, 'initialized'):
             self.initialized = True
             self._value = 0
+            
+        self.queueModel_ = universal.queueInstance.queueModel
+    
+    @Slot(result=QObject)
+    def getQM(self):
+        return universal.queueInstance.queueModel
+    
+    @Property(QObject, constant=True)
+    def queueModel(self):
+        return self.queueModel_
     
     @Property(QObject, constant=True)
     def queue(self):
-        return universal.queue
+        return universal.queueInstance
 
-    @Slot(str)
+    @Slot(str, int)
     def queueCall(self, func, *args, **kwargs):
         f = getattr(universal.queue.Queue.getInstance(), func)
         universal.bgworker.jobs.append({"func": f, "args": args, "kwargs": kwargs})
@@ -139,10 +147,14 @@ def generateRandomHexColor():
 
 def cleanUp():
     global engine
-    engine.quit()
+    engine.deleteLater()
+    # engine.quit.emit()
+
     
 def appQuitOverride():
     cleanUp()
+    time.sleep(1)
+    sys.exit()
     
 def main():
     global app, engine, backend, theme
