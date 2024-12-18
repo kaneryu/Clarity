@@ -1,7 +1,7 @@
 """takes in a link, downloads the image, crops it to a square, rounds the corners, and returns the path to the image"""
 
 from PIL import Image, ImageChops, ImageDraw
-from src.globals import imageCache, ghash
+from src.universal import imageCache, ghash
 from src.cacheManager import CacheManager
 
 from . import downloadimage, roundimage

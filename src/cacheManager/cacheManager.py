@@ -26,6 +26,30 @@ class ErrorLevel(enum.StrEnum):
     WARNING = "warning"
     ERROR = "error"
 
+caches = {}
+
+def cacheExists(name: str) -> bool:
+    """Check if a cache exists
+
+    Args:
+        name (str): The name of the cache
+
+    Returns:
+        bool: Whether or not the cache exists
+    """
+    return name in caches
+
+def getCache(name: str) -> "CacheManager":
+    """Get a cache by name
+
+    Args:
+        name (str): The name of the cache
+
+    Returns:
+        CacheManager: The cache
+    """
+    return caches.get(name)
+
 class CacheManager:
     def __init__(self, name: str, directory: str = ""):
         """Initialize the CacheManager.
@@ -36,13 +60,12 @@ class CacheManager:
         """
         self.max_size = 1000000000 # 1GB
         self.__cache_path_map = {}
-        self.expiry_times = {}
-        self.metadata = {}
+        self.metadata: dict[str, dict] = {}
         self.last_used = collections.OrderedDict()
         self.name = name or ""
         
         if directory == "":
-            self.directory = f".{os.pathsep}{name}-cache" if not "cache" in name else f".{os.pathsep}{name}"
+            self.directory = f"{os.pathsep}{name}-cache" if not "cache" in name.lower() else f".{os.pathsep}{name}"
         else:
             self.directory = directory
             
@@ -52,6 +75,7 @@ class CacheManager:
         self.statistics = {
             "hits": 0,
             "misses": 0,
+            "saves": 0,
             "evictons": 0, # keeps track of how many items have been evicted
             "deletions": 0, # keeps track of how many items have been deleted, including evictions
             "size": 0
@@ -60,22 +84,33 @@ class CacheManager:
             os.makedirs(self.directory)
         
         self.absdir = os.path.abspath(self.directory)
-    
-    
+        
+        caches[name] = self
+        
+        if not self.__metadataLoad():
+            self.__metadataSave()
+            
+    def ordered_dict_to_dict(self, obj):
+        if isinstance(obj, collections.OrderedDict):
+            return dict(obj)
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
     def __metadataSave(self):
         """Internal function, saves metadata.
         """
         cpm = json.dumps(self.__cache_path_map)
-        et = json.dumps(self.expiry_times)
         md = json.dumps(self.metadata)
-        lu = json.dumps(self.last_used)
+        lu = json.dumps(self.last_used, default=self.ordered_dict_to_dict)
+        st = json.dumps(self.statistics)
+        version = 2
         
         metadata_path = os.path.join(self.directory, f"(27399499ad89dce2b478e6d140b3a9d0)cache_metadata.json") # all the random bytes there are to avoid a collision with a item in the cache
         metadata = {
+            "version": version,
             "cache_path_map": cpm,
-            "expiry_times": et,
             "metadata": md,
-            "last_used": lu
+            "last_used": lu,
+            "statistics": st
         }
         
         with open(metadata_path, 'w') as f:
@@ -84,17 +119,27 @@ class CacheManager:
     def __metadataLoad(self):
         """Internal function, loads metadata.
         """
+        loadversion = 2
+        
         metadata_path = os.path.join(self.directory, "(27399499ad89dce2b478e6d140b3a9d0)cache_metadata.json")
         if not os.path.exists(metadata_path):
-            return
+            return False
         
         with open(metadata_path, 'r') as f:
             metadata = json.load(f)
         
+        if not "version" in metadata:
+            self._print("metadata version not found", ErrorLevel.ERROR)
+            return False
+        elif metadata["version"] != loadversion:
+            self._print("metadata version mismatch", ErrorLevel.ERROR)
+            return False
+        
+        
         self.__cache_path_map = json.loads(metadata["cache_path_map"])
-        self.expiry_times = json.loads(metadata["expiry_times"])
         self.metadata = json.loads(metadata["metadata"])
-        self.last_used = json.loads(metadata["last_used"])
+        self.last_used = json.loads(metadata["last_used"], object_pairs_hook=collections.OrderedDict)
+        self.statistics = json.loads(metadata["statistics"])
     
     
     async def put(self, key: str, value: Any, byte: bool, filext: Optional[str] = None, expiration: Optional[int] = None) -> str:
@@ -126,24 +171,30 @@ class CacheManager:
         if not filext.startswith('.') and not filext == '':
             filext = '.' + filext
         
-            
+        dictmode = False if not isinstance(value, dict) else True
+        
         async with self.lock:
             
             self.last_used[key] = time.time()
-            self.metadata[key] = {"filext": filext, "expiration": expiration, "accessCount": 0, "bytes": byte}
+            self.metadata[key] = {"filext": filext, "expiration": expiration, "accessCount": 0, "bytes": byte, "dict": dictmode}
             self.__cache_path_map[key] = os.path.abspath(os.path.join(self.absdir, key + filext))
+            if os.path.exists(self.__cache_path_map[key]):
+                print("Warning: overwriting cache item at " + self.__cache_path_map[key])
+                os.remove(self.__cache_path_map[key])
             with open(self.__cache_path_map[key], 'wb' if byte else 'w') as file:
-                file.write(value)
+                file.write(value if not dictmode else json.dumps(value))
             
             s = os.path.getsize(self.__cache_path_map[key])
             self.statistics["size"] += s
+            
             self.metadata[key]["size"] = s
         
+        self.statistics["saves"] += 1
         self.__metadataSave()
         return key
         
     
-    async def get(self, key: str) -> Any:
+    async def get(self, key: str) -> str | dict | bool:
         """Get a value from the cache
 
         Args:
@@ -152,16 +203,19 @@ class CacheManager:
         Returns:
             Any: The value stored. When passing in an item of type 'bytes', it will be written to disk using wb
         """
-        b = self.metadata[key].get("bytes", False)
         if not key in self.__cache_path_map:
             self._print("cache miss: " + key, ErrorLevel.INFO)
             self.statistics["misses"] += 1
-            return None
+            return False
+    
+        b = self.metadata[key].get("bytes", False)
+        dictmode = self.metadata[key].get("dict", False)
         
-        if key in self.expiry_times and time.time() > self.expiry_times[key]:
+        
+        if time.time() > self.metadata[key].get("expiration", -1):
             self._print("cache miss: " + key + " expired", ErrorLevel.INFO)
             await self.delete(key)
-            return None
+            return False
         
         async with self.lock:
             self.last_used.move_to_end(key)
@@ -172,7 +226,7 @@ class CacheManager:
                 value = file.read()
             
             self.last_used[key] = time.time()
-            return value
+            return value if not dictmode else json.loads(value)
 
         self.__metadataSave()
     
@@ -189,7 +243,6 @@ class CacheManager:
                 os.remove(self.__cache_path_map[key])
                 del self.__cache_path_map[key]
                 del self.metadata[key]
-                del self.expiry_times[key]
                 del self.last_used[key]
             else:
                 self._print(f"key {key} not found", ErrorLevel.WARNING)
@@ -204,7 +257,6 @@ class CacheManager:
                 os.remove(self.__cache_path_map[key])
             self.__cache_path_map.clear()
             self.metadata.clear()
-            self.expiry_times.clear()
             self.last_used.clear()
         
         self.__metadataSave()
@@ -214,7 +266,8 @@ class CacheManager:
         """
         async with self.lock:
             now = time.time()
-            keys_to_delete = [key for key, expiry in self.expiry_times.items() if now > expiry]
+            
+            keys_to_delete = [key for key in list(self.metadata.keys()) if self.metadata[key].get("expiration", -1) < now]
             for key in keys_to_delete:
                 await self.delete(key)
         
@@ -333,10 +386,10 @@ class CacheManager:
         """
         return asyncio.run(self.getStatistics(*args, **kwargs))
     
-    def scheckInCache(self, *args, **kwargs):
+    def scheckInCache(self, key: str) -> bool:
         """Check if an item is in the cache
         """
-        return asyncio.run(self.checkInCache(*args, **kwargs))
+        return asyncio.run(self.checkInCache(key))
     
     def _print(self, msg: str, level: ErrorLevel):
         print(f"cache[{self.name}] says {msg}, error level {str(level)}")

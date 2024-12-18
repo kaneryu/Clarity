@@ -1,3 +1,3 @@
 from src.app import main
-import src.globals
+import src.universal
 main.main()

@@ -1,4 +1,4 @@
-from src.globals import imageCache, ghash
+from src.universal import imageCache, ghash
 from src.cacheManager import CacheManager
 import asyncio
 import requests

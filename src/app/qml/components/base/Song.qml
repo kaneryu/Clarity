@@ -56,7 +56,7 @@ Item {
     Timer {
         id: coverChangeTimer
         interval: 5000
-        running: true
+        running: false
         repeat: false
         onTriggered: {
             console.log("changing cover")

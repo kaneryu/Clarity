@@ -1,5 +1,5 @@
 from PIL import Image, ImageChops, ImageDraw
-from src.globals import imageCache, ghash
+from src.universal import imageCache, ghash
 from src.cacheManager import CacheManager
 import asyncio
 from io import BytesIO

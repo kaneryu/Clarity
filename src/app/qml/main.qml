@@ -5,6 +5,9 @@ import Qt.labs.platform
 import QtWebEngine
 import QtWebChannel
 
+import QtQuick.Controls.Basic
+
+
 import "components" as Components
 import "components/pages" as Pages
 import "components/base" as Base
@@ -170,6 +173,8 @@ ApplicationWindow {
         }
 
         Components.Button {
+            anchors.left: parent.left
+            anchors.leftMargin: 52
             id: button
             text: "Go to auto-generated playlists page"
             anchors.top: song.bottom
@@ -177,7 +182,7 @@ ApplicationWindow {
             enabled: true
             height: 39
             onClicked: {
-                console.log("Button clicked")
+                Backend.queueCall("next")
             }
         }
 
@@ -189,7 +194,6 @@ ApplicationWindow {
             Pages.HomePage {
                 id: homePage
                 visible: true
-                anchors.fill: parent
             }
         }
     }
