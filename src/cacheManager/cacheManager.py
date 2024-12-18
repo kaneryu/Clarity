@@ -181,6 +181,7 @@ class CacheManager:
             if os.path.exists(self.__cache_path_map[key]):
                 print("Warning: overwriting cache item at " + self.__cache_path_map[key])
                 os.remove(self.__cache_path_map[key])
+                
             with open(self.__cache_path_map[key], 'wb' if byte else 'w') as file:
                 file.write(value if not dictmode else json.dumps(value))
             
@@ -207,8 +208,7 @@ class CacheManager:
             self._print("cache miss: " + key, ErrorLevel.INFO)
             self.statistics["misses"] += 1
             return False
-        else:
-            if not os.path.exists(self.__cache_path_map[key]): # if the key is in the cache, but it's not actually on disk
+        elif not os.path.exists(self.__cache_path_map[key]): # if the key is in the cache, but it's not actually on disk
                 await self.delete(key)
                 self._print(f"key {key} was orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
                 self._print("cache miss: " + key, ErrorLevel.INFO)
@@ -247,7 +247,7 @@ class CacheManager:
                 self.statistics["size"] -= self.metadata[key]["size"]
                 self.statistics["deletions"] += 1
                 if os.path.exists(self.__cache_path_map[key]):
-                    os.remove(self.__cache_path_map[key])
+                        os.remove(self.__cache_path_map[key])
                 del self.__cache_path_map[key]
                 del self.metadata[key]
                 del self.last_used[key]
@@ -262,17 +262,63 @@ class CacheManager:
         async with self.lock:
             for key in self.__cache_path_map:
                 if os.path.exists(self.__cache_path_map[key]):
-                    os.remove(self.__cache_path_map[key])
+                        os.remove(self.__cache_path_map[key])
             self.__cache_path_map.clear()
             self.metadata.clear()
             self.last_used.clear()
         
         self.__metadataSave()
-    
+        
+    async def integrityCheck(self, restore: bool = False):
+        """Runs collect and checks for cache integrity.
+        """
+        self._print("running cleanup", ErrorLevel.INFO)
+       
+        async with self.lock:
+            # use os.walk to check which keys are actually on disk
+            for i in os.listdir(self.absdir):
+                if not os.path.isfile(os.path.join(self.absdir, i)):
+                    continue
+                
+                if i == "(27399499ad89dce2b478e6d140b3a9d0)cache_metadata.json":
+                    continue
+                
+                i = i.split(os.path.extsep)[0]
+                
+                if not i in self.__cache_path_map:
+                    self._print(f"key {i} is orphaned (data is on disk but reference is missing)", ErrorLevel.WARNING)
+                    if restore:
+                        self._print(f"key {i} will be restored", ErrorLevel.INFO)
+                        data = open(os.path.join(self.absdir, i), 'r').read()
+                        os.remove(os.path.join(self.absdir, i))
+                        await self.put(i, data, Btypes.AUTO, expiration=None)
+                    else:
+                        self._print(f"key {i} will be not be restored", ErrorLevel.INFO)
+            
+            for i in self.__cache_path_map:
+                if not os.path.exists(self.__cache_path_map[i]):
+                    self._print(f"key {i} is orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
+                    if restore:
+                        self._print(f"key {i} will be restored", ErrorLevel.INFO)
+                        data = open(os.path.join(self.absdir, i), 'r').read()
+                        os.remove(os.path.join(self.absdir, i))
+                        await self.put(i, data, Btypes.AUTO)
+                    else:
+                        self._print(f"key {i} will be not be restored", ErrorLevel.INFO)
+                    continue
+                    
+                data = await self.getMetadata(i)
+                if data.get("expiration", -1) == None: # this happens sometimes :/
+                    del self.metadata[i]["expiration"]
+        
+        await self.collect()
+        # self.__metadataSave() collect calls metadatasave for us!
+        
     async def collect(self):
         """Collect expired values from the cache
         """
         async with self.lock:
+            self._print("collecting expired items", ErrorLevel.INFO)
             self._print("collecting expired items", ErrorLevel.INFO)
             now = time.time()
             
@@ -287,6 +333,14 @@ class CacheManager:
             self.__metadataSave()
         
         self.__metadataSave()
+        
+        # Perform deletions outside of the locked context (hi copilot!)
+        for key in keys_to_delete:
+            self._print(f"deleting key {key} because it expired", ErrorLevel.INFO)
+            await self.delete(key)
+    
+        async with self.lock:
+            self.__metadataSave()
     
     async def evict(self, method: EvictionMethod, amount: int):
         """Evict a certain amount of items from the cache
@@ -346,7 +400,11 @@ class CacheManager:
         return self.statistics
 
     async def checkInCache(self, key: str) -> bool:
-        """Check if an item is in the cache
+        """Check if an item is in the cache.
+        # This function is only meant for 'checking' purposes. It does not take into account expiration or any other factors.
+        If you're checking if you should call get() on the key, please call get() directly and check if it returns false.
+        If you're checking if a key exists, you should call get() also, so it takes into account key expiration.
+        In 70% of cases, what you nead is get().
 
         Args:
             key (str): The key used to refer to the item. The key *should not* contain a file extension. It will break things.
@@ -406,5 +464,11 @@ class CacheManager:
         """
         return asyncio.run(self.checkInCache(key))
     
+    def scleanup(self, restore: bool = False):
+        """Runs collect and checks for cache integrity.
+        """
+        return asyncio.run(self.integrityCheck(restore))
+    
     def _print(self, msg: str, level: ErrorLevel):
-        print(f"cache[{self.name}] says {msg}, error level {str(level)}")
+        print(f"cache[{self.name}] says {msg}, level: {str(level)}")
+    

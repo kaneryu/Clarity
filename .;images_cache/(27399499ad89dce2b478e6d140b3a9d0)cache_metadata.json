@@ -1,7 +1,0 @@
-{
-    "version": 2,
-    "cache_path_map": "{\"e3b5f2810d310e3d288d76320b8cce98\": \"C:\\\\Users\\\\kaneryu\\\\Projects\\\\InnerTuneDesktop\\\\.;images_cache\\\\e3b5f2810d310e3d288d76320b8cce98.png\", \"86ea2eff11ab70a4275208fcba13ad37\": \"C:\\\\Users\\\\kaneryu\\\\Projects\\\\InnerTuneDesktop\\\\.;images_cache\\\\86ea2eff11ab70a4275208fcba13ad37.png\", \"830709c4b2dcb00da5073d57c249bf0d\": \"C:\\\\Users\\\\kaneryu\\\\Projects\\\\InnerTuneDesktop\\\\.;images_cache\\\\830709c4b2dcb00da5073d57c249bf0d.png\"}",
-    "metadata": "{\"e3b5f2810d310e3d288d76320b8cce98\": {\"filext\": \".png\", \"expiration\": null, \"accessCount\": 0, \"bytes\": true, \"dict\": false, \"size\": 75576}, \"86ea2eff11ab70a4275208fcba13ad37\": {\"filext\": \".png\", \"expiration\": null, \"accessCount\": 0, \"bytes\": true, \"dict\": false, \"size\": 9258}, \"830709c4b2dcb00da5073d57c249bf0d\": {\"filext\": \".png\", \"expiration\": null, \"accessCount\": 0, \"bytes\": true, \"dict\": false, \"size\": 10871}}",
-    "last_used": "{\"e3b5f2810d310e3d288d76320b8cce98\": 1734495212.7590432, \"86ea2eff11ab70a4275208fcba13ad37\": 1734532982.1544974, \"830709c4b2dcb00da5073d57c249bf0d\": 1734495212.8218253}",
-    "statistics": "{\"hits\": 0, \"misses\": 0, \"saves\": 29, \"evictons\": 0, \"deletions\": 0, \"size\": 336413}"
-}
