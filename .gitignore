@@ -168,4 +168,8 @@ cython_debug/
 # Custom
 ./innertube/testing.py
 test_cache/
-./*cache*/
+
+.;cache/
+.;images_cache/
+.;queueCache/
+.;songs_cache/
