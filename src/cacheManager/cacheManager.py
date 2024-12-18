@@ -207,10 +207,16 @@ class CacheManager:
             self._print("cache miss: " + key, ErrorLevel.INFO)
             self.statistics["misses"] += 1
             return False
+        else:
+            if not os.path.exists(self.__cache_path_map[key]): # if the key is in the cache, but it's not actually on disk
+                await self.delete(key)
+                self._print(f"key {key} was orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
+                self._print("cache miss: " + key, ErrorLevel.INFO)
+                self.statistics["misses"] += 1
+                return False
     
         b = self.metadata[key].get("bytes", False)
         dictmode = self.metadata[key].get("dict", False)
-        
         
         if time.time() > self.metadata[key].get("expiration", -1):
             self._print("cache miss: " + key + " expired", ErrorLevel.INFO)
@@ -240,7 +246,8 @@ class CacheManager:
             if key in self.__cache_path_map:
                 self.statistics["size"] -= self.metadata[key]["size"]
                 self.statistics["deletions"] += 1
-                os.remove(self.__cache_path_map[key])
+                if os.path.exists(self.__cache_path_map[key]):
+                    os.remove(self.__cache_path_map[key])
                 del self.__cache_path_map[key]
                 del self.metadata[key]
                 del self.last_used[key]
@@ -254,7 +261,8 @@ class CacheManager:
         """
         async with self.lock:
             for key in self.__cache_path_map:
-                os.remove(self.__cache_path_map[key])
+                if os.path.exists(self.__cache_path_map[key]):
+                    os.remove(self.__cache_path_map[key])
             self.__cache_path_map.clear()
             self.metadata.clear()
             self.last_used.clear()
@@ -265,11 +273,18 @@ class CacheManager:
         """Collect expired values from the cache
         """
         async with self.lock:
+            self._print("collecting expired items", ErrorLevel.INFO)
             now = time.time()
             
             keys_to_delete = [key for key in list(self.metadata.keys()) if self.metadata[key].get("expiration", -1) < now]
-            for key in keys_to_delete:
-                await self.delete(key)
+        
+        # Perform deletions outside of the locked context (hi copilot!)
+        for key in keys_to_delete:
+            self._print(f"deleting key {key} because it expired", ErrorLevel.INFO)
+            await self.delete(key)
+    
+        async with self.lock:
+            self.__metadataSave()
         
         self.__metadataSave()
     
