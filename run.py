@@ -9,7 +9,6 @@
 # nuitka-project: --include-data-dir=src/app/assets=src/app/assets
 # nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
 
-# nuitka-project: --file-version=0.0.0
 # nuitka-project: --file-description="InnerTuneDesktop -- A music player."
 # nuitka-project: --copyright="This is free and open-source software -- GNU GPL v3"
 # nuitka-project: --windows-product-name="InnerTuneDesktop"
