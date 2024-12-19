@@ -1,0 +1,6 @@
+materialyoucolors
+https://github.com/OmLanke/async-ytmusicapi/archive/async.zip
+PySide6
+PySide6_Addons
+PySide6_Essentials
+shiboken6
