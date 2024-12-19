@@ -164,6 +164,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# End of github python template
 
 # Custom
 ./innertube/testing.py
@@ -173,3 +174,8 @@ test_cache/
 .;images_cache/
 .;queueCache/
 .;songs_cache/
+
+
+# Builds
+*build/
+*dist/

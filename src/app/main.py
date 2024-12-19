@@ -28,7 +28,6 @@ from PySide6.QtCore import (
 from PySide6.QtCore import Signal as QSignal
 from PySide6.QtCore import Slot as Slot, QDir
 from PySide6.QtGui import QAction, QFont, QIcon
-from PySide6.QtWebEngineQuick import QtWebEngineQuick
 from PySide6.QtQml import (
     QmlElement,
     QmlSingleton,
@@ -158,8 +157,6 @@ def appQuitOverride():
     
 def main():
     global app, engine, backend, theme
-    # webengine = QtWebEngineQuick()
-    # webengine.initialize()
 
     app = QApplication()
     app.setStyle("Material")
