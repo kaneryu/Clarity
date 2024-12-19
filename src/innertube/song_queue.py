@@ -17,7 +17,7 @@ import asyncio
 
 ydlOpts = {
     "external_downloader_args": ['-loglevel', 'panic'],
-    "quiet": True
+    "quiet": False
 }
 
 ytdl: yt_dlp_module.YoutubeDL
@@ -29,9 +29,6 @@ class LoopType(enum.Enum):
     SINGLE = 1 # Repeat the current song
     ALL = 2 # Repeat all songs in the queue
     
-
-class QueueModel():
-    pass
 
 class QueueModel(QAbstractListModel):
     def __init__(self, queue):
@@ -289,9 +286,17 @@ class Queue(QObject):
             "description": data["description"]
         }
     
-    def add(self, link: str, index: int):
+    def add(self, link: str, index: int = -1):
         self.queueData[link] = self.getSongData(link)
-        self.queue.insert(index, link)
+        self.queue.insert(index if not index == -1 else len(self.queue), link)
+        print("Added: " + link)
+        self.setPointer(index)
+        print("pointing to:" + str(self.pointer), self.info(self.pointer))
+    
+    def add_id(self, id: str, index: int = -1):
+        link = "https://www.youtube.com/watch?v=" + id
+        self.add(link, index)
+
     
     def _seek(self, time: int):
         if time < 0 or time > self.player.get_length() / 1000:

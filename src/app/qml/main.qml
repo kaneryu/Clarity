@@ -19,7 +19,7 @@ ApplicationWindow {
     minimumWidth: 840 / 2
     minimumHeight: 480 / 2
 
-    title: "InnerTuneDesktop"
+    // title: "InnerTuneDesktop"
 
     Connections {
         target: Backend
@@ -193,30 +193,106 @@ ApplicationWindow {
                 visible: true
             }
         }
-        ListView {
-            id: queueListView
-            anchors.fill: parent
-            model: Backend.queueModel
+        // ListView {
+        //     id: queueListViewTest
+        //     anchors.fill: parent
+        //     model: Backend.queueModel
 
-            Component.onCompleted: {
-                console.log("Queue model: ", model)
-                console.log("itemAt(0): ", model[1])
-            }
+        //     Component.onCompleted: {
+        //         console.log("Queue model: ", model)
+        //         console.log("itemAt(0): ", model[1])
+        //     }
 
-            delegate: Item {
-                width: parent.width
-                height: 50
+        //     delegate: Item {
+        //         width: parent.width
+        //         height: 50
+        //         Text {
+        //             text: song
+        //             anchors.centerIn: parent
+        //         }
+        //         Component.onCompleted: {
+        //             console.log("Model data: ", song)
+        //         }
+        //         MouseArea {
+        //             anchors.fill: parent
+        //             onClicked: {
+        //                 Backend.queueCall("setPointer", index)
+        //             }
+        //         }
+        //     }
+        // }
+        
+        Component{
+            id: songResultDelegate
+            Rectangle {
+                id: songResultDelegateRect
+                width: 100
+                height: 100
+                
+                color: "white"
+                property string title
+                property string creator
+                property string duration
+                property string id
                 Text {
-                    text: song
-                    anchors.centerIn: parent
+                    id: songResultDelegateTitle
+                    text: title
+                    anchors.top: parent.top
+                    anchors.left: parent.left
                 }
-                Component.onCompleted: {
-                    console.log("Model data: ", song)
+                Text {
+                    id: songResultDelegateCreator
+                    text: creator
+                    anchors.top: songResultDelegateTitle.bottom
+                    anchors.left: parent.left
+                }
+                Text {
+                    id: songResultDelegateDuration
+                    text: duration
+                    anchors.top: songResultDelegateCreator.bottom
+                    anchors.left: parent.left
                 }
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        Backend.queueCall("setPointer", index)
+                        console.log("Clicked: ", title)
+                        Backend.queueFunctions.addEnd(id)
+                    }
+                }
+            }
+        }
+        Item {
+            id: albumResultDelegate
+        }
+
+        ListView {
+            id: searchListViewTest
+            anchors.fill: parent
+            model: Backend.searchModel
+            
+            delegate: Item {
+                width: searchListViewTest.width
+                height: 100
+                Rectangle {
+                    width: parent.width
+                    height: 100
+                    color: "transparent"
+                    Text {
+                        text: model.title + " - " + model.creator
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                    }
+                    Loader {
+                        id: delegateLoader
+                        anchors.fill: parent
+                        sourceComponent: model.type === "song" ? songResultDelegate : albumResultDelegate
+                        onLoaded: {
+                            item.title = model.title
+                            item.creator = model.creator
+                            item.duration = model.duration
+                            item.id = model.id
+                            console.log("Loaded: ", item.title)
+                        }
                     }
                 }
             }
