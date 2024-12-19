@@ -30,6 +30,7 @@ jobs:
         with:
           nuitka-version: main
           script-name: run.py
+          mode: app
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -40,3 +41,5 @@ jobs:
             build/*.bin
             build/*.app/**/*
           include-hidden-files: true
+        
+    

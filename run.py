@@ -1,5 +1,5 @@
 # Compilation mode, support OS-specific options
-# nuitka-project: --standalone
+# nuitka-project: --mode=app
 # The PySide6 plugin covers qt-plugins
 
 # nuitka-project: --enable-plugin=pyside6
