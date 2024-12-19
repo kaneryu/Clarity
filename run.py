@@ -15,7 +15,7 @@
 # nuitka-project: --windows-product-name="InnerTuneDesktop"
 
 # nuitka-project: --disable-console
-
+# nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml 
 
 import src.universal
 from src.app import main
