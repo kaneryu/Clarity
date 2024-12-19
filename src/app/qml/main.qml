@@ -23,7 +23,6 @@ ApplicationWindow {
 
     Connections {
         target: Backend
-
         function onLoadComplete() {
             console.log("Loaded")
         }

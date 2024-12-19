@@ -2,13 +2,11 @@
 Search.
 """
 
-import ytmusicapi
+
 import enum
 import json
 from typing import Union
 import asyncio
-
-
 import song
 
 
@@ -109,3 +107,4 @@ async def main():
     print(st[0].title) # Returns the title of the first search result.
     await API.close()
     
+asyncio.run(main())

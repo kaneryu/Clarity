@@ -1,5 +1,5 @@
 from src.cacheManager import cacheManager as cacheManager_module
-from src.innertube import queue
+from src.innertube import song_queue as queue
 import threading
 import asyncio
 import types
