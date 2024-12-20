@@ -3,6 +3,7 @@ import subprocess
 import re
 
 commit_history = subprocess.check_output(['git', 'log', '--oneline']).decode('utf-8').split('\n')
+commit_history.reverse()
 commit_count = len(commit_history) - 1
 
 typeincmap = [
@@ -80,4 +81,3 @@ def checkCommit(commit):
     if not matches:
         return False
     return True
-    
