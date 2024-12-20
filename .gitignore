@@ -179,3 +179,5 @@ test_cache/
 # Builds
 *build/
 *dist/
+
+.git/

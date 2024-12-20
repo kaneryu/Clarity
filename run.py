@@ -13,6 +13,7 @@
 # nuitka-project: --copyright="This is free and open-source software -- GNU GPL v3"
 # nuitka-project: --windows-product-name="InnerTuneDesktop"
 
+# nuitka-project: --output-filename=InnerTuneDesktop
 # disabled: --disable-console
 # nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml 
 
