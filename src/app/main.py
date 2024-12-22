@@ -11,6 +11,7 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtCore import Slot as Slot, QDir
+from PySide6.QtGui import QIcon
 from PySide6.QtQml import (
     QQmlApplicationEngine,
 )
@@ -57,6 +58,9 @@ def main():
     engine.rootContext().setContextProperty("Theme", theme)
     engine.rootContext().setContextProperty("Backend", backend)
 
+    icon = QIcon(os.path.join(universal.Paths.assetsPath, "Logo.png"))
+    app.setWindowIcon(icon)
+    app.setApplicationName("InnerTuneDesktop")
     
     engine.load(qml)
     if not engine.rootObjects():

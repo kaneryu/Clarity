@@ -1,5 +1,5 @@
 # Compilation mode, support OS-specific options
-# nuitka-project: --mode=standalone
+# nuitka-project: --mode=app
 # The PySide6 plugin covers qt-plugins
 
 # nuitka-project: --enable-plugin=pyside6
@@ -7,14 +7,16 @@
 
 # nuitka-project: --include-data-dir=src/app/qml=src/app/qml
 # nuitka-project: --include-data-dir=src/app/assets=src/app/assets
+# nuitka-project: --include-data-file=./versions.txt=./versions.txt
+# nuitka-project: --include-data-file=src/app/versions.txt=src/app/versions.txt
 # nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
 
 # nuitka-project: --file-description="InnerTuneDesktop -- A music player."
 # nuitka-project: --copyright="This is free and open-source software -- GNU GPL v3"
 # nuitka-project: --windows-product-name="InnerTuneDesktop"
 
-# nuitka-project: --product-version=0.9.0
-# nuitka-project: --file-version=0.9.0
+# nuitka-project: --product-version=0.9.1
+# nuitka-project: --file-version=0.9.1
 
 # nuitka-project: --output-filename=InnerTuneDesktop
 # disabled: --disable-console
