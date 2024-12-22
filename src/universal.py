@@ -10,12 +10,13 @@ import inspect
 import versions
 import os
 
+
 from PySide6.QtCore import QThread
 
 from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_BackgroundWorker
 
 from src.app.KImage import KImage, Placeholders, Status
-
+from .AppUrl import AppUrl, appUrl
 try:
     version = versions.Version(open("version.txt").read().strip())
 except FileNotFoundError:

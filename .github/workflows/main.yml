@@ -47,4 +47,37 @@ jobs:
             build/*.app/**/*
           include-hidden-files: true
 
+      # - name: Get Version
+      #   id: get_version
+      #   run: echo "::set-output name=version::$(cat version.txt)"
+
+      # - name: Check Prerelease
+      #   id: check_prerelease
+      #   run: |
+      #     if [ -f prerelease ]; then
+      #       echo "::set-output name=is_prerelease::true"
+      #     else
+      #       echo "::set-output name=is_prerelease::false"
+      #     fi
+
+      # - name: Create GitHub Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: ${{ steps.get_version.outputs.version }}
+      #     release_name: Release ${{ steps.get_version.outputs.version }}
+      #     draft: false
+      #     prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
+
+      # - name: Upload Release Asset
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: build/*.exe
+      #     asset_name: ${{ runner.os }}-build.exe
+      #     asset_content_type: application/octet-stream
 

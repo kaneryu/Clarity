@@ -8,7 +8,7 @@ import os
 from PIL import Image
 import json
 import collections
-
+import concurrent.futures
 import enum
 from hashlib import md5
 
@@ -55,6 +55,23 @@ def getCache(name: str) -> "CacheManager":
     """
     return caches.get(name)
 
+def run_sync(coro):
+    def run_in_thread(loop, coro):
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(coro)
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(run_in_thread, asyncio.new_event_loop(), coro)
+            return future.result()
+    else:
+        return asyncio.run(coro)
+    
 class CacheManager:
     def __init__(self, name: str, directory: str = ""):
         """Initialize the CacheManager.
@@ -68,7 +85,7 @@ class CacheManager:
         self.metadata: dict[str, dict] = {}
         self.last_used = collections.OrderedDict()
         self.name = name or ""
-        
+        self.event_loop = asyncio.get_event_loop()
         if directory == "":
             self.directory = f"{os.pathsep}{name}-cache" if not "cache" in name.lower() else f".{os.pathsep}{name}"
         else:
@@ -457,48 +474,47 @@ class CacheManager:
     def sdelete(self, *args, **kwargs):
         """Delete a value from the cache
         """
-        return asyncio.run(self.delete(*args, **kwargs))
+        return run_sync(self.delete(*args, **kwargs))
     
     def sclear(self, *args, **kwargs):
         """Clear all values in the cache
         """
-        return asyncio.run(self.clear(*args, **kwargs))
+        return run_sync(self.clear(*args, **kwargs))
     
     def scollect(self, *args, **kwargs):
         """Collect expired values from the cache
         """
-        return asyncio.run(self.collect(*args, **kwargs))
+        return run_sync(self.collect(*args, **kwargs))
     
     def sevict(self, *args, **kwargs):
         """Evict a certain amount of items from the cache
         """
-        return asyncio.run(self.evict(*args, **kwargs))
+        return run_sync(self.evict(*args, **kwargs))
     
     def sgetMetadata(self, *args, **kwargs):
         """Get the metadata of an item from the cache
         """
-        return asyncio.run(self.getMetadata(*args, **kwargs))
+        return run_sync(self.getMetadata(*args, **kwargs))
     
     def sgetKeyPath(self, *args, **kwargs):
         """Get the path of an item from the cache
         """
-        return asyncio.run(self.getKeyPath(*args, **kwargs))
+        return run_sync(self.getKeyPath(*args, **kwargs))
     
     def sgetStatistics(self, *args, **kwargs):
         """Get the statistics of the cache
         """
-        return asyncio.run(self.getStatistics(*args, **kwargs))
+        return run_sync(self.getStatistics(*args, **kwargs))
     
     def scheckInCache(self, key: str) -> bool:
         """Check if an item is in the cache
         """
-        return asyncio.run(self.checkInCache(key))
+        return run_sync(self.checkInCache(key))
     
     def scleanup(self, restore: bool = False):
         """Runs collect and checks for cache integrity.
         """
-        return asyncio.run(self.integrityCheck(restore))
+        return run_sync(self.integrityCheck(restore))
     
     def _print(self, msg: str, level: ErrorLevel):
         print(f"cache[{self.name}] says {msg}, level: {str(level)}")
-    

@@ -7,7 +7,7 @@ import sys
 import asyncio
 import time
 import typing
-
+import urllib.parse
 
 # library imports
 from PySide6.QtCore import (
@@ -16,6 +16,7 @@ from PySide6.QtCore import (
     QTimer,
     QThread,
 )
+
 from PySide6.QtCore import Signal as QSignal
 from PySide6.QtCore import Slot as Slot
 from PySide6.QtQml import (
@@ -126,6 +127,7 @@ class Backend(QObject):
     loadComplete = QSignal(name="loadComplete")
     activeTabChanged = QSignal(name="activeTabChanged")
     # tabModelChanged = QSignal(name="tabModelChanged")
+    urlChanged = QSignal(name="urlChanged")
     _instance = None
     
     
@@ -138,7 +140,44 @@ class Backend(QObject):
             
         self.queueModel_ = universal.queueInstance.queueModel
         self.fakequeue = Queue()
-
+        
+    @Property(str, notify=urlChanged)
+    def url(self):
+        return universal.appUrl.getUrl()
+    
+    @url.setter
+    def url(self, value):
+        try:
+            urllib.parse.urlparse(value)
+        except:
+            print("Set URL failed, invalid URL", value)
+            return
+        universal.appUrl.setUrl(value)
+        self.urlChanged.emit()
+    
+    @Property(dict, notify=urlChanged)
+    def currentQuery(self):
+        return universal.appUrl.getQuery()
+    
+    @Property(str, notify=urlChanged)
+    def getCurrentPageFilePath(self):
+        path = universal.appUrl.getPath()
+        if path[0] == "page":
+            if path == "/":
+                ret = os.path.join(universal.Paths.qmlPath, "pages", "home.qml")
+            else:
+                first = path[1]
+                first.replace("/", "")
+                ret = os.path.join(universal.Paths.qmlPath, "pages", first + ".qml")
+                
+            if not os.path.exists(ret):
+                print("Path does not exist", ret)
+                return ""
+            return "file:///" + ret
+    
+    @Slot(str)
+    def setSearchURL(self, query):
+        self.url = "innertune:///page/search?query=" + query
         
     @Slot(result=QObject)
     def getQM(self):

@@ -112,6 +112,7 @@ Item {
 
         Keys.onReturnPressed: {
             console.log("Enter pressed: " + searchbarField.text)
+            Backend.setSearchURL(searchbarField.text)
             Backend.search(searchbarField.text)
             searchbarField.text = ""
 
