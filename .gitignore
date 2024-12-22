@@ -181,3 +181,4 @@ test_cache/
 *dist/
 
 .git/
+nuitka-crash-report.xml
