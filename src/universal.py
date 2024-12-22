@@ -16,7 +16,12 @@ from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_Background
 
 from src.app.KImage import KImage, Placeholders, Status
 
-version = versions.Version(open("version.txt").read().strip())
+try:
+    version = versions.Version(open("version.txt").read().strip())
+except FileNotFoundError:
+    print("version.txt not found, using 0.0.0")
+    version = versions.Version("0.0.0")
+    
 print("InnerTune version", version)
 
 def ghash(thing):
