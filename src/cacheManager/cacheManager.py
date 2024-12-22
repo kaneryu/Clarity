@@ -10,6 +10,11 @@ import json
 import collections
 
 import enum
+from hashlib import md5
+
+def ghash(thing):
+    # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
+    return md5(str(thing).encode()).hexdigest()
 
 class EvictionMethod(enum.StrEnum):
     LRU = "lru"
@@ -218,10 +223,11 @@ class CacheManager:
         b = self.metadata[key].get("bytes", False)
         dictmode = self.metadata[key].get("dict", False)
         
-        if time.time() > self.metadata[key].get("expiration", -1):
-            self._print("cache miss: " + key + " expired", ErrorLevel.INFO)
-            await self.delete(key)
-            return False
+        if self.metadata[key].get("expiration", -1):
+            if time.time() > self.metadata[key].get("expiration", -1):
+                self._print("cache miss: " + key + " expired", ErrorLevel.INFO)
+                await self.delete(key)
+                return False
         
         async with self.lock:
             self.last_used.move_to_end(key)
@@ -380,7 +386,7 @@ class CacheManager:
         """
         return self.metadata.get(key)
 
-    async def getKeyPath(self, key: str) -> str:
+    async def getKeyPath(self, key: str) -> str | bool:
         """Get the path of an item from the cache
 
         Args:
@@ -389,6 +395,30 @@ class CacheManager:
         Returns:
             str: The path of the item on disk
         """
+        if not key in self.__cache_path_map:
+            self._print("cache miss: " + key, ErrorLevel.INFO)
+            self.statistics["misses"] += 1
+            return False
+        elif not os.path.exists(self.__cache_path_map[key]): # if the key is in the cache, but it's not actually on disk
+                await self.delete(key)
+                self._print(f"key {key} was orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
+                self._print("cache miss: " + key, ErrorLevel.INFO)
+                self.statistics["misses"] += 1
+                return False
+    
+        b = self.metadata[key].get("bytes", False)
+        dictmode = self.metadata[key].get("dict", False)
+        
+        if self.metadata[key].get("expiration", -1):
+            if time.time() > self.metadata[key].get("expiration", -1):
+                self._print("cache miss: " + key + " expired", ErrorLevel.INFO)
+                await self.delete(key)
+                return False
+        
+        self.last_used.move_to_end(key)
+        self.statistics["hits"] += 1
+        self.last_used[key] = time.time()
+        self.__metadataSave()
         return self.__cache_path_map.get(key)
 
     async def getStatistics(self) -> dict:

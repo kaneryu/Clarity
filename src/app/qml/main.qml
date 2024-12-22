@@ -193,6 +193,7 @@ ApplicationWindow {
                 visible: true
             }
         }
+        
         // ListView {
         //     id: queueListViewTest
         //     anchors.fill: parent
@@ -233,31 +234,48 @@ ApplicationWindow {
                 property string title
                 property string creator
                 property string duration
-                property string id
+                property string ytid
+                property var thumbnail
+
                 Text {
                     id: songResultDelegateTitle
                     text: title
                     anchors.top: parent.top
                     anchors.left: parent.left
                 }
-                Text {
-                    id: songResultDelegateCreator
-                    text: creator
-                    anchors.top: songResultDelegateTitle.bottom
-                    anchors.left: parent.left
-                }
-                Text {
-                    id: songResultDelegateDuration
-                    text: duration
-                    anchors.top: songResultDelegateCreator.bottom
-                    anchors.left: parent.left
+                // Text {
+                //     id: songResultDelegateCreator
+                //     text: creator
+                //     anchors.top: songResultDelegateTitle.bottom
+                //     anchors.left: parent.left
+                // }
+                // Text {
+                //     id: songResultDelegateDuration
+                //     text: duration
+                //     anchors.top: songResultDelegateCreator.bottom
+                //     anchors.left: parent.left
+                // }
+                Image {
+                    id: songResultDelegateImage
+                    source: thumbnail.image
+                    anchors.top: parent.top
+                    width: 100
+                    height: 100
+
+                    onSourceChanged: {
+                        console.log("sourceChanged")
+                    }
                 }
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
                         console.log("Clicked: ", title)
-                        Backend.queueFunctions.addEnd(id)
+                        Backend.queueFunctions.addEnd(ytid)
                     }
+                }
+
+                Component.onCompleted: {
+                    console.log("Thumbnail: ", thumbnail)
                 }
             }
         }
@@ -290,7 +308,8 @@ ApplicationWindow {
                             item.title = model.title
                             item.creator = model.creator
                             item.duration = model.duration
-                            item.id = model.id
+                            item.ytid = model.ytid
+                            item.thumbnail = model.thumbnail
                             console.log("Loaded: ", item.title)
                         }
                     }
