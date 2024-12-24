@@ -9,6 +9,7 @@ import asyncio
 
 import src.cacheManager as cacheManager
 from src.workers import asyncBgworker, mainThread
+from src.innertube import song
 
 __compiled__ = False
 
@@ -123,6 +124,14 @@ class KImage(QObject):
                 self.status = Status.FAILED
         
         self.image = await cacheManager.getCache("images_cache").getKeyPath(hash_)
+        
+    async def imageDownloadFromId(self, id: str):
+        api = asyncBgworker.API
+        song_ = song.Song(id)
+        await song_.get_info(api, cacheManager)
+        self._url = song_.largestThumbailUrl
+        self.beginDownload()
+        
         
     def beginDownload(self):
         if image := cacheManager.getCache("images_cache").sgetKeyPath(cacheManager.ghash(self._url)):

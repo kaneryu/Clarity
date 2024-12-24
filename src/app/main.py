@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QApplication
 # local imports
 import src.app.materialInterface as materialInterface
 import src.universal as universal
-from . import Backend
+from . import Backend, Interactions
 
 
 def generateRandomHexColor():
@@ -51,12 +51,14 @@ def main():
     qml = os.path.join(universal.Paths.qmlPath, "main.qml")
 
     backend = Backend.Backend()
-
+    interactions = Interactions.Interactions()
+    
     theme = materialInterface.Theme()
     theme.get_dynamicColors(0x1A1D1D, True, 0.0)
     
     engine.rootContext().setContextProperty("Theme", theme)
     engine.rootContext().setContextProperty("Backend", backend)
+    engine.rootContext().setContextProperty("Interactions", interactions)
 
     icon = QIcon(os.path.join(universal.Paths.assetsPath, "Logo.png"))
     app.setWindowIcon(icon)

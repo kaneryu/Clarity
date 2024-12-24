@@ -130,8 +130,20 @@ ApplicationWindow {
 
         property bool windowTooSmall: (root.height < 300) ? true : false
 
-        height: windowTooSmall ? 0 : 44
-        opacity: windowTooSmall ? 0 : 1
+        height: windowTooSmall ? 0 : 55
+        visible: windowTooSmall ? false : true
+
+        radius: 5
+        color: Theme.surfaceContainerLow
+
+        Components.SongBar {
+            id: songbar
+            anchors.fill: parent
+            visible: parent.visible
+
+            anchors.margins: 3
+
+        }
 
         Behavior on opacity {
             NumberAnimation {
@@ -144,11 +156,6 @@ ApplicationWindow {
                 duration: 200
             }
         }
-
-
-        radius: 10
-
-        color: Theme.surfaceContainerLow
     }
 
     function onClosing(event) {
