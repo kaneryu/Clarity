@@ -15,13 +15,6 @@ Item {
 
     property bool windowTooSmall: (root.height < 300) ? true : false
 
-    ColObjs.ColRect {
-        id: contentBackground
-        anchors.fill: parent
-        radius: root.windowTooSmall ? 0 : 10
-        color: Theme.surfaceContainerLow
-    }
-
     Component{
         id: songResultDelegate
         Rectangle {
@@ -58,7 +51,7 @@ Item {
                 anchors.fill: parent
                 onClicked: {
                     console.log("Clicked: ", title)
-                    Backend.queueFunctions.addEnd(ytid)
+                    Interactions.searchPress(ytid)
                 }
             }
 

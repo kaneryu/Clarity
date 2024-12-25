@@ -14,14 +14,7 @@ Item {
     anchors.fill: parent
     
     property bool windowTooSmall: (root.height < 300) ? true : false
-
-    ColObjs.ColRect {
-        id: contentBackground
-        anchors.fill: parent
-        radius: root.windowTooSmall ? 0 : 10
-        color: Theme.surfaceContainerLow
-    }
-
+    
     Components.Button {
         anchors.left: parent.left
         anchors.leftMargin: 52

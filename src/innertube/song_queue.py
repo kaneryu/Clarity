@@ -91,7 +91,7 @@ class Queue(QObject):
 
     queueChanged = Signal()
     songChanged = Signal()
-    
+    pointerMoved = Signal()
     
     @staticmethod
     def getInstance():
@@ -106,7 +106,7 @@ class Queue(QObject):
         super().__init__()
         
         self.queueData = {}
-        self.pointer = 0
+        self._pointer = 0
         self.player: vlc.MediaPlayer = vlc.MediaPlayer()
         self.eventMgr = self.player.event_manager()
         self.eventMgr.event_attach(vlc.EventType.MediaPlayerEndReached, self.songFinished)
@@ -120,6 +120,8 @@ class Queue(QObject):
             cache = cacheManager.getCache("queueCache")
         
         self.cache = cache
+        self.queue: list
+        
     
     @QProperty(list, notify=queueChanged)
     def queue(self):
@@ -135,13 +137,43 @@ class Queue(QObject):
         return self.info(self.pointer)["title"]
 
     @QProperty(str, notify=songChanged)
-    def currentSongUploader(self):
+    def currentSongChannel(self):
         return self.info(self.pointer)["uploader"]
     
     @QProperty(str, notify=songChanged)
     def currentSongDescription(self):
         return self.info(self.pointer)["description"]
     
+    @QProperty(str, notify=songChanged)
+    def currentSongId(self):
+        return self.queue[self.pointer]
+    
+    @QProperty(int, notify=pointerMoved)
+    def pointer(self):
+        return self._pointer
+    
+    @QProperty(int, notify=songChanged)
+    def currentSongDuration(self):
+        return self.player.get_length() // 1000
+    
+    @QProperty(int, notify=songChanged)
+    def currentSongTime(self):
+        return self.player.get_time() // 1000
+    
+    @QProperty(int, notify=songChanged)
+    def songFinishesAt(self):
+        return time.time() + self.currentSongDuration - self.currentSongTime # current time + time left
+    
+    @pointer.setter
+    def pointer(self, value):
+        if value == -1:
+            self._pointer = len(self.queue) - 1 # special case for setting pointer to last song
+        if value < 0 or value >= len(self.queue):
+            raise ValueError("Pointer must be between 0 and length of queue")
+        
+        self.pointerMoved.emit()
+        self._pointer = value
+        
     def checkError(self, url: str):
         # we will check if accessing the url will result in an error
         
@@ -213,7 +245,7 @@ class Queue(QObject):
     def songFinished(self, event):
         print("Song Finished")
         if self.loop == LoopType.SINGLE:
-            self.playSong(self.queue[self.pointer])
+            self.play()
         elif self.loop == LoopType.ALL or self.loop == LoopType.NONE:
             self.next()
         else:
@@ -227,13 +259,27 @@ class Queue(QObject):
         self.player.set_mrl(self.getSongData(id)["playbackUrl"])
         print("Playing: " + id)
         self.player.play()
+    
+    @Slot(str)
+    def goToSong(self, id: str):
+        if not id in self.queue:
+            self.add(id)
         
+        self.pointer = self.queue.index(id)
+        self.play()
+    
     @Slot()
     def pause(self):
         self.player.pause()
-        
+       
+    @Slot()
+    def resume(self):
+        self.player.play()
+         
     @Slot()
     def play(self):
+        self.songChanged.emit()
+        self.player.set_mrl(self.getSongData(self.queue[self.pointer])["playbackUrl"])
         self.player.play()
     
     @Slot()
@@ -256,11 +302,11 @@ class Queue(QObject):
         if self.pointer == len(self.queue) - 1:
             print("Queue Finished")
             if self.loop == LoopType.SINGLE:
-                self.playSong(self.queue[self.pointer])
+                self.play() # pointer doesn't change, song doesn't change
                 return
             elif self.loop == LoopType.ALL:
                 self.pointer = 0
-                self.playSong(self.queue[self.pointer])
+                self.play()
                 return
             else:
                 print("Queue Exhaused")
@@ -268,14 +314,20 @@ class Queue(QObject):
                 return
         
         self.pointer += 1
-        self.playSong(self.queue[self.pointer])
+        self.play()
     
     @Slot()
     def prev(self):
         self.pointer = self.pointer - 1 if self.pointer > 0 else 0
-        self.playSong(self.queue[self.pointer])
+        self.play()
     
     def info(self, pointer: int):
+        if len(self.queue) == 0:
+            return {
+                "title": "No Songs",
+                "uploader": "No Songs",
+                "description": "No Songs"
+            }
         if not self.queue[pointer] in self.queueData:
             self.queueData[self.queue[pointer]] = self.getSongData(self.queue[pointer])
             
@@ -286,16 +338,14 @@ class Queue(QObject):
             "description": data["description"]
         }
     
-    def add(self, link: str, index: int = -1):
-        self.queueData[link] = self.getSongData(link)
-        self.queue.insert(index if not index == -1 else len(self.queue), link)
-        print("Added: " + link)
-        self.setPointer(index)
-        print("pointing to:" + str(self.pointer), self.info(self.pointer))
+    def add(self, id: str, index: int = -1):
+        self.queueData[id] = self.getSongData(id)
+        self.queue.insert(index if not index == -1 else len(self.queue), id)
+        print("Added: " + id)
     
-    def add_id(self, id: str, index: int = -1):
-        link = "https://www.youtube.com/watch?v=" + id
-        self.add(link, index)
+    # def add_id(self, id: str, index: int = -1):
+    #     link = "https://www.youtube.com/watch?v=" + id
+    #     self.add(link, index)
 
     
     def _seek(self, time: int):
