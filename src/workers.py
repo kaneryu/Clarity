@@ -6,6 +6,9 @@ import asyncio, aiohttp
 
 import ytmusicapi
 from PySide6.QtCore import QThread
+import src.app.pyutils as utils
+
+
 
 mainThread: QThread = QThread.currentThread()
 
@@ -72,34 +75,66 @@ class Async_BackgroundWorker(threading.Thread):
         print("Async-bgworker", self.is_alive())
         self.session = aiohttp.ClientSession()
         self.API = ytmusicapi.YTMusic(requests_session=self.session)
-        while not self.stopped:
-            await asyncio.sleep(1/15)  # 15hz
-            while not self.jobs.empty():
-                job = await self.jobs.get()
-                fun = job["func"]
-                args = job["args"]
-                kwargs = job["kwargs"]
+        try:
+            while not self.stopped:
+                await asyncio.sleep(1/15)  # 15hz
+                while not self.jobs.empty():
+                    job = await self.jobs.get()
+                    fun = job["func"]
+                    args = job["args"]
+                    kwargs = job["kwargs"]
+                    callback = job.get("cb")
 
-                if asyncio.iscoroutinefunction(fun):
-                    async with self.semaphore:
-                        await fun(*args, **kwargs)
-                else:
-                    fun(*args, **kwargs)
-                self.jobs.task_done()
+                    try:
+                        if asyncio.iscoroutinefunction(fun):
+                            async with self.semaphore:
+                                res = await fun(*args, **kwargs)
+                                if callback:
+                                    callback(res)
+                        else:
+                            res = fun(*args, **kwargs)
+                            if callback:
+                                callback(res)
+                    except Exception as e:
+                        print(f"Error executing job: {e}, {fun}, {args}, {kwargs}")
+                    finally:
+                        self.jobs.task_done()
+        finally:
+            await self.session.close()
 
-    async def add_job(self, func, *args, **kwargs):
-        await self.jobs.put({"func": func, "args": args, "kwargs": kwargs})
+    async def add_job(self, func, callback=None, *args, **kwargs):
+        job = {"func": func, "args": args, "kwargs": kwargs}
+        if callback:
+            job["cb"] = callback
+        await self.jobs.put(job)
 
-    def add_job_sync(self, func, usestar = True, a = [], kw = {}, *args, **kwargs):
+
+    def add_job_sync(self, func, callback = None, usestar = True, a = [], kw = {}, *args, **kwargs):
         if usestar:
-            self.jobs.put_nowait({"func": func, "args": args, "kwargs": kwargs})
+            job = {"func": func, "args": args, "kwargs": kwargs}
+            if callback:
+                job["cb"] = callback
+            self.jobs.put_nowait(job)
+            
         else:
-            self.jobs.put_nowait({"func": func, "args": a, "kwargs": kw})
-        
+            job = {"func": func, "args": a, "kwargs": kw}
+            if callback:
+                job["cb"] = callback
+            self.jobs.put_nowait(job)
+    
+    async def putCoverConvert(self, callback, path: str, radius: int, size: int = 50, identify: str = ""):
+        d = {"path": path, "radius": radius, "size": size, "identify": identify}
+        await self.jobs.put({"func": utils.convertTocover.convertToCover_path, "args": [], "kwargs": d})
+    
+    def putCoverConvert_sync(self, callback, path: str, radius: int, size: int = 50, identify: str = ""):
+        d = {"path": path, "radius": radius, "size": size, "identify": identify}
+        self.jobs.put_nowait({"func": utils.convertTocover.convertToCover_path, "args": [], "kwargs": d})
+    
     def stop(self):
         self.stopped = True
         print("async background worker stopped")
-        asyncio.create_task(self.session.close())
+        if self.loop:
+            self.loop.call_soon_threadsafe(self.loop.stop)
       
 bgworker = BackgroundWorker()
 bgworker.start()

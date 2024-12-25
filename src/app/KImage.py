@@ -49,13 +49,15 @@ class KImage(QObject):
     statusChanged = QSignal(str)
     imageChanged = QSignal(str)
     
-    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False):
+    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False):
         super().__init__(parent)
         self._placeholder = placeholder
         self._url = url
         self._image = None
         self._status = Status.INITIALIZING
         self.moveToThread(mainThread)
+        
+        self.cover = cover
         
         if not deffered:
             self.beginDownload()
@@ -96,7 +98,17 @@ class KImage(QObject):
         self._status = value
         self.statusChanged.emit(self._status)
     
-    async def imageDownload(self, url: str):
+    async def imageDownload(self, url: str = "", id: str = ""):
+        if id:
+            api = asyncBgworker.API
+            song_ = song.Song(id)
+            await song_.get_info(api, cacheManager)
+            url = song_.largestThumbailUrl
+            
+        if not id and not url:
+            self.status = Status.FAILED
+            return
+            
         self.status = Status.DOWNLOADING
         hash_ = cacheManager.ghash(url)
         
@@ -123,21 +135,34 @@ class KImage(QObject):
 
                 self.status = Status.FAILED
         
-        self.image = await cacheManager.getCache("images_cache").getKeyPath(hash_)
+        if self.cover:
+            
+            if image := await cacheManager.getCache("images_cache").getKeyPath(hash_ + "coverconverted"):
+                self.image = image
+                return # return if the image is already converted, and in the cache
+            
+            image = await cacheManager.getCache("images_cache").getKeyPath(hash_)
+            image = await asyncBgworker.putCoverConvert(callback=self.coverCallback, path=image, radius=10, size=50, identify=hash_ + "coverconverted")
+        else:
+            self.image = await cacheManager.getCache("images_cache").getKeyPath(hash_)
         
-    async def imageDownloadFromId(self, id: str):
-        api = asyncBgworker.API
-        song_ = song.Song(id)
-        await song_.get_info(api, cacheManager)
-        self._url = song_.largestThumbailUrl
-        self.beginDownload()
+    def coverCallback(self, path: str):
+        self.image = path
         
+    
+    def setId(self, id: str):
+        self.beginDownload(id=id)
         
-    def beginDownload(self):
-        if image := cacheManager.getCache("images_cache").sgetKeyPath(cacheManager.ghash(self._url)):
+    
+    def beginDownload(self, url: str = "", id: str = ""):
+        if url:
+            self._url = url
+        
+        identifier = id if id else self._url
+        if image := cacheManager.getCache("images_cache").sgetKeyPath(cacheManager.ghash(identifier)):
             self.status = Status.DOWNLOADED
             self.image = image
             return
         
-        asyncBgworker.add_job_sync(func=self.imageDownload, url=self._url)
+        asyncBgworker.add_job_sync(func=self.imageDownload, url=self._url, id=id)
         self.status = Status.WAITING

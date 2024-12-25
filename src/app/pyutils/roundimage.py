@@ -1,10 +1,10 @@
 from PIL import Image, ImageChops, ImageDraw
-from src.universal import imageCache, ghash
-from src.cacheManager import CacheManager
+from src.cacheManager import getCache, ghash, CacheManager
 import asyncio
 from io import BytesIO
 
 
+imageCache = getCache("images_cache")
 async def roundimage(image: str, radius = 20, cache: CacheManager = imageCache) -> int:
     """rounds an image from local path, and returns key of the image in cache
     """

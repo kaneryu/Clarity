@@ -52,7 +52,7 @@ ApplicationWindow {
         height: windowTooSmall ? 0 : 44
         opacity: windowTooSmall ? 0 : 1
 
-        radius: 10
+        radius: 5
 
         color: Theme.surfaceContainerLow
 
@@ -96,12 +96,15 @@ ApplicationWindow {
     //     onClicked: webview.reload()
     //     z: 999
     // }
-    Item {
+    ColObjs.ColRect {
         id: content
         anchors.top: header.bottom
         anchors.bottom: footer.top
         anchors.left: parent.left
         anchors.right: parent.right
+
+        color: Theme.surfaceContainerLow
+        radius: root.windowTooSmall ? 0 : 10
 
         property bool windowTooSmall: (root.height < 300) ? true : false
 
@@ -130,7 +133,7 @@ ApplicationWindow {
 
         property bool windowTooSmall: (root.height < 300) ? true : false
 
-        height: windowTooSmall ? 0 : 55
+        height: windowTooSmall ? 0 : 44
         visible: windowTooSmall ? false : true
 
         radius: 5
@@ -140,7 +143,7 @@ ApplicationWindow {
             id: songbar
             anchors.fill: parent
             visible: parent.visible
-
+            
             anchors.margins: 3
 
         }

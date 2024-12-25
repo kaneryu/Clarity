@@ -125,7 +125,7 @@ class Queue(QObject):
 @QmlElement
 class Interactions(QObject):
     _instance = None
-    
+    songChanged = Signal()
     def __init__(self):
         super().__init__()
         if not hasattr(self, 'initialized'):
@@ -137,13 +137,45 @@ class Interactions(QObject):
         
         self._currentSongCover = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True)
         universal.queueInstance.songChanged.connect(self.changeSongKImage)
+        universal.queueInstance.songChanged.connect(self.songChangeMirror)
         
+    @Slot(str)
+    def songChangeMirror(self):
+        print("Interactions knows the song changed")
+        self.songChanged.emit()
+    
     @Slot(str)
     def changeSongKImage(self):
         print("changing song kimage")
         id = universal.queueInstance.currentSongId
-        self._currentSongCover.fromId(id)
+        self._currentSongCover.setId(id)
 
     @Property(QObject, constant=True)
     def currentSongCover(self):
         return self._currentSongCover
+    
+    @Property(str, notify=songChanged)
+    def currentSongTitle(self):
+        return universal.queueInstance.currentSongTitle
+    
+    @Property(str, notify=songChanged)
+    def currentSongChannel(self):
+        return universal.queueInstance.currentSongChannel
+
+    @Property(str, notify=songChanged)
+    def currentSongTime(self):
+        return universal.queueInstance.currentSongTime
+    
+    @Property(str, notify=songChanged)
+    def currentSongDuration(self):
+        return universal.queueInstance.currentSongDuration
+    
+    @Property(str, notify=songChanged)
+    def songFinishesAt(self):
+        return universal.queueInstance.songFinishesAt
+    
+    @Slot(str)
+    def searchPress(self, id: str):
+        q = universal.queueInstance
+        q.add(id)
+        q.goToSong(id)

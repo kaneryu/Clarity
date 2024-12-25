@@ -1,5 +1,4 @@
-from src.universal import imageCache, ghash
-from src.cacheManager import CacheManager
+from src.cacheManager import getCache, ghash, CacheManager
 import asyncio
 import requests
 from typing import Optional
@@ -7,7 +6,7 @@ from typing import Optional
 """downloads an image from the internet, checking the cache first"""
 
 
-
+imageCache = getCache("images_cache")
 async def downloadimage(url: str, cache: Optional[CacheManager] = imageCache) -> str:
     """downloads an image from the internet, checking the cache, and returns key of the image in the cache
     """

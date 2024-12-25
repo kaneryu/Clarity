@@ -2,7 +2,6 @@ import ytmusicapi as ytm
 import time
 from datetime import datetime, timedelta
 
-
 def convert_to_timestamp(date_str: str) -> float:
     # Split the date and the timezone
     date_str, tz_str = date_str.split('T')
@@ -47,13 +46,19 @@ class Song:
         self.title = search_result["title"]
         self.id = search_result["videoId"]
         
-    async def get_info(self, api) -> None:
+    async def get_info(self, api, cache: object) -> None:
         """
         Gets the info of the song.
         """
         api: ytm.YTMusic = api
         
-        self.rawData: dict = await api.get_song(self.id)
+        if cache:
+            c = cache.getCache("songs_cache")
+            identifier = self.id + "_info"
+        
+        self.rawdata = await c.get(identifier)
+        if not self.rawdata:
+            self.rawData: dict = await api.get_song(self.id)
 
         self.source = "full"
         

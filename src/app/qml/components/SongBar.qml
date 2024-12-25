@@ -49,14 +49,60 @@ Item {
     Image {
         id: songImage
         source: Interactions.currentSongCover.image
-        width: 35
-        height: 35
+
+        mipmap: true
+        width: 30
+        height: width
+
         anchors.left: parent.left
-        anchors.leftMargin: 5
+        anchors.leftMargin: leftGlow.width / 10
         anchors.verticalCenter: parent.verticalCenter
 
         onSourceChanged: {
             console.log("Song image changed")
         }
     }
+
+    Text {
+        id: songTitle
+        text: Interactions.currentSongTitle + " - " + Interactions.currentSongChannel
+        font.pixelSize: 20
+        color: Theme.onSurface
+        anchors.left: songImage.right
+        anchors.leftMargin: 10
+        anchors.verticalCenter: parent.verticalCenter
+    }
+
+    // ProgressBar {
+    //     id: songProgress
+    //     width: parent.width / 2
+    //     height: 5
+    //     anchors.right: parent.right
+    //     anchors.rightMargin: 10
+
+    //     anchors.verticalCenter: parent.verticalCenter
+
+    //     property int timerRuns: 0
+
+    //     value: Interactions.currentSongTime
+    //     to: Interactions.currentSongDuration
+    //     visible: true
+
+    //     Timer {
+    //         id: progressTimer
+    //         interval: 1000
+    //         running: true
+    //         repeat: true
+    //         onTriggered: {
+    //             songProgress.timerRuns += 1
+
+    //             if (songProgress.timerRuns % 3 == 0) { // Every three seconds, confirm we have the right time
+    //                 songProgress.value = Interactions.currentSongTime
+    //                 return
+    //             }
+
+    //             songProgress.value += 1 // Increment the progress bar by one every second
+    //         }
+    //     }
+    // }
 }
