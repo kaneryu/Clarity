@@ -66,9 +66,14 @@ Item {
 
     ListView {
         id: searchListViewTest
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+
+        width: parent.width
+        height: parent.height * 0.8
+
+
         model: Backend.searchModel
-        
         delegate: Item {
             width: searchListViewTest.width
             height: 100

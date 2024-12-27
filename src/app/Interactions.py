@@ -126,6 +126,7 @@ class Queue(QObject):
 class Interactions(QObject):
     _instance = None
     songChanged = Signal()
+    playingStatusChanged = Signal()
     def __init__(self):
         super().__init__()
         if not hasattr(self, 'initialized'):
@@ -135,9 +136,10 @@ class Interactions(QObject):
         self.queueModel_ = universal.queueInstance.queueModel
         self.fakequeue = Queue()
         
-        self._currentSongCover = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True)
+        self._currentSongCover = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=10)
         universal.queueInstance.songChanged.connect(self.changeSongKImage)
         universal.queueInstance.songChanged.connect(self.songChangeMirror)
+        universal.queueInstance.playingStatusChanged.connect(self.playingStatusChanged.emit)
         
     @Slot(str)
     def songChangeMirror(self):
@@ -162,20 +164,48 @@ class Interactions(QObject):
     def currentSongChannel(self):
         return universal.queueInstance.currentSongChannel
 
-    @Property(str, notify=songChanged)
+    @Property(int, notify=songChanged)
     def currentSongTime(self):
         return universal.queueInstance.currentSongTime
     
-    @Property(str, notify=songChanged)
+    @Property(int, notify=songChanged)
     def currentSongDuration(self):
         return universal.queueInstance.currentSongDuration
     
     @Property(str, notify=songChanged)
     def songFinishesAt(self):
         return universal.queueInstance.songFinishesAt
+
+    @Property(bool, notify=playingStatusChanged)
+    def isPlaying(self):
+        return universal.queueInstance.isPlaying
     
     @Slot(str)
     def searchPress(self, id: str):
         q = universal.queueInstance
         q.add(id)
         q.goToSong(id)
+    
+    @Slot(int)
+    def seekPercent(self, percentage: int):
+        q = universal.queueInstance
+        q.pseek(percentage)
+        
+        
+    @Slot()
+    def next(self):
+        q = universal.queueInstance
+        q.next()
+    
+    @Slot()
+    def back(self):
+        q = universal.queueInstance
+        q.prev()
+        
+    @Slot()
+    def togglePlayback(self):
+        q = universal.queueInstance
+        if q.isPlaying:
+            q.pause()
+        else:
+            q.resume()

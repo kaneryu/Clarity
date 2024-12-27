@@ -92,6 +92,7 @@ class Queue(QObject):
     queueChanged = Signal()
     songChanged = Signal()
     pointerMoved = Signal()
+    playingStatusChanged = Signal()
     
     @staticmethod
     def getInstance():
@@ -122,7 +123,8 @@ class Queue(QObject):
         self.cache = cache
         self.queue: list
         
-    
+        self.songChanged.connect(self.playingStatusChanged)
+        self.playingStatusChanged.connect(lambda: print("Playing Status Changed"))
     @QProperty(list, notify=queueChanged)
     def queue(self):
         return self.queueModel._queue
@@ -163,7 +165,10 @@ class Queue(QObject):
     @QProperty(int, notify=songChanged)
     def songFinishesAt(self):
         return time.time() + self.currentSongDuration - self.currentSongTime # current time + time left
-    
+
+    @QProperty(bool, notify=playingStatusChanged)
+    def isPlaying(self):
+        return self.player.is_playing() == 1
     @pointer.setter
     def pointer(self, value):
         if value == -1:
@@ -271,10 +276,13 @@ class Queue(QObject):
     @Slot()
     def pause(self):
         self.player.pause()
+        self.playingStatusChanged.emit()
        
     @Slot()
     def resume(self):
         self.player.play()
+        self.playingStatusChanged.emit()
+        
          
     @Slot()
     def play(self):
@@ -373,8 +381,8 @@ class Queue(QObject):
         self.player.set_time(len * percentage // 100)
 
 
-queue = Queue()   
-
+queue = Queue()
+queue.setQueue(["F_mq88Lw2Lo", "DyTBxPyEG_M", "I8O-BFLzRF0", "UNQTvQGVjao", "IAW0oehOi24"])
 def main():
     print("Queue Player")
     player = Queue()

@@ -49,7 +49,7 @@ class KImage(QObject):
     statusChanged = QSignal(str)
     imageChanged = QSignal(str)
     
-    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False):
+    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 0):
         super().__init__(parent)
         self._placeholder = placeholder
         self._url = url
@@ -58,7 +58,7 @@ class KImage(QObject):
         self.moveToThread(mainThread)
         
         self.cover = cover
-        
+        self.radius = radius
         if not deffered:
             self.beginDownload()
     
@@ -142,13 +142,15 @@ class KImage(QObject):
                 return # return if the image is already converted, and in the cache
             
             image = await cacheManager.getCache("images_cache").getKeyPath(hash_)
-            image = await asyncBgworker.putCoverConvert(callback=self.coverCallback, path=image, radius=10, size=50, identify=hash_ + "coverconverted")
+            image = await asyncBgworker.putCoverConvert(callback=self.coverCallback, path=image, radius=self.radius, size=50, identify=hash_ + "coverconverted")
         else:
             self.image = await cacheManager.getCache("images_cache").getKeyPath(hash_)
         
     def coverCallback(self, path: str):
         self.image = path
-        
+    
+    def setRadius(self, radius: int):
+        self.radius = radius
     
     def setId(self, id: str):
         self.beginDownload(id=id)
