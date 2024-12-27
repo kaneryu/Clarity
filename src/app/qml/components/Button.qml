@@ -4,6 +4,8 @@ import QtQuick.Layouts
 import Qt.labs.platform
 import QtQuick.Effects
 
+import "./text" as TextVariant
+
 Item {
     id: root
 
@@ -23,10 +25,6 @@ Item {
     property color textcolor: (colortype === "primary") ? (state == "base" ? Theme.onPrimaryContainer : (state == "hover" ? Theme.onPrimaryContainer : (state == "pressed" ? Theme.onPrimaryContainer : Theme.onSurface)))
     :(colortype === "secondary") ? (state == "base" ? Theme.onSecondaryContainer : (state == "hover" ? Theme.onSecondaryContainer : (state == "pressed" ? Theme.onSecondaryContainer : Theme.onSurface))) : Theme.onPrimaryContainer
 
-
-    onStateChanged: {
-        console.log("State changed to: " + state)
-    }
     /*define hover, pressed, disabled, and base colors*/
     property color hoverColor: Theme.primaryContainer
     property color pressedColor: Theme.primaryContainer
@@ -106,15 +104,6 @@ Item {
 
         shadowColor: "#71000000"
 
-        onShadowColorChanged: {
-            console.log(Theme.shadow)
-        }
-
-        onShadowEnabledChanged: {
-            console.log("Shadow enabled: " + shadowEnabled)
-            
-        }
-
         states: [
             State {
                 name: "hover"
@@ -171,12 +160,10 @@ Item {
     }
     
     
-
-    Text {
+    TextVariant.Default {
         id: buttonText
         text: root.text
         color: root.textcolor
-        font.pixelSize: 16
         anchors.centerIn: parent
     }
 

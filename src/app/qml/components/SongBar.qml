@@ -6,6 +6,8 @@ import QtQuick.Shapes
 import QtQuick.Effects
 
 import "../colobjs" as ColObjs
+import "." as Components
+import "./text" as TextVariant
 
 Item {
     id: root
@@ -20,6 +22,12 @@ Item {
         height: parent.height
         color: Theme.surfaceContainer
         radius: 10
+    }
+
+    MouseArea {
+        id: mouseBlocker
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
     }
 
     Rectangle {
@@ -39,70 +47,144 @@ Item {
         }
         
         gradient: Gradient {
-            GradientStop { position: 0; color: leftGlow.addAlpha("40", Theme.primary);}
+            GradientStop { position: 0; color: leftGlow.addAlpha("20", Theme.primary);}
             GradientStop { position: 1; color: leftGlow.addAlpha("00", Theme.primary);}
             orientation: Qt.Horizontal
         }
 
     }
+    RowLayout {
+        id: masterLayout
+        spacing: 5
+        anchors.fill: parent
+        anchors.leftMargin: 10
+        anchors.rightMargin: 10
 
-    Image {
-        id: songImage
-        source: Interactions.currentSongCover.image
 
-        mipmap: true
-        width: 30
-        height: width
+        RowLayout {
+            id: leftPanel
 
-        anchors.left: parent.left
-        anchors.leftMargin: leftGlow.width / 10
-        anchors.verticalCenter: parent.verticalCenter
+            Layout.fillHeight: true
+            Layout.preferredWidth: parent.width / 3
+            Layout.alignment: Qt.AlignCenter
+            Image {
+                id: songImage
+                source: Interactions.currentSongCover.image
 
-        onSourceChanged: {
-            console.log("Song image changed")
+                mipmap: true
+                Layout.preferredHeight: 30
+                Layout.preferredWidth: 30
+
+                onSourceChanged: {
+                    console.log("Song image changed")
+                }
+            }
+
+            TextVariant.Small {
+                id: songTitle
+                text: Interactions.currentSongTitle + " - " + Interactions.currentSongChannel
+
+                color: Theme.onSurface
+            }
+        }
+
+        RowLayout {
+            id: centerPanel
+
+            Layout.fillHeight: true
+            Layout.preferredWidth: parent.width / 3
+            Layout.alignment: Qt.AlignCenter
+
+            Components.Button {
+                id: playButton
+                text: (Interactions.isPlaying) ? "Pause" : "Play"
+
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                onClicked: Interactions.togglePlayback()
+            }
+
+            Components.Button {
+                id: nextButton
+                text: "Next"
+
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                onClicked: Interactions.next()
+            }
+
+            Components.Button {
+                id: likeButton
+                text: "Like"
+
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                onClicked: Interactions.like()
+                enabled: false
+            }
+
+            Components.Button {
+                id: backButton
+                text: "Back"
+
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                onClicked: Interactions.back()
+            }
+        }
+        
+        RowLayout {
+            id: rightPanel
+
+            Layout.fillHeight: true
+            Layout.preferredWidth: parent.width / 3
+            Layout.alignment: Qt.AlignCenter
+
+            TextVariant.Default {
+                id: currentTime
+                text: Interactions.currentSongTime
+                Timer {
+                    id: timeTimer
+                    interval: 1000
+                    running: true
+                    repeat: true
+                    
+                    onTriggered: {
+                        currentTime.text = Interactions.currentSongTime
+                    }
+                }       
+            }
+
+            Components.ProgressBar {
+                id: songProgress
+
+                Layout.preferredHeight: 10
+                Layout.fillWidth: true
+
+                vertical: false
+                fillColor: Theme.primary
+                backgroundColor: Theme.surfaceContainerLow
+
+                radius: 10
+                percent: Interactions.currentSongTime / Interactions.currentSongDuration * 100
+
+                onClick: (percent) => Interactions.seekPercent(percent)
+
+                Timer {
+                    id: progressTimer
+                    interval: 150
+                    running: true
+                    repeat: true
+                    onTriggered: {
+                        songProgress.percent = Interactions.currentSongTime / Interactions.currentSongDuration * 100
+                    }
+                }
+            }
+
+            TextVariant.Default {
+                id: durationText
+                text: Interactions.currentSongDuration
+            }
         }
     }
-
-    Text {
-        id: songTitle
-        text: Interactions.currentSongTitle + " - " + Interactions.currentSongChannel
-        font.pixelSize: 20
-        color: Theme.onSurface
-        anchors.left: songImage.right
-        anchors.leftMargin: 10
-        anchors.verticalCenter: parent.verticalCenter
-    }
-
-    // ProgressBar {
-    //     id: songProgress
-    //     width: parent.width / 2
-    //     height: 5
-    //     anchors.right: parent.right
-    //     anchors.rightMargin: 10
-
-    //     anchors.verticalCenter: parent.verticalCenter
-
-    //     property int timerRuns: 0
-
-    //     value: Interactions.currentSongTime
-    //     to: Interactions.currentSongDuration
-    //     visible: true
-
-    //     Timer {
-    //         id: progressTimer
-    //         interval: 1000
-    //         running: true
-    //         repeat: true
-    //         onTriggered: {
-    //             songProgress.timerRuns += 1
-
-    //             if (songProgress.timerRuns % 3 == 0) { // Every three seconds, confirm we have the right time
-    //                 songProgress.value = Interactions.currentSongTime
-    //                 return
-    //             }
-
-    //             songProgress.value += 1 // Increment the progress bar by one every second
-    //         }
-    //     }
-    // }
 }

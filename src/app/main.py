@@ -11,7 +11,7 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtCore import Slot as Slot, QDir
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QFont, QFontDatabase
 from PySide6.QtQml import (
     QQmlApplicationEngine,
 )
@@ -44,6 +44,12 @@ def main():
     app = QApplication()
     app.setStyle("Material")
     app.aboutToQuit.connect(appQuitOverride)
+    
+    fontDir = os.path.join(universal.Paths.assetsPath, "fonts")
+    font = os.path.join(fontDir, "Urbanist", "Urbanist-VariableFont_wght.ttf")
+    qf = QFontDatabase()
+    qf.addApplicationFont(font)
+    app.setFont(QFont("Urbanist"))
 
     engine = QQmlApplicationEngine()
     engine.quit.connect(app.quit)
