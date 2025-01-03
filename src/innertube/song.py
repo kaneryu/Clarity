@@ -185,6 +185,8 @@ class Song:
         
         # self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
         
+        # open("playbackinfo.json", "w").write(json.dumps(self.rawPlaybackInfo))
+        
     def get_playback(self):
         
         if not self.rawPlaybackInfo:

@@ -4,6 +4,10 @@
 
 - Improve songbar, add threading to non-async bgworker, refactor some stuff -- kaneryu on 2025-01-02
 
+## Bugfixes
+
+- added fault tolerance to convertocover by making sure that cache is always set to a real cache instead of None -- kaneryu on 2025-01-03
+
 
 
 # Version 0.12

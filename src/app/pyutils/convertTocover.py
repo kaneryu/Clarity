@@ -11,7 +11,9 @@ imageCache = getCache("images_cache")
 
 async def convertToCover(link: str, radius: str, size: int, *, cache: CacheManager = imageCache):
     """takes in a link, downloads the image, crops it to a square, rounds the corners, and returns the key to the image in the cache"""
-
+    if cache == None:
+        cache = imageCache
+        
     path = cache.getKeyPath(downloadimage.downloadimage(link, cache=cache))
     
     image = Image.open(path)
@@ -37,7 +39,9 @@ async def convertToCover(link: str, radius: str, size: int, *, cache: CacheManag
 
 async def convertToCover_path(path: str, radius: int, size: int = -100, identify: str = "", *, cache: CacheManager = imageCache):
     """takes in a path, downloads the image, crops it to a square, rounds the corners, and returns the key to the image in the cache"""
-    
+    if cache == None:
+        cache = imageCache
+        
     image = Image.open(path)
     width, height = image.size
     if width > height:
