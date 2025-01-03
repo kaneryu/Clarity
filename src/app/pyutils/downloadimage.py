@@ -11,8 +11,8 @@ async def downloadimage(url: str, cache: Optional[CacheManager] = imageCache) ->
     """downloads an image from the internet, checking the cache, and returns key of the image in the cache
     """
     hsh = ghash(url)
-    if not await cache.checkInCache(hsh): # if the image is not in the cache
+    if not cache.checkInCache(hsh): # if the image is not in the cache
         r = requests.get(url)
-        await cache.put(hsh, r.content, filext = ".png", byte = True)
+        cache.put(hsh, r.content, filext = ".png", byte = True)
     
     return hsh

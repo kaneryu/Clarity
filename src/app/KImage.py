@@ -109,7 +109,7 @@ class KImage(QObject):
         self.status = Status.DOWNLOADING
         hash_ = cacheManager.ghash(url)
         
-        if image := await cacheManager.getCache("images_cache").getKeyPath(hash_):
+        if image := cacheManager.getCache("images_cache").getKeyPath(hash_):
             self.status = Status.DOWNLOADED
             self.image = image
             return
@@ -125,7 +125,7 @@ class KImage(QObject):
                     extension = mimetypes.guess_extension(content_type)
                 else:
                     extension
-                await cacheManager.getCache("images_cache").put(key=hash_, value=temp, byte=True, filext=extension)
+                cacheManager.getCache("images_cache").put(key=hash_, value=temp, byte=True, filext=extension)
                 
                 self.status = Status.DOWNLOADED
             except Exception as e:
@@ -134,14 +134,14 @@ class KImage(QObject):
         
         if self.cover:
             
-            if image := await cacheManager.getCache("images_cache").getKeyPath(hash_ + "coverconverted"):
+            if image := cacheManager.getCache("images_cache").getKeyPath(hash_ + "coverconverted"):
                 self.image = image
                 return # return if the image is already converted, and in the cache
             
-            image = await cacheManager.getCache("images_cache").getKeyPath(hash_)
+            image = cacheManager.getCache("images_cache").getKeyPath(hash_)
             image = await asyncBgworker.putCoverConvert(callback=self.coverCallback, path=image, radius=self.radius, size=50, identify=hash_ + "coverconverted")
         else:
-            self.image = await cacheManager.getCache("images_cache").getKeyPath(hash_)
+            self.image = cacheManager.getCache("images_cache").getKeyPath(hash_)
         
     def coverCallback(self, path: str):
         self.image = path
@@ -158,7 +158,7 @@ class KImage(QObject):
             self._url = url
         
         identifier = id if id else self._url
-        if image := cacheManager.getCache("images_cache").sgetKeyPath(cacheManager.ghash(identifier)):
+        if image := cacheManager.getCache("images_cache").getKeyPath(cacheManager.ghash(identifier)):
             self.status = Status.DOWNLOADED
             self.image = image
             return

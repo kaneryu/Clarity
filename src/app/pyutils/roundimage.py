@@ -9,8 +9,8 @@ async def roundimage(image: str, radius = 20, cache: CacheManager = imageCache) 
     """rounds an image from local path, and returns key of the image in cache
     """
     hsh = ghash(image + "rounded" + str(radius))
-    if await cache.checkInCache(hsh): # check if the rounded image is cached
-        return await cache.getKeyPath(hsh) # return the path of the image
+    if cache.checkInCache(hsh): # check if the rounded image is cached
+        return cache.getKeyPath(hsh) # return the path of the image
     
     im: Image.Image = Image.open(image).convert('RGBA')
     bigsize = (im.size[0] * 3, im.size[1] * 3) # define the size of the mask as 3x the size of the image
@@ -24,7 +24,7 @@ async def roundimage(image: str, radius = 20, cache: CacheManager = imageCache) 
     im.save(buffer, format='PNG')
     image_bytes = buffer.getvalue()
     
-    key = await cache.put(ghash(image + "rounded" + str(radius)), image_bytes, byte=True, filext='.png', expiration=None)
+    key = cache.put(ghash(image + "rounded" + str(radius)), image_bytes, byte=True, filext='.png', expiration=None)
     
     return key
 
