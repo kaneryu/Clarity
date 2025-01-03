@@ -238,15 +238,12 @@ class Song:
                 audio.append(item)
             else:
                 video.append(item)
-                
-            print(item)
-
     
         audio.sort(key=lambda x: x["quality"])
         video.sort(key=lambda x: x["quality"])
             
         self.playbackInfo = {"audio": audio, "video": video}
-        print(self.playbackInfo)
+        # print(self.playbackInfo)
             
     async def get_lyrics(self, api) -> dict:
         """
