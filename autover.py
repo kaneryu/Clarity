@@ -71,8 +71,10 @@ def getVer():
         if mitem["inc"] == "patch":
             patch += mitem["amt"]
         
-        if "BREAKING CHANGE" in commit:
+        if "BREAKING CHANGE" in commit or "BUMP MAJOR" in commit:
             major += 1
+            minor = 0
+            patch = 0
 
     return f"{major}.{minor}.{patch}"
 
