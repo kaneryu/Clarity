@@ -33,8 +33,11 @@ globalCache = cacheManager_module.CacheManager(name="cache")
 songCache = cacheManager_module.CacheManager(name="songs_cache")
 imageCache = cacheManager_module.CacheManager(name="images_cache")
 
-queueInstance = queue.queue
+
+queueInstance: queue.Queue = queue.Queue()
 search = search_module.search
+bgworker.add_job(queueInstance.setQueue, ["F_mq88Lw2Lo", "DyTBxPyEG_M", "I8O-BFLzRF0", "UNQTvQGVjao", "IAW0oehOi24"])
+
 searchModel = search_module.BasicSearchResultsModel()
 
 mainThread: QThread = QThread.currentThread()

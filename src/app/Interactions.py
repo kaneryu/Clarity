@@ -196,6 +196,7 @@ class Interactions(QObject):
     def next(self):
         q = universal.queueInstance
         q.next()
+        print("next")
     
     @Slot()
     def back(self):

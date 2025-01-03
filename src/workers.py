@@ -1,59 +1,58 @@
 import threading
 import inspect
-import src.innertube.song_queue as queue
+import traceback
 import time
 import asyncio, aiohttp
+from concurrent.futures import ThreadPoolExecutor
 
 import ytmusicapi
 from PySide6.QtCore import QThread
 import src.app.pyutils as utils
 
 
-
 mainThread: QThread = QThread.currentThread()
 
 class BackgroundWorker(threading.Thread):
-    def __init__(self):
+    def __init__(self, max_threads=10):
         threading.Thread.__init__(self)
         self.daemon = True
         self.stopped = False
-        self.jobs: list[dict[object, list, dict]] = [] # list of {"func": function, "args": args, "kwargs": kwargs}
-        
+        self.jobs: list[dict[object, list, dict]] = []  # list of {"func": function, "args": args, "kwargs": kwargs}
+        self.executor = ThreadPoolExecutor(max_workers=max_threads)
+
     def run(self):
-        self.queue = queue.Queue.getInstance()
-        # self.queue.setQueue(["F_mq88Lw2Lo", "DyTBxPyEG_M", "I8O-BFLzRF0", "UNQTvQGVjao", "IAW0oehOi24"])
         print("bgworker", self.is_alive())
         while not self.stopped:
-            time.sleep(1/15) # 15hz
+            time.sleep(1/15)  # 15hz
             for i in self.jobs:
                 fun = i["func"]
                 args = i["args"]
                 kwargs = i["kwargs"]
-                if args:
-                    if kwargs:
-                        if inspect.iscoroutinefunction(fun):
-                            asyncio.run(fun(*args, **kwargs))
-                            self.jobs.remove(i)
-                            continue
-                        fun(*args, **kwargs)
-                    else:
-                        if inspect.iscoroutinefunction(fun):
-                            asyncio.run(fun(*args))
-                            self.jobs.remove(i)
-                            continue
-                        fun(*args)
+                if inspect.iscoroutinefunction(fun):
+                    self.executor.submit(self.run_async, fun, *args, **kwargs)
                 else:
-                    if inspect.iscoroutinefunction(fun):
-                        asyncio.run(fun())
-                        self.jobs.remove(i)
-                        continue
-                    fun()
+                    self.executor.submit(self.run_sync, fun, *args, **kwargs)
                 self.jobs.remove(i)
-            
+
+    def run_async(self, fun, *args, **kwargs):
+        asyncio.run(fun(*args, **kwargs))
+    
+    def run_sync(self, fun, *args, **kwargs):
+        print("running func", fun, args, kwargs)
+        try:
+            fun(*args, **kwargs)
+        except Exception as e:
+            print(f"Error executing job: {e}, {fun}, {args}, {kwargs}")
+            traceback.print_exc()
 
     def stop(self):
         self.stopped = True
+        self.executor.shutdown(wait=True)
         print("background worker stopped")
+
+    def add_job(self, func, *args, **kwargs):
+        job = {"func": func, "args": args, "kwargs": kwargs}
+        self.jobs.append(job)
 
 
 class Async_BackgroundWorker(threading.Thread):
@@ -66,9 +65,9 @@ class Async_BackgroundWorker(threading.Thread):
         
         
     def run(self):
-        event_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(event_loop)
-        event_loop.run_until_complete(self.Arun())
+        self.event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.event_loop)
+        self.event_loop.run_until_complete(self.Arun())
         
 
     async def Arun(self):
@@ -97,6 +96,7 @@ class Async_BackgroundWorker(threading.Thread):
                                 callback(res)
                     except Exception as e:
                         print(f"Error executing job: {e}, {fun}, {args}, {kwargs}")
+                        traceback.print_exc()
                     finally:
                         self.jobs.task_done()
         finally:

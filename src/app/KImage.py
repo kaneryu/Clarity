@@ -69,14 +69,11 @@ class KImage(QObject):
     @QProperty(str, notify=imageChanged)
     def image(self):
         if not self.status == Status.DOWNLOADED:
-            if self.status == Status.WAITING or self.status == Status.DOWNLOADING or Status.INITIALIZING:
-                print("returning" + "file:///" + Placeholders.LOADING)
+            if self.status == Status.WAITING or self.status == Status.DOWNLOADING or self.status == Status.INITIALIZING:
                 return "file:///" + Placeholders.LOADING
             if self.status == Status.FAILED:
-                print("returning" + "file://" + Placeholders.ERROR)
                 return "file:///" + Placeholders.ERROR
         else:
-            print("returning" + "file:///" + Placeholders.ERROR)
             return "file:///" + self._image
     
     @image.setter
@@ -102,7 +99,7 @@ class KImage(QObject):
         if id:
             api = asyncBgworker.API
             song_ = song.Song(id)
-            await song_.get_info(api, cacheManager)
+            await song_.get_info(api)
             url = song_.largestThumbailUrl
             
         if not id and not url:
