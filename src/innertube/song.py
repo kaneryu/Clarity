@@ -169,9 +169,7 @@ class Song:
         self.category: str = self.rawMicroformatData["microformatDataRenderer"]["category"]
         
         self.isFamilySafe: bool = self.rawMicroformatData["microformatDataRenderer"]["familySafe"]
-        
-        json.dump(self.rawData, open("song.json", "w"))
-    
+
     def download_playbackInfo(self) -> None:
         """Because ytdlp isn't async, input this function into the BackgroundWorker to do the slow part in a different thread.
         """

@@ -1,3 +1,11 @@
+# Version 0.13
+
+## New Features
+
+- Improve songbar, add threading to non-async bgworker, refactor some stuff -- kaneryu on 2025-01-02
+
+
+
 # Version 0.12
 
 ## New Features
