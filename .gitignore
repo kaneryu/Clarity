@@ -182,3 +182,4 @@ test_cache/
 
 .git/
 nuitka-crash-report.xml
+playbackinfo.json
