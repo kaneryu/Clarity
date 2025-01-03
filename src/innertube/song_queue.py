@@ -11,7 +11,7 @@ import requests
 
 from src import universal as g
 from src import cacheManager
-from src.app import baseModels
+import src.innertube.song as song
 import time
 import asyncio
 
@@ -31,9 +31,10 @@ class LoopType(enum.Enum):
     
 
 class QueueModel(QAbstractListModel):
-    def __init__(self, queue):
+    def __init__(self):
         super().__init__()
-        self._queue = queue if not None else []
+        self._queueIds = []
+        self._queue = []
 
     def rowCount(self, parent=QModelIndex()):
         print("asked for rowCount")
@@ -94,26 +95,26 @@ class Queue(QObject):
     pointerMoved = Signal()
     playingStatusChanged = Signal()
     
-    @staticmethod
-    def getInstance():
-        global queue
-        if queue:
-            return queue
-        else:
-            queue = Queue()
-            return queue
+    instance = None
+    
+    def __new__(cls, *args, **kwargs):
+        if cls.instance is None:
+            cls.instance = super(Queue, cls).__new__(cls, *args, **kwargs)
+        return cls.instance
         
     def __init__(self):
         super().__init__()
         
-        self.queueData = {}
+
         self._pointer = 0
         self.player: vlc.MediaPlayer = vlc.MediaPlayer()
-        self.eventMgr = self.player.event_manager()
-        self.eventMgr.event_attach(vlc.EventType.MediaPlayerEndReached, self.songFinished)
+        self.eventManager = self.player.event_manager()
+        
+        self.instance: vlc.Instance = self.player.get_instance()
+        
         self.player.set_hwnd(0)
         self.loop: LoopType = LoopType.NONE
-        self.queueModel = QueueModel([])
+        self.queueModel = QueueModel()
         
         if not cacheManager.cacheExists("queueCache"):
             cache = cacheManager.CacheManager(name="queueCache")
@@ -121,13 +122,19 @@ class Queue(QObject):
             cache = cacheManager.getCache("queueCache")
         
         self.cache = cache
-        self.queue: list
+        self.queue: list[song.Song]
+        self.pointer: int
         
         self.songChanged.connect(self.playingStatusChanged)
         self.playingStatusChanged.connect(lambda: print("Playing Status Changed"))
+
     @QProperty(list, notify=queueChanged)
     def queue(self):
         return self.queueModel._queue
+    
+    @QProperty(list, notify=queueChanged)
+    def queueIds(self):
+        return self.queueModel._queueIds
     
     @queue.setter
     def queue(self, value):
@@ -148,12 +155,22 @@ class Queue(QObject):
     
     @QProperty(str, notify=songChanged)
     def currentSongId(self):
-        return self.queue[self.pointer]
+        return self.queueIds[self.pointer]
     
     @QProperty(int, notify=pointerMoved)
     def pointer(self):
         return self._pointer
-    
+        
+    @pointer.setter
+    def pointer(self, value):
+        if value == -1:
+            self._pointer = len(self.queue) - 1 # special case for setting pointer to last song
+        if value < 0 or value >= len(self.queue):
+            raise ValueError("Pointer must be between 0 and length of queue")
+        
+        self.pointerMoved.emit()
+        self._pointer = value
+        
     @QProperty(int, notify=songChanged)
     def currentSongDuration(self):
         return self.player.get_length() // 1000
@@ -169,86 +186,28 @@ class Queue(QObject):
     @QProperty(bool, notify=playingStatusChanged)
     def isPlaying(self):
         return self.player.is_playing() == 1
-    @pointer.setter
-    def pointer(self, value):
-        if value == -1:
-            self._pointer = len(self.queue) - 1 # special case for setting pointer to last song
-        if value < 0 or value >= len(self.queue):
-            raise ValueError("Pointer must be between 0 and length of queue")
-        
-        self.pointerMoved.emit()
-        self._pointer = value
+
         
     def checkError(self, url: str):
-        # we will check if accessing the url will result in an error
-        
         r = requests.get(url)
         if r.status_code == 200:
             return False
         else:
             return True
-    
-    
-    def getPlaybackUrl(self, data: dict):
-        for i in data:
-            if i["resolution"] == "audio only" or i["format_id"] == "233":
-                return i["url"]
-    
-    
-    def getSongData(self, id: str):
-        def getNewDataAndCache(id: str):
-            data = ytdl.extract_info(id, download=False)
-            self.cache.sput(id + "_playbackData", data, byte = False, expiration = int(time.time()) + 18000) # Expires in 5 hours
-            return data
-        
-        print("Getting Song Data")
-        print("ID: " + id)
-        
-        data = self.cache.sget(id + "_playbackData")
-        if data == False:
-            print("No Cached Data")
-            data = getNewDataAndCache(id)
-        else:
-            print("Using Cached Data")
-        
-        url = self.getPlaybackUrl(data["formats"])
-        if self.checkError(url):
-            print("Error in URL")
-            data = getNewDataAndCache(id)
-            
-        return {
-            "title": data["title"],
-            "uploader": data["uploader"],
-            "description": data["description"],
-            "playbackUrl": url
-        }
-    
-    def setSongData(self, id: str, data: dict):
-        self.queueData[id] = data
-        self.cache.sput(id + "_playbackData", data, byte = False, expiration = int(time.time()) + 18000) # Expires in 5 hours
-    
-    async def test(self):
-        await asyncio.sleep(2)
-        print("wow")
-        
-    def getCurrentSongData(self):
-        return self.queueData[self.queue[self.pointer]]
-    
+
     @Slot(result=dict)
     def getCurrentInfo(self) -> dict:
         return self.info(self.pointer)
     
     @Slot(str, bool)
     def setQueue(self, queue: list, skipSetData: bool = False):
-        
-        if not skipSetData:
-            for i in self.queue:
-                self.queueData[i] = self.getSongData(i)
-                
-        self.queueModel.setQueue(queue)
+        for i in queue:
+            print("Adding", i)
+            self.add(i)
 
     def songFinished(self, event):
         print("Song Finished")
+        print(self.player.get_state())
         if self.loop == LoopType.SINGLE:
             self.play()
         elif self.loop == LoopType.ALL or self.loop == LoopType.NONE:
@@ -258,19 +217,18 @@ class Queue(QObject):
             print("Treating as LoopType.NONE")
             self.next()
         self.songChanged.emit()
-            
-    @Slot(str)
-    def playSong(self, id: str):
-        self.player.set_mrl(self.getSongData(id)["playbackUrl"])
-        print("Playing: " + id)
-        self.player.play()
+    
+    def on_vlc_error(self, event):
+        print("VLC Error")
+        print(event)
+        
     
     @Slot(str)
     def goToSong(self, id: str):
         if not id in self.queue:
             self.add(id)
         
-        self.pointer = self.queue.index(id)
+        self.pointer = self.queueIds.index(id)
         self.play()
     
     @Slot()
@@ -286,8 +244,16 @@ class Queue(QObject):
          
     @Slot()
     def play(self):
+        def Media(url):
+            media: vlc.Media = self.instance.media_new(url)
+            media.add_option("http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Herring/97.1.8280.8")
+            media.add_option("http-referrer=https://www.youtube.com/")
+            media.add_option("http-cookie=CONSENT=YES+cb.20210328-17-p0.en+FX+410")
+            return media
+
         self.songChanged.emit()
-        self.player.set_mrl(self.getSongData(self.queue[self.pointer])["playbackUrl"])
+        url = self.queue[self.pointer].playbackInfo["audio"][0]["url"]
+        self.player.set_media(Media(url))
         self.player.play()
     
     @Slot()
@@ -296,7 +262,7 @@ class Queue(QObject):
     
     @Slot()
     def reload(self):
-        self.playSong(self.queue[self.pointer])
+        self.play()
     
     @Slot(int)
     def setPointer(self, index: int):
@@ -336,25 +302,25 @@ class Queue(QObject):
                 "uploader": "No Songs",
                 "description": "No Songs"
             }
-        if not self.queue[pointer] in self.queueData:
-            self.queueData[self.queue[pointer]] = self.getSongData(self.queue[pointer])
-            
-        data = self.queueData[self.queue[pointer]]
+
+        song_ = self.queue[pointer]
+        
         return {
-            "title": data["title"],
-            "uploader": data["uploader"],
-            "description": data["description"]
+            "title": song_.title,
+            "uploader": song_.artist,
+            "description": song_.description
         }
     
     def add(self, id: str, index: int = -1):
-        self.queueData[id] = self.getSongData(id)
-        self.queue.insert(index if not index == -1 else len(self.queue), id)
-        print("Added: " + id)
-    
-    # def add_id(self, id: str, index: int = -1):
-    #     link = "https://www.youtube.com/watch?v=" + id
-    #     self.add(link, index)
-
+        s = song.Song(id = id, cache = cacheManager)
+        coro = s.get_info(g.asyncBgworker.API)
+        future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
+        future.result() # wait for the result
+        s.get_playback()
+        
+        self.queue.append(s)
+        self.queueIds.append(id)
+        
     
     def _seek(self, time: int):
         if time < 0 or time > self.player.get_length() / 1000:
@@ -380,67 +346,3 @@ class Queue(QObject):
         len = self.player.get_length()
         self.player.set_time(len * percentage // 100)
 
-
-queue = Queue()
-queue.setQueue(["F_mq88Lw2Lo", "DyTBxPyEG_M", "I8O-BFLzRF0", "UNQTvQGVjao", "IAW0oehOi24"])
-def main():
-    print("Queue Player")
-    player = Queue()
-    player.setQueue(["F_mq88Lw2Lo", "DyTBxPyEG_M", "I8O-BFLzRF0", "UNQTvQGVjao", "IAW0oehOi24"])
-    
-    print("Commands: pause play stop reload next prev info add seek aseek pseek exit")
-
-    while True:
-        cmd = input("Enter Command: ")
-        if cmd == "pause":
-            player.pause()
-        elif cmd == "play":
-            player.play()
-        elif cmd == "stop":
-            player.stop()
-        elif cmd == "exit":
-            player.stop()
-            break
-        elif cmd == "reload":
-            player.reload()
-        elif cmd == "next":
-            player.next()
-        elif cmd == "prev":
-            player.prev()
-        elif cmd == "info":
-            info = player.info(player.pointer)
-            print(f"Title: {info['title']}")
-            print(f"Uploader: {info['uploader']}")
-            print(f"Description: {info['description']}")
-        elif cmd == "add":
-            link = input("Enter watchID: ")
-            index = int(input("Enter index: "))
-            player.add(link, index)
-        elif cmd == "volume":
-            volume = int(input("Enter volume (0 - 100): "))
-            player.player.audio_set_volume(volume)
-        elif cmd == "loop":
-            loop = input("Enter loop type (none, single, all): ")
-            if loop == "none":
-                player.loop = LoopType.NONE
-            elif loop == "single":
-                player.loop = LoopType.SINGLE
-            elif loop == "all":
-                player.loop = LoopType.ALL
-            else:
-                print("Invalid Loop Type")
-
-        elif cmd == "seek":
-            time = int(input(f"Enter time (0 - {player.player.get_length() / 1000}): "))
-            player.seek(time)
-        elif cmd == "aseek":
-            time = int(input("Enter change in time: "))
-            player.aseek(time)
-        elif cmd == "pseek":
-            percentage = int(input("Enter percentage (0 - 100): "))
-            player.pseek(percentage)
-        else:
-            print("Invalid Command")
-
-if __name__ == "__main__":
-    main()

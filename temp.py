@@ -1,4 +1,2 @@
-import autover
-import subprocess
-
-print(autover.getVer())
+import requests
+import ffmpeg

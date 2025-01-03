@@ -1,6 +1,63 @@
 import ytmusicapi as ytm
+import yt_dlp as yt_dlp_module
+
 import time
 from datetime import datetime, timedelta
+import json
+
+ydlOpts = {
+    "external_downloader_args": ['-loglevel', 'panic'],
+    "quiet": False
+}
+
+ytdl: yt_dlp_module.YoutubeDL
+ytdl = yt_dlp_module.YoutubeDL(ydlOpts)
+
+FMT_DATA_HUMAN = {
+        "sb0": "Storyboard (low quality)",
+        "sb1": "Storyboard (low quality)",
+        "sb2": "Storyboard (low quality)",
+        "160": "144p (low quality)",
+        "133": "240p (low quality)",
+        "134": "360p (medium quality)",
+        "135": "480p (medium quality)",
+        "136": "720p (high quality)",
+        "137": "1080p (high quality)",
+        "242": "240p (low quality, WebM)",
+        "243": "360p (medium quality, WebM)",
+        "244": "480p (medium quality, WebM)",
+        "247": "720p (high quality, WebM)",
+        "248": "1080p (high quality, WebM)",
+        "139": "Low quality audio (48.851 kbps)",
+        "140": "Medium quality audio (129.562 kbps)",
+        "251": "Medium quality audio (135.49 kbps, WebM)",
+        "250": "Low quality audio (68.591 kbps, WebM)",
+        "249": "Low quality audio (51.975 kbps, WebM)",
+        "18": "360p video with audio (medium quality)"
+}
+FMT_DATA = {
+        "sb0": -1,  # Storyboard (low quality)
+        "sb1": -1,  # Storyboard (low quality)
+        "sb2": -1,  # Storyboard (low quality)
+        "160": 1,   # 144p (low quality)
+        "133": 2,   # 240p (low quality)
+        "134": 4,   # 360p (medium quality)
+        "135": 5,   # 480p (medium quality)
+        "136": 7,   # 720p (high quality)
+        "137": 9,   # 1080p (high quality)
+        "242": 2,   # 240p (low quality, WebM)
+        "243": 4,   # 360p (medium quality, WebM)
+        "244": 5,   # 480p (medium quality, WebM)
+        "247": 7,   # 720p (high quality, WebM)
+        "248": 9,   # 1080p (high quality, WebM) 
+        "139": 1,   # Low quality audio (48.851 kbps)
+        "140": 4,   # Medium quality audio (129.562 kbps)
+        "251": 5,   # Medium quality audio (135.49 kbps, WebM)
+        "250": 3,   # Low quality audio (68.591 kbps, WebM)
+        "249": 2,   # Low quality audio (51.975 kbps, WebM)
+        "18": 4     # 360p video with audio (medium quality)
+}
+
 
 def convert_to_timestamp(date_str: str) -> float:
     # Split the date and the timezone
@@ -23,13 +80,13 @@ def convert_to_timestamp(date_str: str) -> float:
     return timestamp
 
 class Song:
-    def __init__(self, yt_id: str = "", autoGetInfo: bool = False, givenInfo: dict = {"None": None}):
+    def __init__(self, id: str = "", givenInfo: dict = {"None": None}, cache: object = None) -> None:
         """
         A class that represents a youtube music song.
         To actually get the info of the song, use the get_info_short or get_info_full method after initializing the class, or set auto_get_info to True.
         
         Parameters:
-        yt_id (str): The id of the youtube video.
+        id (str): The id of the youtube video.
         autoGetInfo (bool): Whether to automatically get the info of the song or not. Uses the get_info_short method.
         
         Functions:
@@ -37,8 +94,11 @@ class Song:
         get_info_full: Gets the full info of the song.
         get_lyrics: Gets the lyrics of the song.
         """
-        self.id = yt_id
+        self.id = id
         self.source = None
+        self.cache = cache
+        
+        self.rawPlaybackInfo = None
     
     def from_search_result(self, search_result: dict) -> None:
         self.source = "search"
@@ -46,19 +106,24 @@ class Song:
         self.title = search_result["title"]
         self.id = search_result["videoId"]
         
-    async def get_info(self, api, cache: object) -> None:
+    async def get_info(self, api) -> None:
         """
         Gets the info of the song.
         """
         api: ytm.YTMusic = api
-        
-        if cache:
-            c = cache.getCache("songs_cache")
+        print(self.id)
+        if self.cache:
+            c = self.cache.getCache("songs_cache")
             identifier = self.id + "_info"
-        
-        self.rawdata = await c.get(identifier)
-        if not self.rawdata:
+            self.rawdata = await c.get(identifier)
+            if not self.rawdata:
+                self.rawData: dict = await api.get_song(self.id)
+                await c.put(identifier, json.dumps(self.rawData), byte = False)
+            else:
+                self.rawData = json.loads(self.rawdata)
+        else:
             self.rawData: dict = await api.get_song(self.id)
+            
 
         self.source = "full"
         
@@ -105,6 +170,83 @@ class Song:
         
         self.isFamilySafe: bool = self.rawMicroformatData["microformatDataRenderer"]["familySafe"]
         
+        json.dump(self.rawData, open("song.json", "w"))
+    
+    def download_playbackInfo(self) -> None:
+        """Because ytdlp isn't async, input this function into the BackgroundWorker to do the slow part in a different thread.
+        """
+        c = self.cache.getCache("songs_cache")
+        identifier = self.id + "_playbackinfo"
+        self.rawPlaybackInfo = c.sget(identifier)
+        if not self.rawPlaybackInfo:
+            self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
+            c.sput(identifier, json.dumps(self.rawPlaybackInfo), byte = False)
+        else:
+            self.rawPlaybackInfo = json.loads(self.rawPlaybackInfo)
+        
+        # self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
+        
+    def get_playback(self):
+        
+        if not self.rawPlaybackInfo:
+            self.download_playbackInfo() # This will take a while.... so do it in the background
+        
+        playbackinfo = self.rawPlaybackInfo
+        
+        video = []
+        audio = []
+        
+        format: dict
+
+        for format in playbackinfo["formats"]:
+            item = {}
+
+            if format.get("format_note", None) == "storyboard":
+                continue
+            
+            item["format_id"] = format["format_id"]
+            item["format_note"] = format.get("format_note", None)
+            item["ext"] = format["ext"]
+            item["url"] = format["url"]
+            item["protocol"] = format["protocol"]
+            
+            if item["protocol"] == "m3u8_native":
+                continue # m3u8 sometimes breaks vlc, also doesn't have some keys set properly, like quality
+            
+            item["serverQuality"] = format["quality"]
+            item["quality"] = FMT_DATA.get(format["format_id"], item["serverQuality"])
+            item["qualityName"] = FMT_DATA_HUMAN.get(format["format_id"], item["format_note"])
+            
+            if format["resolution"] == "audio only":
+                item["type"] = "audio"
+            else:
+                if format["acodec"] == "none":
+                    continue # we don't want video without audio
+                
+                item["type"] = "video"
+            
+            if item["type"] == "video":
+                item["resolution"] = format["resolution"]
+                item["fps"] = format["fps"]
+                item["vcodec"] = format["vcodec"]
+                item["aspect_ratio"] = format["aspect_ratio"]
+            
+            item["filesize"] = format["filesize"]
+            
+            if item["type"] == "audio":
+                audio.append(item)
+            else:
+                video.append(item)
+                
+            print(item)
+
+    
+        audio.sort(key=lambda x: x["quality"])
+        video.sort(key=lambda x: x["quality"])
+            
+        self.playbackInfo = {"audio": audio, "video": video}
+        print(self.playbackInfo)
+            
     async def get_lyrics(self, api) -> dict:
         """
         Gets the lyrics of the song.
