@@ -115,10 +115,10 @@ class Song:
         if self.cache:
             c = self.cache.getCache("songs_cache")
             identifier = self.id + "_info"
-            self.rawdata = await c.get(identifier)
+            self.rawdata = c.get(identifier)
             if not self.rawdata:
                 self.rawData: dict = await api.get_song(self.id)
-                await c.put(identifier, json.dumps(self.rawData), byte = False)
+                c.put(identifier, json.dumps(self.rawData), byte = False)
             else:
                 self.rawData = json.loads(self.rawdata)
         else:
@@ -175,10 +175,11 @@ class Song:
         """
         c = self.cache.getCache("songs_cache")
         identifier = self.id + "_playbackinfo"
-        self.rawPlaybackInfo = c.sget(identifier)
+        self.rawPlaybackInfo = c.get(identifier)
         if not self.rawPlaybackInfo:
             self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
-            c.sput(identifier, json.dumps(self.rawPlaybackInfo), byte = False)
+            
+            c.put(identifier, json.dumps(self.rawPlaybackInfo), byte = False, expiration = time.time() + 3600) # 1 hour
         else:
             self.rawPlaybackInfo = json.loads(self.rawPlaybackInfo)
         
@@ -187,7 +188,7 @@ class Song:
     def get_playback(self):
         
         if not self.rawPlaybackInfo:
-            self.download_playbackInfo() # This will take a while.... so do it in the background
+            self.download_playbackInfo()
         
         playbackinfo = self.rawPlaybackInfo
         

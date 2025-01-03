@@ -12,7 +12,7 @@ imageCache = getCache("images_cache")
 async def convertToCover(link: str, radius: str, size: int, *, cache: CacheManager = imageCache):
     """takes in a link, downloads the image, crops it to a square, rounds the corners, and returns the key to the image in the cache"""
 
-    path = await cache.getKeyPath(await downloadimage.downloadimage(link, cache=cache))
+    path = cache.getKeyPath(downloadimage.downloadimage(link, cache=cache))
     
     image = Image.open(path)
     width, height = image.size
@@ -28,7 +28,7 @@ async def convertToCover(link: str, radius: str, size: int, *, cache: CacheManag
     image.save(buffer, format='PNG')
     image_bytes = buffer.getvalue()
     
-    path = await cache.getKeyPath(await cache.put(ghash(link + "coverconverted"), image_bytes, byte=True, filext='.png', expiration=None))
+    path = cache.getKeyPath(cache.put(ghash(link + "coverconverted"), image_bytes, byte=True, filext='.png', expiration=None))
     
     
     
@@ -53,9 +53,9 @@ async def convertToCover_path(path: str, radius: int, size: int = -100, identify
     image_bytes = buffer.getvalue()
     
     if identify:
-        path = await cache.getKeyPath(await cache.put(ghash(identify), image_bytes, byte=True, filext='.png', expiration=None))
+        path = cache.getKeyPath(cache.put(ghash(identify), image_bytes, byte=True, filext='.png', expiration=None))
     else:
-        path = await cache.getKeyPath(await cache.put(ghash(path + "coverconverted"), image_bytes, byte=True, filext='.png', expiration=None))
+        path = cache.getKeyPath(cache.put(ghash(path + "coverconverted"), image_bytes, byte=True, filext='.png', expiration=None))
     
     
     
