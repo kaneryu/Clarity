@@ -121,6 +121,10 @@ class Queue(QObject):
         else:
             cache = cacheManager.getCache("queueCache")
         
+        
+        self.eventManager.event_attach(vlc.EventType.MediaPlayerEndReached, self.songFinished)
+        self.eventManager.event_attach(vlc.EventType.MediaPlayerEncounteredError, self.on_vlc_error)
+        
         self.cache = cache
         self.queue: list[song.Song]
         self.pointer: int
@@ -222,6 +226,11 @@ class Queue(QObject):
         print("VLC Error")
         print(event)
         
+        g.bgworker.add_job(self.refetch)
+    
+    def refetch(self):
+        self.queue[self.pointer].purge_playback()
+        self.play()
     
     @Slot(str)
     def goToSong(self, id: str):
@@ -248,7 +257,6 @@ class Queue(QObject):
             media: vlc.Media = self.instance.media_new(url)
             media.add_option("http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Herring/97.1.8280.8")
             media.add_option("http-referrer=https://www.youtube.com/")
-            media.add_option("http-cookie=CONSENT=YES+cb.20210328-17-p0.en+FX+410")
             return media
 
         self.songChanged.emit()
