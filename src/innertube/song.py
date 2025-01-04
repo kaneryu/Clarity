@@ -244,6 +244,15 @@ class Song:
             
         self.playbackInfo = {"audio": audio, "video": video}
         # print(self.playbackInfo)
+    
+    def purge_playback(self):
+        c = self.cache.getCache("songs_cache")
+        identifier = self.id + "_playbackinfo"
+        c.delete(identifier)
+        self.rawPlaybackInfo = None
+        
+        self.get_playback()
+        
             
     async def get_lyrics(self, api) -> dict:
         """
