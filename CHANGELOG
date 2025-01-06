@@ -7,6 +7,7 @@
 ## Bugfixes
 
 - added fault tolerance to convertocover by making sure that cache is always set to a real cache instead of None -- kaneryu on 2025-01-03
+- added fault tolerance to the queue by allowing it to ask for a song's data to be refetched. -- kaneryu on 2025-01-04
 
 
 
