@@ -533,10 +533,16 @@ class Queue(QObject):
         
 
         self._pointer = 0
-        self.player: vlc.MediaPlayer = vlc.MediaPlayer()
+        
+        vlc_args = ["h254-fps=15", "network-caching", "file-caching"]
+        
+        self.instance: vlc.Instance = vlc.Instance(vlc_args)
+        
+        
+        self.player: vlc.MediaPlayer = self.instance.media_player_new()
+        
         self.eventManager = self.player.event_manager()
         
-        self.instance: vlc.Instance = self.player.get_instance()
         
         self.player.set_hwnd(0)
         self.loop: LoopType = LoopType.NONE
