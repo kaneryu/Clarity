@@ -49,7 +49,7 @@ class KImage(QObject):
     statusChanged = QSignal(str)
     imageChanged = QSignal(str)
     
-    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 0):
+    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 10):
         super().__init__(parent)
         self._placeholder = placeholder
         self._url = url
