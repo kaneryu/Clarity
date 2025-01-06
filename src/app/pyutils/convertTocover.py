@@ -7,13 +7,8 @@ from . import downloadimage, roundimage
 import asyncio
 from io import BytesIO
 
-imageCache = getCache("images_cache")
-
-async def convertToCover(link: str, radius: str, size: int, *, cache: CacheManager = imageCache):
+async def convertToCover(link: str, radius: str, size: int, *, cache: CacheManager = getCache("images_cache")):
     """takes in a link, downloads the image, crops it to a square, rounds the corners, and returns the key to the image in the cache"""
-    if cache == None:
-        cache = imageCache
-        
     path = cache.getKeyPath(downloadimage.downloadimage(link, cache=cache))
     
     image = Image.open(path)
@@ -37,11 +32,8 @@ async def convertToCover(link: str, radius: str, size: int, *, cache: CacheManag
     return await roundimage.roundimage(path, radius, cache=cache)
 
 
-async def convertToCover_path(path: str, radius: int, size: int = -100, identify: str = "", *, cache: CacheManager = imageCache):
+async def convertToCover_path(path: str, radius: int, size: int = -100, identify: str = "", *, cache: CacheManager = getCache("images_cache")):
     """takes in a path, downloads the image, crops it to a square, rounds the corners, and returns the key to the image in the cache"""
-    if cache == None:
-        cache = imageCache
-        
     image = Image.open(path)
     width, height = image.size
     if width > height:
@@ -56,6 +48,7 @@ async def convertToCover_path(path: str, radius: int, size: int = -100, identify
     image.save(buffer, format='PNG')
     image_bytes = buffer.getvalue()
     
+    print("cache is", cache)
     if identify:
         path = cache.getKeyPath(cache.put(ghash(identify), image_bytes, byte=True, filext='.png', expiration=None))
     else:
