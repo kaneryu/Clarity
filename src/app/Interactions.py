@@ -176,9 +176,13 @@ class Interactions(QObject):
     def songFinishesAt(self):
         return universal.queueInstance.songFinishesAt
     
-    @Property(bool, notify=songChanged)
+    @Property(str, notify=songChanged)
     def currentSongId(self):
         return universal.queueInstance.currentSongId
+    
+    @Property(QObject, notify=songChanged)
+    def currentSong(self):
+        return universal.queueInstance.currentSongObject
     
     @Property(bool, notify=playingStatusChanged)
     def isPlaying(self):
@@ -222,5 +226,3 @@ class Interactions(QObject):
         smodule = universal.song_module
         song = smodule.Song(id)
         universal.asyncBgworker.add_job_sync(song.download)
-
-    

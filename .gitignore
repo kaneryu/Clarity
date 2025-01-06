@@ -170,11 +170,7 @@ cython_debug/
 ./innertube/testing.py
 test_cache/
 
-.;cache/
-.;images_cache/
-.;queueCache/
-.;songs_cache/
-
+data/
 
 # Builds
 *build/

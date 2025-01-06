@@ -142,20 +142,9 @@ class DataStore:
         self.last_used = json.loads(metadata["last_used"], object_pairs_hook=collections.OrderedDict)
         self.statistics = json.loads(metadata["statistics"])
     
-    
-    def write_file(self, key: str, value: str | bytes | dict | io.BytesIO, byte: bool = False, filext: Optional[str] = None) -> str:
-        """write a file into the dataStore
-
-        Args:
-            key (str): They key used to refer to the item. The key *should not* contain a file extension. It will break things.
-            Invalid chars: /, \\, :, *, ?, ", <, >, |, ., and whitespace
-            value (Any): The value stored. When passing in an item of type 'bytes', it will be written to disk using wb
-            byte (bool): Override whether or not it's written with wb
-            filext (Optional[str]): The file extension. Not including it will cause the file to have no ext.
-
-        Returns:
-            str: The key used to refer to the item.
-        """
+               
+    def __wfsetup(self, key: str, value: str | bytes | dict | io.BytesIO, byte: bool = False, ext: Optional[str] = None):
+        
         estimated_size = len(value) if isinstance(value, (str, bytes)) else 0
         if self.statistics["size"] + estimated_size > self.max_size:
             self._print("dataStore full", ErrorLevel.WARNING)
@@ -163,38 +152,93 @@ class DataStore:
         if any(c in key for c in ["\\", "/", ":", "*", "?", "\"", "<", ">", "|", " "]):
             raise ValueError("Invalid character in key")
         
-        if filext == None:
-            filext = ''
-        if not filext.startswith('.') and not filext == '':
-            filext = '.' + filext
-        
-        dictmode = False if not isinstance(value, dict) else True
-        byte = byte or isinstance(value, bytes)
+        if ext == None:
+            ext = ''
+        if not ext.startswith('.') and not ext == '':
+            ext = '.' + ext
         
         if isinstance(value, io.BytesIO):
             value = value.getvalue()
             byte = True
         
-        self.__dataStore_path_map[key] = os.path.abspath(os.path.join(self.absdir, key + filext))
+        self.__dataStore_path_map[key] = os.path.abspath(os.path.join(self.absdir, key + ext))
         
         if os.path.exists(self.__dataStore_path_map[key]):
             self._print(f"key {key} already exists", ErrorLevel.ERROR)
             return False
-            
 
-        with open(self.__dataStore_path_map[key], 'wb' if byte else 'w') as file:
-            file.write(value if not dictmode else json.dumps(value))
-        
+        return (byte, ext)
+    
+    def __wfexit(self, key: str, byte: bool, ext: str, dictmode: bool):
+
         s = os.path.getsize(self.__dataStore_path_map[key])
         self.last_used[key] = time.time()
-        self.metadata[key] = {"filext": filext, "accessCount": 0, "bytes": byte, "dict": dictmode}
+        self.metadata[key] = {"ext": ext, "accessCount": 0, "bytes": byte, "dict": dictmode}
         self.statistics["size"] += s
         self.metadata[key]["size"] = s
         self.statistics["saves"] += 1
         self.__metadataSave()
         
-        return key
+    def write_file(self, key: str, value: str | bytes | dict | io.BytesIO, byte: bool = False, ext: Optional[str] = None) -> str:
+        """write a file into the dataStore
+
+        Args:
+            key (str): They key used to refer to the item. The key *should not* contain a file extension. It will break things.
+            Invalid chars: /, \\, :, *, ?, ", <, >, |, ., and whitespace
+            value (Any): The value stored. When passing in an item of type 'bytes', it will be written to disk using wb
+            byte (bool): Override whether or not it's written with wb
+            ext (Optional[str]): The file extension. Not including it will cause the file to have no ext.
+
+        Returns:
+            str: The key used to refer to the item.
+        """
+        dictmode = False if not isinstance(value, dict) else True
+        byte = byte or isinstance(value, bytes)
+
+            
+        if setres := self.__setup(key, value, byte, ext) == False:
+            return False
         
+        byte, ext = setres
+        
+        with open(self.__dataStore_path_map[key], 'wb' if byte else 'w') as file:
+            file.write(value if not dictmode else json.dumps(value))
+
+        self.__wfexit(key, byte, ext, dictmode)
+        
+        return key
+    
+    def open_write_file(self, key: str, bytes: bool, ext: Optional[str] = None, allowappend: Optional[bool] = False) -> io.FileIO:
+        """Open a file for writing in the datastore, returns a file object
+        Close the file with close_write_file, not by calling close on the file object
+
+        Args:
+            key (str): key / filename
+            ext (Optional[str], optional): file ext. Defaults to None.
+
+        Returns:
+            io.FileIO: the file object, 
+        """
+        self.__wfsetup(key, "", False, ext)
+        if allowappend:
+            if os.path.exists(self.__dataStore_path_map[key]):
+                return open(self.__dataStore_path_map[key], 'ab' if bytes else 'a')
+            else:
+                return open(self.__dataStore_path_map[key], 'wb' if bytes else 'w')
+        else:
+            return open(self.__dataStore_path_map[key], 'wb' if bytes else 'w')
+
+    def close_write_file(self, key: str, ext: str, file: io.FileIO):
+        """Close a file opened with open_write_file
+
+        Args:
+            key (str): key / filename
+            file (io.FileIO): the file object
+        """
+        
+        file.close()
+        
+        self.__wfexit(key, True if 'b' in file.mode else False, ext, False)
     
     def get_file(self, key: str) -> str | dict | bool:
         """Get a file from the dataStore
@@ -319,31 +363,28 @@ class DataStore:
         """
         return self.metadata.get(key)
 
-    def getKeyPath(self, key: str) -> str | bool:
-        """Get the path of an item from the dataStore
+    def getFilePath(self, key: str) -> str | bool:
+        """Get the path of an file from the dataStore
 
         Args:
-            key (str): The key used to refer to the item. The key *should not* contain a file extension. It will break things.
+            key (str): The key used to refer to the file. The key *should not* contain a file extension. It will break things.
 
         Returns:
-            str: The path of the item on disk
+            str: The path of the file on disk
         """
+        
+        print("getFilePath", key)
+        print(self.__dataStore_path_map[key])
+        
         if not key in self.__dataStore_path_map:
             self._print("dataStore miss: " + key, ErrorLevel.INFO)
             self.statistics["misses"] += 1
             return False
-        
         elif not os.path.exists(self.__dataStore_path_map[key]): # if the key is in the dataStore, but it's not actually on disk
                 self.delete(key)
                 self._print(f"key {key} was orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
                 self._print("dataStore miss: " + key, ErrorLevel.INFO)
                 self.statistics["misses"] += 1
-                return False
-
-        if self.metadata[key].get("expiration", -1):
-            if time.time() > self.metadata[key].get("expiration", -1):
-                self._print("dataStore miss: " + key + " expired", ErrorLevel.INFO)
-                self.delete(key)
                 return False
         
         self.last_used.move_to_end(key)

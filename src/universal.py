@@ -12,6 +12,7 @@ import versions
 import os
 
 
+
 from PySide6.QtCore import QThread
 
 from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_BackgroundWorker
@@ -30,11 +31,13 @@ def ghash(thing):
     # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
     return md5(str(thing).encode()).hexdigest()
 
-globalCache = cacheManager_module.CacheManager(name="cache")
-songCache = cacheManager_module.CacheManager(name="songs_cache")
-imageCache = cacheManager_module.CacheManager(name="images_cache")
 
-songDataStore = dataStore_module.DataStore(name="song_datastore")
+datapath = os.path.abspath("data")
+globalCache = cacheManager_module.CacheManager(name="cache", directory=os.path.join(datapath, "cache"))
+songCache = cacheManager_module.CacheManager(name="songs_cache", directory=os.path.join(datapath, "songs_cache"))
+imageCache = cacheManager_module.CacheManager(name="images_cache", directory=os.path.join(datapath, "images_cache"))
+
+songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(datapath, "song_datastore"))
 
 song_module.DATASTORE_MODULE = dataStore_module
 song_module.CACHEMANAGER_MODULE = cacheManager_module

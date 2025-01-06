@@ -75,7 +75,9 @@ Item {
     property alias radius: background.radius
 
     property alias border: background.border
-    
+
+    property bool input: true
+
     signal click(real percent)
 
     Behavior on percent {
@@ -107,7 +109,9 @@ Item {
     }
 
     MouseArea {
+        id: mouseArea
         anchors.fill: parent
+        enabled: root.input
         onClicked: {
             if (root.vertical) {
                 root.click((mouseY / parent.height) * 100)
