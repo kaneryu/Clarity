@@ -132,6 +132,15 @@ Item {
                 Layout.fillWidth: true
                 onClicked: Interactions.back()
             }
+
+            Components.Button {
+                id: downloadButton
+                text: "dl"
+
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                onClicked: Interactions.downloadSong(Interactions.currentSongId)
+            }
         }
         
         RowLayout {

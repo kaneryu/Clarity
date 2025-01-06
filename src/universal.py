@@ -1,6 +1,7 @@
-from src.cacheManager import cacheManager as cacheManager_module
-from src.innertube import song_queue as queue
+from src.cacheManager import cacheManager as cacheManager_module, dataStore as dataStore_module
+import src.innertube as innertube_module
 from src.innertube import search as search_module
+from src.innertube import song as song_module
 import threading
 import asyncio
 import types
@@ -33,8 +34,12 @@ globalCache = cacheManager_module.CacheManager(name="cache")
 songCache = cacheManager_module.CacheManager(name="songs_cache")
 imageCache = cacheManager_module.CacheManager(name="images_cache")
 
+songDataStore = dataStore_module.DataStore(name="song_datastore")
 
-queueInstance: queue.Queue = queue.Queue()
+song_module.DATASTORE_MODULE = dataStore_module
+song_module.CACHEMANAGER_MODULE = cacheManager_module
+
+queueInstance: innertube_module.Queue = innertube_module.Queue()
 search = search_module.search
 bgworker.add_job(queueInstance.setQueue, ["F_mq88Lw2Lo", "DyTBxPyEG_M", "I8O-BFLzRF0", "UNQTvQGVjao", "IAW0oehOi24"])
 

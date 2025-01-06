@@ -175,10 +175,16 @@ class Interactions(QObject):
     @Property(str, notify=songChanged)
     def songFinishesAt(self):
         return universal.queueInstance.songFinishesAt
-
+    
+    @Property(bool, notify=songChanged)
+    def currentSongId(self):
+        return universal.queueInstance.currentSongId
+    
     @Property(bool, notify=playingStatusChanged)
     def isPlaying(self):
         return universal.queueInstance.isPlaying
+    
+
     
     @Slot(str)
     def searchPress(self, id: str):
@@ -210,3 +216,11 @@ class Interactions(QObject):
             q.pause()
         else:
             q.resume()
+    
+    @Slot(str)
+    def downloadSong(self, id: str):
+        smodule = universal.song_module
+        song = smodule.Song(id)
+        universal.asyncBgworker.add_job_sync(song.download)
+
+    
