@@ -5,8 +5,9 @@ import asyncio
 import io
 import enum
 import requests
+from concurrent.futures import ThreadPoolExecutor
 
-from PySide6.QtCore import QObject, Signal, Slot, Qt, Property as QProperty
+from PySide6.QtCore import QObject, Signal, Slot, Qt, Property as QProperty, QThread
 from PySide6.QtCore import QAbstractListModel, QModelIndex
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 
@@ -93,18 +94,26 @@ def convert_to_timestamp(date_str: str) -> float:
 
     return timestamp
 
+class DownloadStatus(enum.Enum):
+    NOT_DOWNLOADED = 0
+    DOWNLOADING = 1
+    DOWNLOADED = 2
+
 class Song(QObject):
     
     idChanged = Signal(str)
     sourceChanged = Signal(str)
     downloadedChanged = Signal(bool)
+    downloadStatusChanged = Signal(enum.Enum)
+    downloadProgressChanged = Signal(int)
     
     _instances = {}
-
+    
     def __new__(cls, id: str = "", givenInfo: dict = {"None": None}, cache: object = None):
         if id in cls._instances:
             return cls._instances[id]
-        instance = super(Song, cls).__new__(cls)
+        instance = super(Song, cls).__new__(cls, id, givenInfo)
+        print("Creating new instance")
         cls._instances[id] = instance
         return instance
     
@@ -122,15 +131,29 @@ class Song(QObject):
         get_info_full: Gets the full info of the song.
         get_lyrics: Gets the lyrics of the song.
         """
+        print("Initializing, id:", id)
+        self._downloaded = cacheManager.getdataStore("song_datastore").checkFileExists(id)
+        print("Downloaded:", self._downloaded)
+        if self._downloaded:
+            self._dowloadStatus = DownloadStatus.DOWNLOADED
+        else:
+            self._dowloadStatus = DownloadStatus.NOT_DOWNLOADED
+            
         if hasattr(self, '_initialized'):
             return
         super().__init__()
+        
         self._id = id
         self._source = None
-        self._downloaded = cacheManager.getdataStore("song_datastore").checkFileExists(self.id)
+
+        self._downloadProgress = 0
         self.rawPlaybackInfo = None
         self.playbackInfo = None
         self._initialized = True
+        
+        self.moveToThread(g.mainThread)
+    
+        return None
         
     
     @QProperty(str, notify = idChanged)
@@ -159,6 +182,24 @@ class Song(QObject):
     def downloaded(self, value: bool) -> None:
         self._downloaded = value
         self.downloadedChanged.emit(self._downloaded)
+    
+    @QProperty(enum.Enum, notify = downloadStatusChanged)
+    def downloadStatus(self) -> enum.Enum:
+        return self._dowloadStatus
+
+    @downloadStatus.setter
+    def downloadStatus(self, value: enum.Enum) -> None:
+        self._dowloadStatus = value
+        self.downloadStatusChanged.emit(self._dowloadStatus)
+    
+    @QProperty(int, notify = downloadProgressChanged)
+    def downloadProgress(self) -> int:
+        return self._downloadProgress
+    
+    @downloadProgress.setter
+    def downloadProgress(self, value: int) -> None:
+        self._downloadProgress = value
+        self.downloadProgressChanged.emit(self._downloadProgress)
     
     def from_search_result(self, search_result: dict) -> None:
         self.source = "search"
@@ -309,6 +350,51 @@ class Song(QObject):
         
         self.get_playback()
     
+        
+    def download_chunk(self, url, headers, file, start, end):
+        mhash = cacheManager.ghash(str(start + end))
+        self.downloadProgresses[mhash] = 0
+        
+        headers["Range"] = f"bytes={start}-{end}"
+        with requests.get(url, headers=headers, stream=True) as response:
+            for chunk in response.iter_content(chunk_size=8192):
+                file.seek(start)
+                file.write(chunk)
+                start += len(chunk)
+                self.downloadProgresses[mhash] = start
+                    
+    async def download_with_progress(self, url: str, datastore: cacheManager.dataStore.DataStore, ext: str, id: str) -> None:
+        file: io.FileIO = datastore.open_write_file(key=id, ext=ext, bytes=True)
+        downloaded = file.tell()  # Get the current file size to determine how many bytes have been written
+
+        headers = {"Range": f"bytes={downloaded}-"} if downloaded else {}
+        self.downloadProgresses = {}
+        async with httpx.AsyncClient() as client:
+            print("Downloading", self.title)
+            
+            response = await client.head(url, headers=headers)
+            total = int(response.headers.get("Content-Length", 0)) + downloaded
+
+            chunk_size = 10 * 1024 * 1024  # 10 MB
+            ranges = [(i, min(i + chunk_size - 1, total - 1)) for i in range(downloaded, total, chunk_size)]
+
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                loop = asyncio.get_event_loop()
+                tasks = [
+                    loop.run_in_executor(executor, self.download_chunk, url, headers, file, start, end)
+                    for start, end in ranges
+                ]
+                
+                future = asyncio.ensure_future(asyncio.gather(*tasks))
+                while not future.done():
+                    await asyncio.sleep(0.1)
+                    self.downloadProgress = sum(self.downloadProgresses.values()) / total * 100
+
+            print("Download complete")
+            datastore.close_write_file(key=self.id, ext=ext, file=file)
+            self.downloadStatus = DownloadStatus.DOWNLOADED
+            self.downlaoded = True
+            
     async def download(self, audio = True) -> None:
         """
         Downloads the song.
@@ -335,11 +421,8 @@ class Song(QObject):
         if datastore.checkFileExists(self.id):
             datastore.delete(self.id)
 
-        async with httpx.AsyncClient() as client:
-            r = await client.get(url)
-            datastore.write_file(key = self.id, ext = ext, value = r.content)
+        await self.download_with_progress(url, datastore, ext, self.id)
     
-        self.downloaded = True
     
     def get_best_playback_MRL(self) -> str:
         """Will return either the path of the file on disk or best possbile quality playback URL.
@@ -347,7 +430,15 @@ class Song(QObject):
         Returns:
             str: Path or URL
         """
-        pass
+        if self.downloaded or self.downloadStatus == DownloadStatus.DOWNLOADED:
+            print("Asked for MRL; returning path")
+            return cacheManager.getdataStore("song_datastore").getFilePath(self.id)
+        else:
+            if not self.playbackInfo:
+                print("No playback info")
+                return None
+            print("Asked for MRL; returning URL")
+            return self.playbackInfo["audio"][-1]["url"]
         
             
     async def get_lyrics(self, api) -> dict:
@@ -357,14 +448,6 @@ class Song(QObject):
         api: ytm.YTMusic = api
         self.lyrics = await self.api.get_lyrics(self.id)
         return self.lyrics
-
-ydlOpts = {
-    "external_downloader_args": ['-loglevel', 'panic'],
-    "quiet": False
-}
-
-ytdl: yt_dlp_module.YoutubeDL
-ytdl = yt_dlp_module.YoutubeDL(ydlOpts)
 
 class LoopType(enum.Enum):
     """Loop Types"""
@@ -503,10 +586,16 @@ class Queue(QObject):
     @QProperty(str, notify=songChanged)
     def currentSongId(self):
         return self.queueIds[self.pointer]
+
+    @QProperty(QObject, notify=songChanged)
+    def currentSongObject(self):
+        return self.queue[self.pointer]
     
     @QProperty(int, notify=pointerMoved)
     def pointer(self):
         return self._pointer
+    
+
         
     @pointer.setter
     def pointer(self, value):
@@ -568,7 +657,6 @@ class Queue(QObject):
     def on_vlc_error(self, event):
         print("VLC Error")
         print(event)
-        
         g.bgworker.add_job(self.refetch)
     
     def refetch(self):
@@ -603,7 +691,7 @@ class Queue(QObject):
             return media
 
         self.songChanged.emit()
-        url = self.queue[self.pointer].playbackInfo["audio"][0]["url"]
+        url = self.queue[self.pointer].get_best_playback_MRL()
         self.player.set_media(Media(url))
         self.player.play()
     

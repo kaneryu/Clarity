@@ -15,6 +15,7 @@ Item {
     height: parent.height
     visible: true
     property bool settingsButton: true
+    property QtObject song: Interactions.currentSong
 
     ColObjs.ColRect {
         id: songbarBackground
@@ -135,7 +136,20 @@ Item {
 
             Components.Button {
                 id: downloadButton
-                text: "dl"
+                text: (root.song.downloadStatus == 2) ? "DL" : (root.song.downloadStatus == 0) ? "NDL" : "DLI"
+
+                Components.ProgressBar {
+                    id: downloadProgress
+                    anchors.fill: parent
+
+                    vertical: false
+                    input: false
+                    fillColor: leftGlow.addAlpha("50", Theme.primary)
+                    backgroundColor: "transparent"
+
+                    radius: downloadButton.radius
+                    percent: root.song.downloadProgress
+                }
 
                 Layout.fillHeight: true
                 Layout.fillWidth: true
