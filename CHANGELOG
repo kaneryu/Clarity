@@ -7,6 +7,7 @@
 ## Bugfixes
 
 - fix None in coverconvert caused by imageCache being set too early -- kaneryu on 2025-01-06
+- try a fix for no corner radius showing in the songbar image -- kaneryu on 2025-01-06
 
 
 

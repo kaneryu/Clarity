@@ -6,6 +6,7 @@ import io
 import enum
 import requests
 from concurrent.futures import ThreadPoolExecutor
+import ctypes
 
 from PySide6.QtCore import QObject, Signal, Slot, Qt, Property as QProperty, QThread
 from PySide6.QtCore import QAbstractListModel, QModelIndex
@@ -113,7 +114,6 @@ class Song(QObject):
         if id in cls._instances:
             return cls._instances[id]
         instance = super(Song, cls).__new__(cls, id, givenInfo)
-        print("Creating new instance")
         cls._instances[id] = instance
         return instance
     
@@ -131,9 +131,7 @@ class Song(QObject):
         get_info_full: Gets the full info of the song.
         get_lyrics: Gets the lyrics of the song.
         """
-        print("Initializing, id:", id)
         self._downloaded = cacheManager.getdataStore("song_datastore").checkFileExists(id)
-        print("Downloaded:", self._downloaded)
         if self._downloaded:
             self._dowloadStatus = DownloadStatus.DOWNLOADED
         else:
@@ -141,6 +139,7 @@ class Song(QObject):
             
         if hasattr(self, '_initialized'):
             return
+        
         super().__init__()
         
         self._id = id
@@ -150,11 +149,8 @@ class Song(QObject):
         self.rawPlaybackInfo = None
         self.playbackInfo = None
         self._initialized = True
-        
-        self.moveToThread(g.mainThread)
-    
         return None
-        
+    
     
     @QProperty(str, notify = idChanged)
     def id(self) -> str:
@@ -534,11 +530,11 @@ class Queue(QObject):
 
         self._pointer = 0
         
-        vlc_args = ["h254-fps=15", "network-caching", "file-caching"]
+        vlc_args = ["h254-fps=15", "network-caching", "file-caching", "verbose=1", "vv", "log-verbose=3"]
         
+
         self.instance: vlc.Instance = vlc.Instance(vlc_args)
-        
-        
+
         self.player: vlc.MediaPlayer = self.instance.media_player_new()
         
         self.eventManager = self.player.event_manager()
@@ -560,9 +556,12 @@ class Queue(QObject):
         self.cache = cache
         self.queue: list[Song]
         self.pointer: int
+        self.currentSongObject: Song
         
         self.songChanged.connect(self.playingStatusChanged)
         self.playingStatusChanged.connect(lambda: print("Playing Status Changed"))
+        
+        
 
     @QProperty(list, notify=queueChanged)
     def queue(self):
@@ -615,11 +614,17 @@ class Queue(QObject):
         
     @QProperty(int, notify=songChanged)
     def currentSongDuration(self):
-        return self.player.get_length() // 1000
-    
+        try:
+            return self.player.get_length() // 1000
+        except OSError:
+            return 0
+        
     @QProperty(int, notify=songChanged)
     def currentSongTime(self):
-        return self.player.get_time() // 1000
+        try:
+            return self.player.get_time() // 1000
+        except OSError:
+            return 0
     
     @QProperty(int, notify=songChanged)
     def songFinishesAt(self):
@@ -690,16 +695,28 @@ class Queue(QObject):
          
     @Slot()
     def play(self):
+        
         def Media(url):
             media: vlc.Media = self.instance.media_new(url)
+            print(1)
             media.add_option("http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Herring/97.1.8280.8")
+            print(2)
             media.add_option("http-referrer=https://www.youtube.com/")
+            print(3)
             return media
 
         self.songChanged.emit()
+        print(4)
         url = self.queue[self.pointer].get_best_playback_MRL()
+        print(5)
+        if not self.player.get_media() == None:
+            self.player.stop()
+            print(6)
+            
         self.player.set_media(Media(url))
+        print(7)
         self.player.play()
+        print(8)
     
     @Slot()
     def stop(self):
