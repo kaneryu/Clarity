@@ -9,6 +9,8 @@ import "../colobjs" as ColObjs
 import "." as Components
 import "./text" as TextVariant
 
+
+
 Item {
     id: root
     width: parent.width
@@ -149,6 +151,7 @@ Item {
 
                     radius: downloadButton.radius
                     percent: root.song.downloadProgress
+                    
                 }
 
                 Layout.fillHeight: true

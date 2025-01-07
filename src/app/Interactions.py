@@ -1,5 +1,5 @@
 # stdlib imports
-import random
+import json
 import os
 import pathlib
 import random
@@ -8,6 +8,8 @@ import asyncio
 import time
 import typing
 import urllib.parse
+import inspect
+import enum
 
 # library imports
 from PySide6.QtCore import (
@@ -36,91 +38,141 @@ QML_IMPORT_NAME = "CreateTheSun"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
 
-class Queue(QObject):
-    def __init__(self):
-        """A fake queue class that will call the real one in the other thread.
-        """
-        super().__init__()
-        pass
-
-    @Slot(str)
-    def playSong(self, id: str):
-        f = universal.queue.Queue.getInstance().playSong
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {"id": id}})
-
-    @Slot()
-    def pause(self):
-        f = universal.queue.Queue.getInstance().pause
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot()
-    def play(self):
-        f = universal.queue.Queue.getInstance().play
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot()
-    def stop(self):
-        f = universal.queue.Queue.getInstance().stop
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot()
-    def reload(self):
-        f = universal.queue.Queue.getInstance().reload
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot(int)
-    def setPointer(self, index: int):
-        f = universal.queue.Queue.getInstance().setPointer
-        universal.bgworker.jobs.append({"func": f, "args": [index], "kwargs": {}})
-
-    @Slot()
-    def next(self):
-        f = universal.queue.Queue.getInstance().next
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot()
-    def prev(self):
-        f = universal.queue.Queue.getInstance().prev
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    def info(self, pointer: int):
-        f = universal.queue.Queue.getInstance().info
-        universal.bgworker.jobs.append({"func": f, "args": [pointer], "kwargs": {}})
-
-    @Slot(str, int)
-    def add(self, link: str, index: int):
-        f = universal.queue.Queue.getInstance().add
-        universal.bgworker.jobs.append({"func": f, "args": [link, index], "kwargs": {}})
-    
-    @Slot(str)
-    def addEnd(self, link: str):
-        f = universal.queue.Queue.getInstance().add
-        universal.bgworker.jobs.append({"func": f, "args": [link], "kwargs": {}})
+class FwdVar:
+    def __init__(self, getvar):
+        self.var = getvar
         
-    @Slot(str, int)
-    def addId(self, id: str, index: int):
-        f = universal.queue.Queue.getInstance().add_id
-        universal.bgworker.jobs.append({"func": f, "args": [id, index], "kwargs": {}})
-
-    @Slot(str)
-    def addIdEnd(self, id: str):
-        f = universal.queue.Queue.getInstance().add_id
-        universal.bgworker.jobs.append({"func": f, "args": [id], "kwargs": {}})
+    def __repr__(self):
+        return self.var()
     
-    @Slot(int)
-    def seek(self, time: int):
-        f = universal.queue.Queue.getInstance().seek
-        universal.bgworker.jobs.append({"func": f, "args": [time], "kwargs": {}})
+    def __str__(self):
+        if isinstance(self.var(), str):
+            return self.var()
+        else:
+            try:
+                return str(self.var())
+            except:
+                return ""
+            
+class FakeQObj(QObject):
+    def __init__(self, faking: object):
+        super().__init__()
+        self.using = faking
+        usingCls = self.using.__class__
+        
+        inspected = inspect.getmembers(self.using)
+        self.code: list[str] = inspect.getsource(usingCls).splitlines()
+        
+        for name, member in inspected:
+            if name not in dir(QObject):
+                if callable(member):
+                    if isinstance(member, Property):
+                        print("creating property " + name)
+                        setattr(self, name, FwdVar(self.gvar(name)))
+                    elif isinstance(member, Signal):
+                        print("creating signal " + name)
+                        self.createSignalAlias(name, member)
+                    elif isinstance(member, Slot):
+                        print("creating slot " + name)
+                        setattr(self, name, self.funcforward(name))
+                    else:
+                        print("creaing function " + name)
+                        setattr(self, name, self.funcforward(name))
+                else:
+                    try:
+                        print("creating " + name, + member)
+                    except:
+                        print("creating " + name)
+                    setattr(self, name, FwdVar(self.gvar(name)))
+    
+    def createSignalAlias(self, name, originalSignal: Signal):
+        print("Creating signal alias for", name)
 
-    @Slot(int)
-    def aseek(self, time: int):
-        f = universal.queue.Queue.getInstance().aseek
-        universal.bgworker.jobs.append({"func": f, "args": [time], "kwargs": {}})
+        # Complete Signal() code:
+        # coolSignalName = Signal(str, "coolSignalName", ["arg1", "arg2"])
+        
+        # All are optional
+        
+        
+        for index, line in enumerate(self.code):
+            if line.strip().startswith("#"):
+                continue
+            
+            if "Signal" in line and name in line:
+                
+                # Useful information in signals include the arguments, the type, and the name
+                # The name is the easiest to get, as it's the name of the var, but the name in the signal is also important (QML uses it)
+                
+                sigline = line.strip()
+                print(sigline)
+                sigline = sigline[sigline.find("Signal"):]
+                sigline = sigline.replace("Signal", "")
+                sigline = sigline.lstrip("(").rstrip(")")
+                sigline = sigline.split(",")
+                
 
-    @Slot(int)
-    def pseek(self, percentage: int):
-        f = universal.queue.Queue.getInstance().pseek
-        universal.bgworker.jobs.append({"func": f, "args": [percentage], "kwargs": {}})
+                sigtype = None
+                signame = None
+                sigargs = None
+                
+                if len(sigline) >= 1:
+                    sigtype = sigline[0].strip()
+                    # # Now we check if the parsed type is real
+                    # try:
+                    #     ev = eval("type(sigtype)")
+                    #     if not isinstance(ev, object):
+                    #         sigtype = None
+                    # except:
+                    #     sigtype = None
+                    # Validation has been temporarily disabled because i need to fix the fact that imports exist, oops
+                
+                if len(sigline) >= 2:
+                    signame = sigline[1].strip().removeprefix("\"").removesuffix("\"").removeprefix("\'").removesuffix("\'") # covers all cases
+                if len(sigline) >= 3:
+                    sigargs = sigline[2].strip()
+                    if sigargs:
+                        sigargs = json.loads(sigargs) # This is a list of strings
+                        if not isinstance(sigargs, list):
+                            sigargs = None
+                            
+        estr = "Signal("
+        estr += sigtype if sigtype else ""
+        estr += ", \"" + signame + "\"" if signame else ""
+        estr += ", " + str(sigargs) if sigargs else ""
+        estr += ")"
+        
+        aliasSignal = eval(estr)
+        setattr(self.__class__, name, aliasSignal)
+        originalSignal.connect(getattr(self, name).emit)
+    
+    def funcforward(self, name):
+        def f(*args, **kwargs):
+            return getattr(self.using, name)(*args, **kwargs)
+        return f
+    
+    def gvar(self, name):
+        def f():
+            return getattr(self.using, name)
+        return f
+    
+    def createPropGetter(self, name):
+        def f():
+            pass
+        return f
+    
+    def createPropSetter(self, name):
+        def f():
+            pass
+        return f
+
+    @Property(str)
+    def FAKE(self):
+        return "FAKE"
+    
+    
+    def __dir__(self):
+        return dir(self.using)
+
 
 @QmlElement
 class Interactions(QObject):
@@ -134,7 +186,6 @@ class Interactions(QObject):
             self._value = 0
             
         self.queueModel_ = universal.queueInstance.queueModel
-        self.fakequeue = Queue()
         
         self._currentSongCover = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=10)
         universal.queueInstance.songChanged.connect(self.changeSongKImage)
@@ -182,13 +233,15 @@ class Interactions(QObject):
     
     @Property(QObject, notify=songChanged)
     def currentSong(self):
-        return universal.queueInstance.currentSongObject
+        f = FakeQObj(universal.queueInstance.currentSongObject)
+        
+        return f
     
     @Property(bool, notify=playingStatusChanged)
     def isPlaying(self):
         return universal.queueInstance.isPlaying
     
-
+    
     
     @Slot(str)
     def searchPress(self, id: str):
@@ -226,3 +279,17 @@ class Interactions(QObject):
         smodule = universal.song_module
         song = smodule.Song(id)
         universal.asyncBgworker.add_job_sync(song.download)
+    
+    # convenience functions for interacting with the song class
+    # all functions will take in an ID
+    @Slot(str)
+    def getSongDownloadStatus(self, id: str):
+        smodule = universal.song_module
+        song = smodule.Song(id)
+        return song.downloadStatus
+    
+    @Slot(str)
+    def getSongDownloadProgress(self, id: str):
+        smodule = universal.song_module
+        song = smodule.Song(id)
+        return song.downloadProgress
