@@ -19,10 +19,6 @@ Item {
     property bool settingsButton: true
     property QtObject song: Interactions.currentSong
 
-    onSongChanged: {
-        console.log("Song changed");
-        song.test();
-    }
     ColObjs.ColRect {
         id: songbarBackground
         width: parent.width

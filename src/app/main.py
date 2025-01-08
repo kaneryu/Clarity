@@ -10,10 +10,11 @@ from PySide6.QtCore import (
     QTimer,
 )
 
-from PySide6.QtCore import Slot as Slot, QDir
+from PySide6.QtCore import Slot as Slot, QDir, QCoreApplication, Qt
 from PySide6.QtGui import QIcon, QFont, QFontDatabase
 from PySide6.QtQml import (
     QQmlApplicationEngine,
+    QQmlDebuggingEnabler,
 )
 from PySide6.QtCore import Property as Property
 from PySide6.QtWidgets import QApplication
@@ -41,6 +42,9 @@ def appQuitOverride():
 def main():
     global app, engine, backend, theme
 
+    # QQmlDebuggingEnabler.enableDebugging(True)
+    # print("Starting debug server")
+    # QQmlDebuggingEnabler.startTcpDebugServer(52150, QQmlDebuggingEnabler.StartMode.DoNotWaitForClient, "localhost")
     app = QApplication()
     app.setStyle("Material")
     app.aboutToQuit.connect(appQuitOverride)

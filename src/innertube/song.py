@@ -153,6 +153,8 @@ class Song(QObject):
         self.rawPlaybackInfo = None
         self.playbackInfo = None
         self._initialized = True
+        
+        self.moveToThread(g.mainThread)
         return None
     
     
@@ -393,7 +395,8 @@ class Song(QObject):
             print("Download complete")
             datastore.close_write_file(key=self.id, ext=ext, file=file)
             self.downloadStatus = DownloadStatus.DOWNLOADED
-            self.downlaoded = True
+            self.downloadProgress = 100
+            self.downloaded = True
             
     async def download(self, audio = True) -> None:
         """
@@ -722,11 +725,15 @@ class Queue(QObject):
         """This function takes in a new MRL (for the same audio), and migrates the current song to that MRL, while trying to minimize interruptions.
         """
         newMedia = self.instance.media_new(MRL)
+        print("Migrating")
         self.player.pause()
         t = self.player.get_time()
+        print("Time:", t)
         self.player.set_media(newMedia)
-        self.player.set_time(t)
         self.player.play()
+        self.player.set_time(t)
+        print("Migrated")
+        print("Time:", self.player.get_time())
         
         
     

@@ -13,7 +13,7 @@ from PySide6.QtCore import Slot as Slot
 from PySide6.QtQml import (
     QmlElement,
 )
-from PySide6.QtCore import Property as QProperty
+from PySide6.QtCore import Property as QProperty, QMetaMethod, QMetaObject, Qt, QAbstractListModel
 
 import src.universal as universal
 
@@ -32,9 +32,9 @@ class FwdVar:
                 return str(self.var())
             except:
                 return ""
+            
 
 class FakeSong(QObject):
-    
     idChanged = Signal(str)
     sourceChanged = Signal(str)
     downloadedChanged = Signal(bool)
@@ -50,6 +50,20 @@ class FakeSong(QObject):
         self.target.downloadedChanged.connect(self.downloadedChanged)
         self.target.downloadStatusChanged.connect(self.downloadStatusChanged)
         self.target.downloadProgressChanged.connect(self.downloadProgressChanged)
+        
+        self.target.idChanged.connect(lambda: self.update("id"))
+        self.target.sourceChanged.connect(lambda: self.update("source"))
+        self.target.downloadedChanged.connect(lambda: self.update("downloaded"))
+        self.target.downloadStatusChanged.connect(lambda: self.update("downloadStatus"))
+        self.target.downloadProgressChanged.connect(lambda: self.update("downloadProgress"))
+        
+        self._id = self.target.id
+        self._source = self.target.source
+        self._downloaded = self.target.downloaded
+        self._downloadStatus = self.target.downloadStatus
+        self._downloadProgress = self.target.downloadProgress
+        
+        
         
         self.moveToThread(universal.mainThread)
         self.setParent(parent)
@@ -91,47 +105,28 @@ class FakeSong(QObject):
         
     @QProperty(str, notify=idChanged)
     def id(self) -> str:
-        return self.target.id
-
-    @id.setter
-    def id(self, value: str) -> None:
-        self.target.id = value
+        return self._id
 
     @QProperty(str, notify=sourceChanged)
     def source(self) -> str:
-        return self.target.source
-
-    @source.setter
-    def source(self, value: str) -> None:
-        self.target.source = value
+        return self._source
 
     @QProperty(bool, notify=downloadedChanged)
     def downloaded(self) -> bool:
-        return self.target.downloaded
-
-    @downloaded.setter
-    def downloaded(self, value: bool) -> None:
-        self.target.downloaded = value
+        return self._downloaded
 
     @QProperty(enum.Enum, notify=downloadStatusChanged)
     def downloadStatus(self) -> enum.Enum:
-        return self.target.downloadStatus
-
-    @downloadStatus.setter
-    def downloadStatus(self, value: enum.Enum) -> None:
-        self.target.downloadStatus = value
+        return self._downloadStatus
 
     @QProperty(int, notify=downloadProgressChanged)
     def downloadProgress(self) -> int:
-        return self.target.downloadProgress
-
-    @downloadProgress.setter
-    def downloadProgress(self, value: int) -> None:
-        self.target.downloadProgress = value
+        return self._downloadProgress
     
     
     @Slot()
     def test(self):
         print("test")
     
-    
+    def update(self, name):
+        setattr(self, "_"+name, getattr(self.target, name))

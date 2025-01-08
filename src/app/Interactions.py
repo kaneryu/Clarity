@@ -8,7 +8,7 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtCore import Signal as Signal
-from PySide6.QtCore import Slot as Slot
+from PySide6.QtCore import Slot as Slot, QMetaObject, Qt
 from PySide6.QtQml import (
     QmlElement,
 )
@@ -83,10 +83,9 @@ class Interactions(QObject):
     @Property(QObject, notify=songChanged)
     def currentSong(self):
         f: universal.song_module.Song = Interfaces.FakeSong(universal.queueInstance.currentSongObject, self)
-        
-        f.downloadProgressChanged.connect(lambda: print("download progress changed"))
-        f.downloadStatusChanged.connect(lambda: print("download status changed"))
-        print(f.title)
+        print(f.thread())
+        print(universal.mainThread)
+        print(universal.queueInstance.currentSongObject.thread())
         return f
     
     @Property(bool, notify=playingStatusChanged)
