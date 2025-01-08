@@ -110,14 +110,18 @@ class Song(QObject):
     
     _instances = {}
     
-    def __new__(cls, id: str = "", givenInfo: dict = {"None": None}, cache: object = None):
-        if id in cls._instances:
-            return cls._instances[id]
-        instance = super(Song, cls).__new__(cls, id, givenInfo)
-        cls._instances[id] = instance
-        return instance
+    def __new__(cls, id: str = "", givenInfo: dict = {"None": None}, fs: bool = False) -> object:
+        # fs refers to the fakesong override
+        if not fs:
+            if id in cls._instances:
+                return cls._instances[id]
+            instance = super(Song, cls).__new__(cls, id, givenInfo)
+            cls._instances[id] = instance
+            return instance
+        else:
+            return super(Song, cls).__new__(cls)
     
-    def __init__(self, id: str = "", givenInfo: dict = {"None": None}) -> None:
+    def __init__(self, id: str = "", givenInfo: dict = {"None": None}, fs: bool = False) -> None:
         """
         A class that represents a youtube music song.
         To actually get the info of the song, use the get_info_short or get_info_full method after initializing the class, or set auto_get_info to True.
@@ -246,7 +250,7 @@ class Song(QObject):
         self.rectangleThumbnailUrl: str = self.rectangleThumbnail["url"]
         
         self.fullUrl: str = self.rawMicroformatData["microformatDataRenderer"]["urlCanonical"]
-        self.description: bytes = self.rawMicroformatData["microformatDataRenderer"]["description"]
+        self.description: str = self.rawMicroformatData["microformatDataRenderer"]["description"]
     
         self.tags: list = self.rawMicroformatData["microformatDataRenderer"]["tags"]
         
@@ -414,6 +418,10 @@ class Song(QObject):
             url = video["url"]
             ext = video["ext"]
             
+        q: Queue = Queue()
+        if q.currentSongObject == self:
+            q.migrate(url)
+            
         if datastore.checkFileExists(self.id):
             datastore.delete(self.id)
 
@@ -427,13 +435,13 @@ class Song(QObject):
             str: Path or URL
         """
         if self.downloaded or self.downloadStatus == DownloadStatus.DOWNLOADED:
-            print("Asked for MRL; returning path")
+            # print("Asked for MRL; returning path")
             return cacheManager.getdataStore("song_datastore").getFilePath(self.id)
         else:
             if not self.playbackInfo:
                 print("No playback info")
                 return None
-            print("Asked for MRL; returning URL")
+            # print("Asked for MRL; returning URL")
             return self.playbackInfo["audio"][-1]["url"]
         
             
@@ -525,8 +533,10 @@ class Queue(QObject):
         return cls.instance
         
     def __init__(self):
+        if hasattr(self, 'initialized'):
+            return
         super().__init__()
-        
+        self.initialized = True
 
         self._pointer = 0
         
@@ -599,8 +609,6 @@ class Queue(QObject):
     @QProperty(int, notify=pointerMoved)
     def pointer(self):
         return self._pointer
-    
-
         
     @pointer.setter
     def pointer(self, value):
@@ -696,27 +704,31 @@ class Queue(QObject):
     @Slot()
     def play(self):
         
-        def Media(url):
-            media: vlc.Media = self.instance.media_new(url)
-            print(1)
+        def Media(mrl):
+            media: vlc.Media = self.instance.media_new(mrl)
             media.add_option("http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Herring/97.1.8280.8")
-            print(2)
             media.add_option("http-referrer=https://www.youtube.com/")
-            print(3)
             return media
 
         self.songChanged.emit()
-        print(4)
         url = self.queue[self.pointer].get_best_playback_MRL()
-        print(5)
         if not self.player.get_media() == None:
             self.player.stop()
-            print(6)
             
         self.player.set_media(Media(url))
-        print(7)
         self.player.play()
-        print(8)
+    
+    def migrate(self, MRL):
+        """This function takes in a new MRL (for the same audio), and migrates the current song to that MRL, while trying to minimize interruptions.
+        """
+        newMedia = self.instance.media_new(MRL)
+        self.player.pause()
+        t = self.player.get_time()
+        self.player.set_media(newMedia)
+        self.player.set_time(t)
+        self.player.play()
+        
+        
     
     @Slot()
     def stop(self):

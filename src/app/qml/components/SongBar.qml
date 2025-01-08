@@ -19,6 +19,10 @@ Item {
     property bool settingsButton: true
     property QtObject song: Interactions.currentSong
 
+    onSongChanged: {
+        console.log("Song changed");
+        song.test();
+    }
     ColObjs.ColRect {
         id: songbarBackground
         width: parent.width
@@ -85,7 +89,7 @@ Item {
 
             TextVariant.Small {
                 id: songTitle
-                text: Interactions.currentSongTitle + " - " + Interactions.currentSongChannel
+                text: root.song.title + " - " + root.song.artist
 
                 color: Theme.onSurface
             }
