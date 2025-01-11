@@ -121,7 +121,7 @@ class Song(QObject):
         else:
             return super(Song, cls).__new__(cls)
     
-    def __init__(self, id: str = "", givenInfo: dict = {"None": None}, fs: bool = False) -> None:
+    def __init__(self, id: str = "", givenInfo: dict = {"None": None}, fs: bool = False) -> "Song":
         """
         A class that represents a youtube music song.
         To actually get the info of the song, use the get_info_short or get_info_full method after initializing the class, or set auto_get_info to True.
@@ -793,15 +793,17 @@ class Queue(QObject):
         }
     
     def add(self, id: str, index: int = -1):
-        s = Song(id = id)
+        s: Song = Song(id = id)
         coro = s.get_info(g.asyncBgworker.API)
         future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
         future.result() # wait for the result
-        s.get_playback()
         
-        self.queue.append(s)
-        self.queueIds.append(id)
-        
+        g.bgworker.add_job(self.finishAdd, s)
+
+    def finishAdd(self, song: Song):
+        song.get_playback()
+        self.queue.append(song)
+        self.queueIds.append(song.id)
     
     def _seek(self, time: int):
         if time < 0 or time > self.player.get_length() / 1000:

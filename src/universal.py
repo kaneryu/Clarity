@@ -37,6 +37,10 @@ globalCache = cacheManager_module.CacheManager(name="cache", directory=os.path.j
 songCache = cacheManager_module.CacheManager(name="songs_cache", directory=os.path.join(datapath, "songs_cache"))
 imageCache = cacheManager_module.CacheManager(name="images_cache", directory=os.path.join(datapath, "images_cache"))
 
+asyncBgworker.add_job_sync(globalCache.collect)
+asyncBgworker.add_job_sync(songCache.collect)
+asyncBgworker.add_job_sync(imageCache.collect)
+
 songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(datapath, "song_datastore"))
 
 song_module.DATASTORE_MODULE = dataStore_module

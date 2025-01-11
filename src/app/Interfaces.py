@@ -123,10 +123,11 @@ class FakeSong(QObject):
     def downloadProgress(self) -> int:
         return self._downloadProgress
     
-    
     @Slot()
     def test(self):
         print("test")
     
     def update(self, name):
         setattr(self, "_"+name, getattr(self.target, name))
+        exec("self."+name+"Changed.emit(getattr(self, '_"+name+"'))")
+        print("updating", name, "to", getattr(self, "_"+name))

@@ -38,7 +38,6 @@ class BackgroundWorker(threading.Thread):
         asyncio.run(fun(*args, **kwargs))
     
     def run_sync(self, fun, *args, **kwargs):
-        print("running func", fun, args, kwargs)
         try:
             fun(*args, **kwargs)
         except Exception as e:
