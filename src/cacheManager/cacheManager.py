@@ -342,7 +342,7 @@ class CacheManager:
         self._print("collecting expired items", ErrorLevel.INFO)
         now = time.time()
         
-        keys_to_delete = [key for key in list(self.metadata.keys()) if self.metadata[key].get("expiration", -1) < now]
+        keys_to_delete = [key for key in list(self.metadata.keys()) if (-1 if self.metadata[key].get("expiration", -1) == None else self.metadata[key].get("expiration", -1)) < now]
     
         for key in keys_to_delete:
             self._print(f"deleting key {key} because it expired", ErrorLevel.INFO)
