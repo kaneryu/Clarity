@@ -9,7 +9,6 @@ from typing import Union
 import asyncio
 import src.universal as universal
 
-# import song
 from PySide6.QtCore import QObject, Signal, QAbstractListModel, QModelIndex, Qt, Property
 
 
@@ -70,7 +69,9 @@ class BasicSearchResultsModel(QAbstractListModel):
         if role == Qt.ItemDataRole.UserRole + 4:
             return data["duration"]
         if role == Qt.ItemDataRole.UserRole + 5:
-            return data["thumbnail"]
+            if not data["thumbnail"]:
+                return None
+            return universal.KImageProxy(data["thumbnail"], self)
         if role == Qt.ItemDataRole.UserRole + 6:
             return data["parentId"]
         return None

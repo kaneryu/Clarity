@@ -1,4 +1,4 @@
-from PySide6.QtCore import QUrl, Qt, QObject, Signal as QSignal, Slot as QSlot, Property as QProperty, QThread
+from PySide6.QtCore import QUrl, Qt, QObject, Signal, Slot, Property as QProperty, QThread
 import httpx
 import os
 import mimetypes
@@ -46,8 +46,8 @@ class Status(StrEnum):
 class KImage(QObject):
     """An image object that downloads the image in another thread, making a placeholder available immediately.
     """
-    statusChanged = QSignal(str)
-    imageChanged = QSignal(str)
+    statusChanged = Signal(str)
+    imageChanged = Signal(str)
     
     def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 10):
         super().__init__(parent)
@@ -62,7 +62,7 @@ class KImage(QObject):
         if not deffered:
             self.beginDownload()
     
-    @QSlot()
+    @Slot()
     def download(self):
         self.beginDownload()
         
@@ -164,3 +164,33 @@ class KImage(QObject):
         
         asyncBgworker.add_job_sync(func=self.imageDownload, url=self._url, id=id)
         self.status = Status.WAITING
+        
+class KImageProxy(QObject):
+    imageChanged = Signal(str)
+    statusChanged = Signal(str)
+    def __init__(self, target: KImage, parent: QObject) -> None:
+        super().__init__()
+        self.target = target
+        self.target.imageChanged.connect(self.imageChanged)
+        self.target.statusChanged.connect(self.statusChanged)
+        
+        self._image = self.target.image
+        self._status = self.target.status
+        
+        self.target.imageChanged.connect(lambda: self.update("image"))
+        self.target.statusChanged.connect(lambda: self.update("status"))
+        
+        self.moveToThread(mainThread)
+        self.setParent(parent)
+    
+    def update(self, name):
+        setattr(self, "_"+name, getattr(self.target, name))
+        exec("self."+name+"Changed.emit(getattr(self, '_"+name+"'))")
+    
+    @QProperty(str, notify=imageChanged)
+    def image(self):
+        return self._image
+    
+    @QProperty(str, notify=statusChanged)
+    def status(self):
+        return self._status

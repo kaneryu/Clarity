@@ -468,13 +468,109 @@ class Song(QObject):
         self.lyrics = await self.api.get_lyrics(self.id)
         return self.lyrics
 
+
+class SongProxy(QObject):
+    idChanged = Signal(str)
+    sourceChanged = Signal(str)
+    downloadedChanged = Signal(bool)
+    downloadStatusChanged = Signal(enum.Enum)
+    downloadProgressChanged = Signal(int)
+    
+    def __init__(self, target: Song, parent: QObject) -> None:
+        super().__init__()
+        self.target = target
+        
+        self.target.idChanged.connect(self.idChanged)
+        self.target.sourceChanged.connect(self.sourceChanged)
+        self.target.downloadedChanged.connect(self.downloadedChanged)
+        self.target.downloadStatusChanged.connect(self.downloadStatusChanged)
+        self.target.downloadProgressChanged.connect(self.downloadProgressChanged)
+        
+        self.target.idChanged.connect(lambda: self.update("id"))
+        self.target.sourceChanged.connect(lambda: self.update("source"))
+        self.target.downloadedChanged.connect(lambda: self.update("downloaded"))
+        self.target.downloadStatusChanged.connect(lambda: self.update("downloadStatus"))
+        self.target.downloadProgressChanged.connect(lambda: self.update("downloadProgress"))
+        
+        self._id = self.target.id
+        self._source = self.target.source
+        self._downloaded = self.target.downloaded
+        self._downloadStatus = self.target.downloadStatus
+        self._downloadProgress = self.target.downloadProgress
+        
+        
+        
+        self.setParent(parent)
+
+                    
+    def createPropGetter(self, name):
+        def getter(self):
+            return getattr(self.target, name)
+        return getter
+    
+    def createPropSetter(self, name):
+        def setter(value):
+            setattr(self.target, name, value)
+        return setter
+    
+    def __getattr__(self, name):
+        # Forward any unknown attribute access to target
+        return getattr(self.target, name)
+    
+    @QProperty(str, constant=True)
+    def title(self) -> str:
+        return self.target.title
+    
+    @QProperty(str, constant=True)
+    def artist(self) -> str:
+        return self.target.artist
+    
+    @QProperty(str, constant=True)
+    def description(self) -> str:
+        return self.target.description
+    
+    @QProperty(str, constant=True)
+    def uploadDate(self) -> str:
+        return self.target.uploadDate
+    
+    @QProperty(str, constant=True)
+    def views(self) -> str:
+        return self.target.views
+        
+    @QProperty(str, notify=idChanged)
+    def id(self) -> str:
+        return self._id
+
+    @QProperty(str, notify=sourceChanged)
+    def source(self) -> str:
+        return self._source
+
+    @QProperty(bool, notify=downloadedChanged)
+    def downloaded(self) -> bool:
+        return self._downloaded
+
+    @QProperty(enum.Enum, notify=downloadStatusChanged)
+    def downloadStatus(self) -> enum.Enum:
+        return self._downloadStatus
+
+    @QProperty(int, notify=downloadProgressChanged)
+    def downloadProgress(self) -> int:
+        return self._downloadProgress
+    
+    @Slot()
+    def test(self):
+        print("test")
+    
+    def update(self, name):
+        setattr(self, "_"+name, getattr(self.target, name))
+        exec("self."+name+"Changed.emit(getattr(self, '_"+name+"'))")
+
 class LoopType(enum.Enum):
     """Loop Types"""
     NONE = 0 # Halt after playing all songs
     SINGLE = 1 # Repeat the current song
     ALL = 2 # Repeat all songs in the queue
     
-
 class QueueModel(QAbstractListModel):
     def __init__(self):
         super().__init__()
