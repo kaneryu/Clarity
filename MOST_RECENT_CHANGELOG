@@ -12,3 +12,4 @@
 - fix bug where QML didn't recive the song object properly -- kaneryu on 2025-01-08
 - Try another fix for random application crashes because trying to access Song in different thread -- kaneryu on 2025-01-08
 - Speed up setqueue by a bit -- kaneryu on 2025-01-11
+- Yet another try to fix random application crashes, using an interface to access KImage living in different thread -- kaneryu on 2025-01-11
