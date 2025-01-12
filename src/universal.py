@@ -15,7 +15,7 @@ from PySide6.QtCore import QThread
 
 from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_BackgroundWorker
 
-from src.app.KImage import KImage, Placeholders, Status
+from src.app.KImage import KImage, Placeholders, Status, KImageProxy
 from .AppUrl import AppUrl, appUrl
 try:
     with open("version.txt") as f:
