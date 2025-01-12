@@ -54,7 +54,7 @@ class Interactions(QObject):
 
     @Property(QObject, constant=True)
     def currentSongCover(self):
-        return self._currentSongCover
+        return Interfaces.KImageProxy(self._currentSongCover, self)
     
     @Property(str, notify=songChanged)
     def currentSongTitle(self):
@@ -82,7 +82,7 @@ class Interactions(QObject):
     
     @Property(QObject, notify=songChanged)
     def currentSong(self):
-        f: universal.song_module.Song = Interfaces.FakeSong(universal.queueInstance.currentSongObject, self)
+        f: universal.song_module.Song = Interfaces.SongProxy(universal.queueInstance.currentSongObject, self)
         print(f.thread())
         print(universal.mainThread)
         print(universal.queueInstance.currentSongObject.thread())

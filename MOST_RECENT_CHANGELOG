@@ -11,3 +11,4 @@
 - Fix random application crash by not directly accessing song object that lives in a different thread using QML. -- kaneryu on 2025-01-07
 - fix bug where QML didn't recive the song object properly -- kaneryu on 2025-01-08
 - Try another fix for random application crashes because trying to access Song in different thread -- kaneryu on 2025-01-08
+- Speed up setqueue by a bit -- kaneryu on 2025-01-11

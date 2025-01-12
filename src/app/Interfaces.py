@@ -1,3 +1,9 @@
+"""This module contains the interfaces for the QML objects to interact with the Python objects.
+These are read only interfaces, and may not implement all functions (thoguh they should implement all properties).
+
+You should be able to use the objects direcly in python as it seems that python interacts with different-threaded QObjects just fine.
+"""
+
 # stdlib imports
 import json
 import inspect
@@ -34,7 +40,7 @@ class FwdVar:
                 return ""
             
 
-class FakeSong(QObject):
+class SongProxy(QObject):
     idChanged = Signal(str)
     sourceChanged = Signal(str)
     downloadedChanged = Signal(bool)
@@ -131,3 +137,35 @@ class FakeSong(QObject):
         setattr(self, "_"+name, getattr(self.target, name))
         exec("self."+name+"Changed.emit(getattr(self, '_"+name+"'))")
         print("updating", name, "to", getattr(self, "_"+name))
+
+class KImageProxy(QObject):
+    imageChanged = Signal(str)
+    statusChanged = Signal(str)
+    def __init__(self, target: universal.KImage, parent: QObject) -> None:
+        super().__init__()
+        self.target = target
+        self.target.imageChanged.connect(self.imageChanged)
+        self.target.statusChanged.connect(self.statusChanged)
+        
+        self._image = self.target.image
+        self._status = self.target.status
+        
+        self.target.imageChanged.connect(lambda: self.update("image"))
+        self.target.statusChanged.connect(lambda: self.update("status"))
+        
+        self.moveToThread(universal.mainThread)
+        self.setParent(parent)
+    
+    def update(self, name):
+        setattr(self, "_"+name, getattr(self.target, name))
+        exec("self."+name+"Changed.emit(getattr(self, '_"+name+"'))")
+        print("updating", name, "to", getattr(self, "_"+name))
+    
+    @QProperty(str, notify=imageChanged)
+    def image(self):
+        return self._image
+    
+    @QProperty(str, notify=statusChanged)
+    def status(self):
+        return self._status
+    
