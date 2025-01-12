@@ -1,3 +1,11 @@
+# Version 0.15
+
+## New Features
+
+- Song no longer downloads playback info from internet if it's already downloaded -- kaneryu on 2025-01-11
+
+
+
 # Version 0.14
 
 ## New Features

@@ -36,7 +36,6 @@ async def convertToCover(link: str, radius: int, size: int):
 
 
 async def convertToCover_path(path: str, radius: int, size: int = -100, identify: str = ""):
-    print("converting to cover, ", getCache("images_cache"))
     """takes in a path, crops it to a square, rounds the corners, and returns the key to the image in the cache"""
     identifier = ghash(path + str(radius) + str(size))
     image = Image.open(path)
@@ -54,7 +53,6 @@ async def convertToCover_path(path: str, radius: int, size: int = -100, identify
     image_bytes = buffer.getvalue()
     
     cache = getCache("images_cache")
-    print("cache is", cache)
     
     if identify:
         path = cache.getKeyPath(cache.put(ghash(identify), image_bytes, byte=True, filext='.png', expiration=None))

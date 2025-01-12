@@ -1,15 +1,5 @@
-# Version 0.14
+# Version 0.15
 
 ## New Features
 
-- Add song downloading -- kaneryu on 2025-01-06
-
-## Bugfixes
-
-- fix None in coverconvert caused by imageCache being set too early -- kaneryu on 2025-01-06
-- try a fix for no corner radius showing in the songbar image -- kaneryu on 2025-01-06
-- Fix random application crash by not directly accessing song object that lives in a different thread using QML. -- kaneryu on 2025-01-07
-- fix bug where QML didn't recive the song object properly -- kaneryu on 2025-01-08
-- Try another fix for random application crashes because trying to access Song in different thread -- kaneryu on 2025-01-08
-- Speed up setqueue by a bit -- kaneryu on 2025-01-11
-- Yet another try to fix random application crashes, using an interface to access KImage living in different thread -- kaneryu on 2025-01-11
+- Song no longer downloads playback info from internet if it's already downloaded -- kaneryu on 2025-01-11
