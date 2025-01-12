@@ -114,7 +114,6 @@ class KImage(QObject):
             self.image = image
             return
         
-        print("downloading image")
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(url)

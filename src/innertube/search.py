@@ -31,7 +31,6 @@ class BasicSearchResultsModel(QAbstractListModel):
         # self.dataChanged.connect(self.log)
     
     def rowCount(self, parent: QModelIndex = QModelIndex()):
-        print("asked for rowcount")
         return len(self._data)
     
     def columnCount(self, parent: QModelIndex = QModelIndex()):

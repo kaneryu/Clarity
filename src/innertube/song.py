@@ -214,7 +214,6 @@ class Song(QObject):
         Gets the info of the song.
         """
         api: ytm.YTMusic = api
-        print(self.id)
         c = cacheManager.getCache("songs_cache")
         identifier = self.id + "_info"
         self.rawdata = c.get(identifier)
@@ -456,7 +455,6 @@ class Song(QObject):
             return cacheManager.getdataStore("song_datastore").getFilePath(self.id)
         else:
             if not self.playbackInfo:
-                print("No playback info")
                 return None
             # print("Asked for MRL; returning URL")
             return self.playbackInfo["audio"][-1]["url"]
@@ -484,7 +482,6 @@ class QueueModel(QAbstractListModel):
         self._queue = []
 
     def rowCount(self, parent=QModelIndex()):
-        print("asked for rowCount")
         return len(self._queue)
 
     def count(self):
@@ -492,8 +489,6 @@ class QueueModel(QAbstractListModel):
     
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.DisplayRole and index.isValid():
-            print("returning data at", index.row())
-            print("data:", self._queue[index.row()])
             return self._queue[index.row()]
         return None
 
