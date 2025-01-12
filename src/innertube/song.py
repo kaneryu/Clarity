@@ -6,7 +6,7 @@ import io
 import enum
 import requests
 from concurrent.futures import ThreadPoolExecutor
-import ctypes
+import os
 
 from PySide6.QtCore import QObject, Signal, Slot, Qt, Property as QProperty, QThread
 from PySide6.QtCore import QAbstractListModel, QModelIndex
@@ -286,7 +286,18 @@ class Song(QObject):
         
         # open("playbackinfo.json", "w").write(json.dumps(self.rawPlaybackInfo))
         
-    def get_playback(self):
+    def get_playback(self, skip_download = False) -> None:
+        
+        if self.downloaded and not skip_download:
+            try:
+                fp = cacheManager.getdataStore("song_datastore").getFilePath(self.id)
+                meta = json.loads(cacheManager.getdataStore("song_datastore").get_file(self.id + "_downloadMeta"))
+                meta["url"] = fp
+                self.playbackInfo = {"audio": [meta], "fromdownload": True}
+                return
+            except Exception:
+                # temporary fix since some files were downloaded before the meta was saved
+                pass
         
         if not self.rawPlaybackInfo:
             self.download_playbackInfo()
@@ -350,7 +361,7 @@ class Song(QObject):
         c.delete(identifier)
         self.rawPlaybackInfo = None
         
-        self.get_playback()
+        self.get_playback(skip_download = True)
     
         
     def download_chunk(self, url, headers, file, start, end):
@@ -405,21 +416,23 @@ class Song(QObject):
         datastore = cacheManager.getdataStore("song_datastore")
         if not self.playbackInfo:
             self.get_playback()
-        
+        elif self.playbackInfo.get("fromdownload", False):
+            self.purge_playback()
+            
         audio = self.playbackInfo["audio"]
         video = self.playbackInfo["video"]
         
         audio = audio[-1]
         video = video[-1]
-        
-        
-        print(audio)
+    
         if audio:
             url = audio["url"]
             ext = audio["ext"]
+            using = audio
         else:
             url = video["url"]
             ext = video["ext"]
+            using = video
             
         q: Queue = Queue()
         if q.currentSongObject == self:
@@ -428,6 +441,7 @@ class Song(QObject):
         if datastore.checkFileExists(self.id):
             datastore.delete(self.id)
 
+        datastore.write_file(json.dumps(using), key=self.id + "_downloadMeta", ext="json", bytes=False)
         await self.download_with_progress(url, datastore, ext, self.id)
     
     
