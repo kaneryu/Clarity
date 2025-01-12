@@ -55,7 +55,7 @@ class KImage(QObject):
         self._url = url
         self._image = None
         self._status = Status.INITIALIZING
-        self.moveToThread(mainThread)
+        # self.moveToThread(mainThread)
         
         self.cover = cover
         self.radius = radius
@@ -98,7 +98,7 @@ class KImage(QObject):
     async def imageDownload(self, url: str = "", id: str = ""):
         if id:
             api = asyncBgworker.API
-            song_ = song.Song(id)
+            song_: song.Song = song.Song(id)
             await song_.get_info(api)
             url = song_.largestThumbailUrl
             
