@@ -17,7 +17,7 @@ Item {
     height: parent.height
     visible: true
     property bool settingsButton: true
-    property QtObject song: Interactions.currentSong
+    property QtObject song
 
     Connections {
         target: Interactions

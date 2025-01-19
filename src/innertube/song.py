@@ -360,6 +360,12 @@ class Song(QObject):
         c.delete(identifier)
         self.rawPlaybackInfo = None
         
+        if self.downloaded:
+            cacheManager.getdataStore("song_datastore").delete(self.id)
+            cacheManager.getdataStore("song_datastore").delete(self.id + "_downloadMeta")
+            self.downloaded = False
+            self.downloadStatus = DownloadStatus.NOT_DOWNLOADED
+            
         self.get_playback(skip_download = True)
     
         
