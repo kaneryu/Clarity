@@ -438,13 +438,10 @@ class Song(QObject):
             str: Path or URL
         """
         if self.downloaded or self.downloadStatus == DownloadStatus.DOWNLOADED:
-            print("Asked for MRL; returning path")
             return cacheManager.getdataStore("song_datastore").getFilePath(self.id)
         else:
             if not self.playbackInfo:
-                print("No playback info")
                 return None
-            print("Asked for MRL; returning URL")
             return self.playbackInfo["audio"][-1]["url"]
         
             

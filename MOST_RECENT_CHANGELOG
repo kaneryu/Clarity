@@ -7,3 +7,4 @@
 ## Bugfixes
 
 - Fix searchModel returning KImage living in different thread -- kaneryu on 2025-01-11
+- fix multiple bugs related to downloading songs -- kaneryu on 2025-01-19

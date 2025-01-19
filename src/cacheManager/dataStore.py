@@ -373,7 +373,6 @@ class DataStore:
             str: The path of the file on disk
         """
         
-        print("getFilePath", key)
         print(self.__dataStore_path_map[key])
         
         if not key in self.__dataStore_path_map:
