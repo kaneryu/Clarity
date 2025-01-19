@@ -19,6 +19,13 @@ Item {
     property bool settingsButton: true
     property QtObject song: Interactions.currentSong
 
+    Connections {
+        target: Interactions
+        onSongChanged: {
+            song = Interactions.currentSong
+        }
+    }
+
     ColObjs.ColRect {
         id: songbarBackground
         width: parent.width

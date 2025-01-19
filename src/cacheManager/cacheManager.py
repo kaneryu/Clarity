@@ -267,7 +267,7 @@ class CacheManager:
             key (str): The key used to refer to the item. The key *should not* contain a file extension. It will break things.
         """
         if key in self.__cache_path_map:
-            self.statistics["size"] -= self.metadata[key]["size"]
+            self.statistics["size"] -= self.metadata[key].get("size", 0)
             self.statistics["deletions"] += 1
             if os.path.exists(self.__cache_path_map[key]):
                     os.remove(self.__cache_path_map[key])
