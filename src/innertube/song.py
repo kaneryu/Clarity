@@ -440,7 +440,7 @@ class Song(QObject):
         if datastore.checkFileExists(self.id):
             datastore.delete(self.id)
 
-        datastore.write_file(json.dumps(using), key=self.id + "_downloadMeta", ext="json", bytes=False)
+        datastore.write_file(key=self.id + "_downloadMeta", value=json.dumps(using), ext="json", byte=False)
         await self.download_with_progress(url, datastore, ext, self.id)
     
     
@@ -497,8 +497,6 @@ class SongProxy(QObject):
         self._downloaded = self.target.downloaded
         self._downloadStatus = self.target.downloadStatus
         self._downloadProgress = self.target.downloadProgress
-        
-        
         
         self.setParent(parent)
 
@@ -679,7 +677,7 @@ class Queue(QObject):
         self.songChanged.connect(self.playingStatusChanged)
         self.playingStatusChanged.connect(lambda: print("Playing Status Changed"))
         
-        
+        self.purgetries = {}
 
     @QProperty(list, notify=queueChanged)
     def queue(self):
@@ -787,7 +785,13 @@ class Queue(QObject):
         g.bgworker.add_job(self.refetch)
     
     def refetch(self):
-        self.queue[self.pointer].purge_playback()
+        self.purgetries[self.queueIds[self.pointer]] = self.purgetries.get(self.queueIds[self.pointer], 0) + 1
+        if self.purgetries[self.queueIds[self.pointer]] > 1:
+            print("Purge Failed")
+            self.stop()
+            return
+        else:
+            self.queue[self.pointer].purge_playback()
         self.play()
     
     @Slot(str)
@@ -829,17 +833,13 @@ class Queue(QObject):
     def migrate(self, MRL):
         """This function takes in a new MRL (for the same audio), and migrates the current song to that MRL, while trying to minimize interruptions.
         """
+        paused = self.player.is_playing() == 0
         newMedia = self.instance.media_new(MRL)
-        print("Migrating")
         self.player.pause()
         t = self.player.get_time()
-        print("Time:", t)
         self.player.set_media(newMedia)
-        self.player.play()
+        self.player.play() if not paused else self.player.pause()
         self.player.set_time(t)
-        print("Migrated")
-        print("Time:", self.player.get_time())
-        
         
     
     @Slot()

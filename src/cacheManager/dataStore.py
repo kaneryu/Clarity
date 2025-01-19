@@ -195,8 +195,8 @@ class DataStore:
         dictmode = False if not isinstance(value, dict) else True
         byte = byte or isinstance(value, bytes)
 
-            
-        if setres := self.__setup(key, value, byte, ext) == False:
+        setres = self.__wfsetup(key, value, byte, ext)
+        if setres == False:
             return False
         
         byte, ext = setres

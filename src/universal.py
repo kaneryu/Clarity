@@ -7,7 +7,7 @@ import asyncio
 import types
 from hashlib import md5
 import time
-import inspect
+import builtins
 import versions
 import os
 
@@ -17,6 +17,15 @@ from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_Background
 
 from src.app.KImage import KImage, Placeholders, Status, KImageProxy
 from .AppUrl import AppUrl, appUrl
+
+oldprint = builtins.print
+def nprint(*args, **kwargs):
+    mythread = threading.current_thread()
+    time_  = time.strftime("%H:%M:%S")
+    oldprint(time_, mythread, *args, **kwargs)
+    return args
+builtins.print = nprint
+
 try:
     with open("version.txt") as f:
         version = versions.Version(f.read().strip())
@@ -25,7 +34,7 @@ except FileNotFoundError:
     version = versions.Version("0.0.0")
     
 print("InnerTune version", version)
-input()
+# input()
 
 def ghash(thing):
     # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
