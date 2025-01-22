@@ -17,14 +17,14 @@ Item {
     height: parent.height
     visible: true
     property bool settingsButton: true
-    property QtObject song
+    property QtObject song: Interactions.currentSong
 
-    Connections {
-        target: Interactions
-        onSongChanged: {
-            song = Interactions.currentSong
-        }
-    }
+    // Connections {
+    //     target: Interactions
+    //     function onSongChanged() {
+    //         console.log("Song changed")
+    //     }
+    // }
 
     ColObjs.ColRect {
         id: songbarBackground

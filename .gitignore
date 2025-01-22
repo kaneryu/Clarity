@@ -179,3 +179,4 @@ data/
 .git/
 nuitka-crash-report.xml
 playbackinfo.json
+/.vs

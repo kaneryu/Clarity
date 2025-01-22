@@ -8,7 +8,7 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 import os
 
-from PySide6.QtCore import QObject, Signal, Slot, Qt, Property as QProperty, QThread
+from PySide6.QtCore import QObject, Signal, Slot, Qt, Property as QProperty, QThread, QMutex, QMutexLocker
 from PySide6.QtCore import QAbstractListModel, QModelIndex
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 
@@ -154,7 +154,7 @@ class Song(QObject):
         self.playbackInfo = None
         self._initialized = True
         
-        self.moveToThread(g.mainThread)
+        # self.moveToThread(g.mainThread)
         return None
     
     
@@ -505,7 +505,7 @@ class SongProxy(QObject):
         self._downloadProgress = self.target.downloadProgress
         
         self.setParent(parent)
-
+        self.moveToThread(parent.thread())
                     
     def createPropGetter(self, name):
         def getter(self):
@@ -661,6 +661,8 @@ class Queue(QObject):
         
         self.eventManager = self.player.event_manager()
         
+        self._mutex = QMutex()
+        self._queueAccessMutex = QMutex()
         
         self.player.set_hwnd(0)
         self.loop: LoopType = LoopType.NONE
@@ -684,32 +686,38 @@ class Queue(QObject):
         self.playingStatusChanged.connect(lambda: print("Playing Status Changed"))
         
         self.purgetries = {}
-
+        
     @QProperty(list, notify=queueChanged)
     def queue(self):
-        return self.queueModel._queue
-    
-    @QProperty(list, notify=queueChanged)
-    def queueIds(self):
-        return self.queueModel._queueIds
-    
+        with QMutexLocker(self._queueAccessMutex):
+            return self.queueModel._queue
+
     @queue.setter
     def queue(self, value):
-        self.queueChanged.emit()
-        self.setQueue(value, skipSetData = True)
-        
+        with QMutexLocker(self._queueAccessMutex):
+            self.queueChanged.emit()
+            self.setQueue(value, skipSetData=True)
+            
+    @QProperty(list, notify=queueChanged)
+    def queueIds(self):
+        with QMutexLocker(self._queueAccessMutex):
+            return self.queueModel._queueIds
+
     @QProperty(str, notify=songChanged)
     def currentSongTitle(self):
-        return self.info(self.pointer)["title"]
+        with QMutexLocker(self._mutex):
+            return self.info(self.pointer)["title"]
 
     @QProperty(str, notify=songChanged)
     def currentSongChannel(self):
-        return self.info(self.pointer)["uploader"]
-    
+        with QMutexLocker(self._mutex):
+            return self.info(self.pointer)["uploader"]
+
     @QProperty(str, notify=songChanged)
     def currentSongDescription(self):
-        return self.info(self.pointer)["description"]
-    
+        with QMutexLocker(self._mutex):
+            return self.info(self.pointer)["description"]
+
     @QProperty(str, notify=songChanged)
     def currentSongId(self):
         return self.queueIds[self.pointer]
@@ -717,7 +725,8 @@ class Queue(QObject):
     @QProperty(QObject, notify=songChanged)
     def currentSongObject(self):
         return self.queue[self.pointer]
-    
+
+
     @QProperty(int, notify=pointerMoved)
     def pointer(self):
         return self._pointer
@@ -903,18 +912,26 @@ class Queue(QObject):
             "description": song_.description
         }
     
-    def add(self, id: str, index: int = -1):
+    def add(self, id: str, index: int = -1, goto: bool = False):
         s: Song = Song(id = id)
         coro = s.get_info(g.asyncBgworker.API)
         future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
         future.result() # wait for the result
         
-        g.bgworker.add_job(self.finishAdd, s)
+        g.bgworker.add_job(self.finishAdd, s, index, goto)
 
-    def finishAdd(self, song: Song):
+    def finishAdd(self, song: Song, index: int = -1, goto: bool = False):
         song.get_playback()
-        self.queue.append(song)
-        self.queueIds.append(song.id)
+        if index == -1:
+            self.queue.append(song)
+            self.queueIds.append(song.id)
+        else:
+            self.queue.insert(index, song)
+            self.queueIds.insert(index, song.id)
+
+        if goto:
+            self.pointer = len(self.queue) -1 if index == -1 else index
+            self.play()
     
     def _seek(self, time: int):
         if time < 0 or time > self.player.get_length() / 1000:
