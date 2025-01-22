@@ -56,6 +56,8 @@ def main():
     app.setFont(QFont("Urbanist"))
 
     engine = QQmlApplicationEngine()
+    # engine.addImageProvider TODO: Add image provider
+    engine.addUrlInterceptor
     engine.quit.connect(app.quit)
     
     qml = os.path.join(universal.Paths.qmlPath, "main.qml")
@@ -69,6 +71,10 @@ def main():
     engine.rootContext().setContextProperty("Theme", theme)
     engine.rootContext().setContextProperty("Backend", backend)
     engine.rootContext().setContextProperty("Interactions", interactions)
+    
+    engine.rootContext().setContextProperty("AssetsPath", "file:///" + universal.Paths.assetsPath.replace("\\", "/") + "/")
+    engine.rootContext().setContextProperty("QMLPath", "file:///" + universal.Paths.qmlPath.replace("\\", "/") + "/")
+    engine.rootContext().setContextProperty("RootPath", "file:///" + universal.Paths.rootpath.replace("\\", "/")+ "/")
 
     icon = QIcon(os.path.join(universal.Paths.assetsPath, "Logo.png"))
     app.setWindowIcon(icon)

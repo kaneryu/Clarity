@@ -101,51 +101,65 @@ Item {
         RowLayout {
             id: centerPanel
 
-            Layout.fillHeight: true
+            // Layout.fillHeight: true
+            Layout.preferredHeight: parent.height / 1.2
             Layout.preferredWidth: parent.width / 3
             Layout.alignment: Qt.AlignCenter
 
             Components.Button {
-                id: playButton
-                text: (Interactions.isPlaying) ? "Pause" : "Play"
-
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                onClicked: Interactions.togglePlayback()
-            }
-
-            Components.Button {
-                id: nextButton
-                text: "Next"
-
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                onClicked: Interactions.next()
-
-            }
-
-            Components.Button {
                 id: likeButton
-                text: "Like"
+                isIcon: true
+                isTransparent: true
+                icon: AssetsPath + "icons/songbar/fav.svg"
 
                 Layout.fillHeight: true
-                Layout.fillWidth: true
+                Layout.preferredWidth: height
+
                 onClicked: Interactions.like()
                 enabled: false
             }
 
             Components.Button {
-                id: backButton
-                text: "Back"
+                id: nextButton
+                isIcon: true
+                isTransparent: true
+                icon: AssetsPath + "icons/songbar/skip_next.svg"
 
                 Layout.fillHeight: true
-                Layout.fillWidth: true
+                Layout.preferredWidth: height
+                onClicked: Interactions.next()
+            }
+
+            Components.Button {
+                id: playButton
+                isIcon: true
+                icon: (Interactions.isPlaying) ? AssetsPath + "icons/songbar/pause.svg" : AssetsPath + "icons/songbar/play.svg"
+
+                Layout.fillHeight: true
+                Layout.preferredWidth: height
+                onClicked: Interactions.togglePlayback()
+            }
+
+            Components.Button {
+                id: backButton
+                isIcon: true
+                isTransparent: true
+                icon: AssetsPath + "icons/songbar/skip_previous.svg"
+
+                Layout.fillHeight: true
+                Layout.preferredWidth: height
                 onClicked: Interactions.back()
             }
 
             Components.Button {
                 id: downloadButton
-                text: (root.song.downloadStatus == 2) ? "DL" : (root.song.downloadStatus == 0) ? "NDL" : "DLI"
+                isIcon: true
+                isTransparent: true
+                icon: (root.song.downloadStatus == 2) ? AssetsPath + "icons/songbar/downloaded.svg" : (root.song.downloadStatus == 0) ? AssetsPath + "icons/songbar/download.svg" : AssetsPath + "icons/songbar/downloading.svg"
+
+                Layout.fillHeight: true
+                Layout.preferredWidth: height
+                onClicked: Interactions.downloadSong(Interactions.currentSongId)
 
                 Components.ProgressBar {
                     id: downloadProgress
@@ -158,15 +172,9 @@ Item {
 
                     radius: downloadButton.radius
                     percent: root.song.downloadProgress
-                    
                 }
-
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                onClicked: Interactions.downloadSong(Interactions.currentSongId)
             }
         }
-        
         RowLayout {
             id: rightPanel
 

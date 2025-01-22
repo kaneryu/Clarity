@@ -5,6 +5,7 @@ import Qt.labs.platform
 import QtQuick.Effects
 
 import "./text" as TextVariant
+import "../colobjs" as ColObjs
 
 Item {
     id: root
@@ -18,8 +19,12 @@ Item {
 
     property string colortype: "primary"
     property string state: "base" // base, hover, pressed, disabled
+    property bool isIcon: false
+    property string icon: AssetsPath + "icons/logo.svg"
+    
+    property bool isTransparent: false
 
-    property color bgcolor: (colortype === "primary") ? (state == "base" ? Theme.primaryContainer : (state == "hover" ? Theme.primaryContainer : (state == "pressed" ? Theme.primaryContainer : Theme.surfaceVariant)))
+    property color bgcolor: (isTransparent) ? "transparent" : (colortype === "primary") ? (state == "base" ? Theme.primaryContainer : (state == "hover" ? Theme.primaryContainer : (state == "pressed" ? Theme.primaryContainer : Theme.surfaceVariant)))
     :(colortype === "secondary") ? (state == "base" ? Theme.secondaryContainer : (state == "hover" ? Theme.secondaryContainer : (state == "pressed" ? Theme.secondaryContainer : Theme.surfaceVariant))) : Theme.primaryContainer
 
     property color textcolor: (colortype === "primary") ? (state == "base" ? Theme.onPrimaryContainer : (state == "hover" ? Theme.onPrimaryContainer : (state == "pressed" ? Theme.onPrimaryContainer : Theme.onSurface)))
@@ -99,7 +104,7 @@ Item {
         shadowVerticalOffset: 5
         shadowBlur: 0.7
 
-        shadowEnabled: (shadowScale > 0) ? true : false
+        shadowEnabled: (isTransparent) ? false : (shadowScale > 0) ? true : false
 
 
         shadowColor: "#71000000"
@@ -165,7 +170,24 @@ Item {
         text: root.text
         color: root.textcolor
         anchors.centerIn: parent
+        visible: !root.isIcon
     }
+
+
+    ColObjs.ColImg {
+        id: buttonIcon
+        source: root.icon
+
+        anchors.centerIn: parent
+        visible: root.isIcon
+
+        width: parent.width
+        height: parent.height
+        fillMode: Image.PreserveAspectFit
+
+        color: root.textcolor
+    }
+
 
     MouseArea {
         id: buttonMouseArea
