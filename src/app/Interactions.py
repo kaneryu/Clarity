@@ -8,7 +8,7 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtCore import Signal as Signal
-from PySide6.QtCore import Slot as Slot, QMetaObject, Qt
+from PySide6.QtCore import Slot as Slot, QMetaObject, Qt, QMutexLocker, QMutex
 from PySide6.QtQml import (
     QmlElement,
 )
@@ -20,6 +20,19 @@ from . import Interfaces
 QML_IMPORT_NAME = "CreateTheSun"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
+
+class loggingMutexLocker(QMutexLocker):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def __enter__(self):
+        print("waiting for lock & executing")
+        super().__enter__()
+    
+    def __exit__(self, *args):
+        print("unlocked")
+        super().__exit__(*args)
+
 
 
 @QmlElement
@@ -45,6 +58,7 @@ class Interactions(QObject):
     def songChangeMirror(self):
         print("Interactions knows the song changed")
         self.songChanged.emit()
+        print("after emit")
     
     @Slot(str)
     def changeSongKImage(self):
@@ -58,30 +72,37 @@ class Interactions(QObject):
     
     @Property(str, notify=songChanged)
     def currentSongTitle(self):
-        return universal.queueInstance.currentSongTitle
+        with QMutexLocker(universal.queueInstance._mutex):
+            return universal.queueInstance.currentSongTitle
     
     @Property(str, notify=songChanged)
     def currentSongChannel(self):
-        return universal.queueInstance.currentSongChannel
+        with QMutexLocker(universal.queueInstance._mutex):
+            return universal.queueInstance.currentSongChannel
 
     @Property(int, notify=songChanged)
     def currentSongTime(self):
-        return universal.queueInstance.currentSongTime
+        with QMutexLocker(universal.queueInstance._mutex):
+            return universal.queueInstance.currentSongTime
     
     @Property(int, notify=songChanged)
     def currentSongDuration(self):
-        return universal.queueInstance.currentSongDuration
+        with QMutexLocker(universal.queueInstance._mutex):
+            return universal.queueInstance.currentSongDuration
     
     @Property(str, notify=songChanged)
     def songFinishesAt(self):
-        return universal.queueInstance.songFinishesAt
+        with QMutexLocker(universal.queueInstance._mutex):
+            return universal.queueInstance.songFinishesAt
     
     @Property(str, notify=songChanged)
     def currentSongId(self):
-        return universal.queueInstance.currentSongId
+        with QMutexLocker(universal.queueInstance._mutex):
+            return universal.queueInstance.currentSongId
     
     @Property(QObject, notify=songChanged)
     def currentSong(self):
+        print("executing currentSong")
         f: universal.song_module.Song = universal.song_module.SongProxy(universal.queueInstance.currentSongObject, self)
         print(f.thread())
         print(universal.mainThread)
@@ -96,8 +117,7 @@ class Interactions(QObject):
     @Slot(str)
     def searchPress(self, id: str):
         q = universal.queueInstance
-        q.add(id)
-        q.goToSong(id)
+        q.add(id, goto=True)
     
     @Slot(int)
     def seekPercent(self, percentage: int):

@@ -26,10 +26,10 @@ class Btypes(enum.StrEnum):
     TEXT = ''
     AUTO = 'a'
 
-class ErrorLevel(enum.StrEnum):
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
+class ErrorLevel(enum.IntEnum):
+    INFO = 0
+    WARNING = 1
+    ERROR = 2
 
 caches = {}
 
@@ -92,7 +92,7 @@ class CacheManager:
             self.directory = directory
             
         self.lock = asyncio.Lock()
-        
+        self.plevel = ErrorLevel.WARNING
         
         self.statistics = {
             "hits": 0,
@@ -452,4 +452,4 @@ class CacheManager:
             message (str): The message to print
             level (ErrorLevel): The level of the message
         """
-        print(f"cache {self.name} says: {message} | {level}")
+        print(f"cache {self.name} says: {message} | {level}") if level >= self.plevel else None

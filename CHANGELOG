@@ -8,6 +8,8 @@
 
 - Fix searchModel returning KImage living in different thread -- kaneryu on 2025-01-11
 - fix multiple bugs related to downloading songs -- kaneryu on 2025-01-19
+- fix bug where songs could not be played if the download was corrupted -- kaneryu on 2025-01-19
+- Add mutexes to increase thread safety -- kaneryu on 2025-01-21
 
 
 

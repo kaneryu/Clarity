@@ -78,10 +78,10 @@ def main():
     if not engine.rootObjects():
         sys.exit(-1)
 
-    tim = QTimer()
-    tim.setInterval(1000)
-    tim.timeout.connect(lambda: theme.get_dynamicColors(generateRandomHexColor(), random.choice([True]), 0.0))
-    tim.start()
+    # tim = QTimer()
+    # tim.setInterval(1000)
+    # tim.timeout.connect(lambda: theme.get_dynamicColors(generateRandomHexColor(), random.choice([True]), 0.0))
+    # tim.start()
     
     print(QDir.currentPath())
     backend.loadComplete.emit()
