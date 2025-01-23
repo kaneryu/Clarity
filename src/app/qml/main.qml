@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Qt.labs.platform
+import QtQuick.Effects
 
 import QtQuick.Controls.Basic
 
@@ -9,6 +10,7 @@ import QtQuick.Controls.Basic
 import "components" as Components
 import "components/base" as Base
 import "colobjs" as ColObjs
+import "js/utils.js" as Utils
 
 ApplicationWindow {
     id: root
@@ -159,6 +161,84 @@ ApplicationWindow {
                 duration: 200
             }
         }
+    }
+
+    Item {
+        id: queueView
+        // A floating view that shows the current queue
+        property int visibleYpos: parent.height - (height + footer.height + 5)
+
+        anchors.right: parent.right
+        y: visibleYpos
+        height: parent.height / 2
+        width: parent.width / 3
+        z: 999
+
+        // MultiEffect {
+        //     anchors.fill: queueView
+        //     source: effectSource
+        //     blurEnabled: true
+        //     blur: 1
+        //     blurMax: 32
+        //     blurMultiplier: 1
+
+        //     // shadowEnabled: true
+        //     // shadowScale: 0
+        //     // shadowHorizontalOffset: 0
+        //     // shadowVerticalOffset: 5
+        //     // shadowBlur: 0.7
+        //     // shadowColor: "#71000000"
+        // }
+        // ShaderEffectSource {
+        //     id: effectSource
+
+        //     sourceItem: content
+        //     anchors.fill: parent
+        //     x: parent.x
+        //     y: parent.y
+        //     sourceRect: Qt.rect(x,y, width, height)
+        // }
+
+        Rectangle {
+            id: queueBackground
+            anchors.fill: parent
+            color: Utils.addAlpha("80", Theme.surfaceContainerHighest)
+            radius: 10
+
+        }
+
+        state: (Backend.queueVisible == true) ? "visible" : "hidden"
+        visible: true
+
+        Behavior on x {
+            NumberAnimation {
+                duration: 200
+            }
+        }
+        states: [
+            State {
+                name: "hidden"
+                PropertyChanges{
+                    target: queueView
+                    y: root.width + width
+                }
+                PropertyChanges {
+                    target: queueView
+                    visible: false
+                }
+            },
+            State {
+                name: "visible"
+                PropertyChanges {
+                    target: queueView
+                    y: queueView.visibleYpos
+                }
+                PropertyChanges {
+                    target: queueView
+                    visible: true
+                }
+            }
+        ]
     }
 
     function onClosing(event) {
