@@ -138,6 +138,11 @@ class Interactions(QObject):
         print("next")
     
     @Slot()
+    def setQueueIndex(self, index: int):
+        q = universal.queueInstance
+        q.setPointer(index)
+    
+    @Slot()
     def back(self):
         q = universal.queueInstance
         q.prev()

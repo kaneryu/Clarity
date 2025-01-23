@@ -139,7 +139,7 @@ class Backend(QObject):
             self.initialized = True
             self._value = 0
             
-        self.queueModel_ = universal.queueInstance.queueModel
+        self._queueModel = universal.queueInstance.queueModel
         self._queueVisible = False
         self.fakequeue = Queue()
         
@@ -182,12 +182,12 @@ class Backend(QObject):
         self.url = "innertune:///page/search?query=" + query
         
     @Slot(result=QObject)
-    def getQM(self):
+    def getqueueModel(self):
         return universal.queueInstance.queueModel
     
     @Property(QObject, constant=True)
     def queueModel(self):
-        return self.queueModel_
+        return self._queueModel
     
     @Property(QObject, constant=True)
     def searchModel(self):

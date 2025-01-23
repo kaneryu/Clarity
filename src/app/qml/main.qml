@@ -11,6 +11,7 @@ import "components" as Components
 import "components/base" as Base
 import "colobjs" as ColObjs
 import "js/utils.js" as Utils
+import "components/text" as TextVariant
 
 ApplicationWindow {
     id: root
@@ -210,11 +211,12 @@ ApplicationWindow {
         state: (Backend.queueVisible == true) ? "visible" : "hidden"
         visible: true
 
-        Behavior on x {
+        Behavior on y {
             NumberAnimation {
                 duration: 200
             }
         }
+
         states: [
             State {
                 name: "hidden"
@@ -239,7 +241,32 @@ ApplicationWindow {
                 }
             }
         ]
+
+        ListView {
+            id: queueList
+            anchors.fill: parent
+            model: Backend.getqueueModel()
+            
+            delegate: Rectangle {
+                id: delegateItem
+                width: parent.width
+                height: 50
+                color: "transparent"
+
+                TextVariant.Small {
+                    id: songTitle
+                    text: model.title + " - " + model.artist
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        Interactions.setQueueIndex(model.index)
+                    }
+                }
+            }
+        }
     }
+
 
     function onClosing(event) {
         event.accepted = false
