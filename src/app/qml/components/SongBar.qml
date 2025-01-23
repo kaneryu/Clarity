@@ -8,6 +8,7 @@ import QtQuick.Effects
 import "../colobjs" as ColObjs
 import "." as Components
 import "./text" as TextVariant
+import "../js/utils.js" as Utils
 
 
 
@@ -47,22 +48,15 @@ Item {
         height: parent.height
         radius: 10, 0, 0, 10
         anchors.left: root.left
-        function addAlpha(alpha, color) {
-            let c = color
-            // remove the # from the color
-            c = c.slice(1)
-            // add the alpha value 
-            c = "#" + alpha + c
-            return c
-        }
         
         gradient: Gradient {
-            GradientStop { position: 0; color: leftGlow.addAlpha("20", Theme.primary);}
-            GradientStop { position: 1; color: leftGlow.addAlpha("00", Theme.primary);}
+            GradientStop { position: 0; color: Utils.addAlpha("20", Theme.primary);}
+            GradientStop { position: 1; color: Utils.addAlpha("00", Theme.primary);}
             orientation: Qt.Horizontal
         }
 
     }
+
     RowLayout {
         id: masterLayout
         spacing: 5
@@ -105,11 +99,10 @@ Item {
             Layout.preferredWidth: parent.width / 3
             Layout.alignment: Qt.AlignCenter
             spacing: 0
+            
 
             property int iconHeight: 35
 
-
-            
             Components.Button {
                 id: likeButton
                 isIcon: true
@@ -182,7 +175,7 @@ Item {
 
                     vertical: false
                     input: false
-                    fillColor: leftGlow.addAlpha("50", Theme.primary)
+                    fillColor: Utils.addAlpha("50", Theme.primary)
                     backgroundColor: "transparent"
 
                     radius: downloadButton.radius
@@ -197,50 +190,69 @@ Item {
             Layout.preferredWidth: parent.width / 3
             Layout.alignment: Qt.AlignCenter
 
-            TextVariant.Default {
-                id: currentTime
-                text: Interactions.currentSongTime
-                Timer {
-                    id: timeTimer
-                    interval: 1000
-                    running: true
-                    repeat: true
-                    
-                    onTriggered: {
-                        currentTime.text = Interactions.currentSongTime
-                    }
-                }       
+            Components.Button {
+                id: queueButton
+                isIcon: true
+                isTransparent: true
+                icon: AssetsPath + "icons/songbar/queue_music.svg"
+                colortype: (Backend.queueVisible) ? "secondary" : "primary"
+
+                Layout.preferredHeight: centerPanel.iconHeight
+                Layout.preferredWidth: height
+                onClicked: Backend.queueVisible = !Backend.queueVisible
             }
 
-            Components.ProgressBar {
-                id: songProgress
-
-                Layout.preferredHeight: 10
+            RowLayout {
+                id: progtime
+                Layout.fillHeight: true
+                Layout.alignment: Qt.AlignCenter
                 Layout.fillWidth: true
 
-                vertical: false
-                fillColor: Theme.primary
-                backgroundColor: Theme.surfaceContainerLow
+                TextVariant.Default {
+                    id: currentTime
+                    text: Interactions.currentSongTime
+                    Timer {
+                        id: timeTimer
+                        interval: 1000
+                        running: true
+                        repeat: true
+                        
+                        onTriggered: {
+                            currentTime.text = Utils.secondsToHMS(Interactions.currentSongTime)
+                        }
+                    }       
+                }
 
-                radius: 10
-                percent: Interactions.currentSongTime / Interactions.currentSongDuration * 100
+                Components.ProgressBar {
+                    id: songProgress
 
-                onClick: (percent) => Interactions.seekPercent(percent)
+                    Layout.preferredHeight: 10
+                    Layout.fillWidth: true
 
-                Timer {
-                    id: progressTimer
-                    interval: 150
-                    running: true
-                    repeat: true
-                    onTriggered: {
-                        songProgress.percent = Interactions.currentSongTime / Interactions.currentSongDuration * 100
+                    vertical: false
+                    fillColor: Theme.primary
+                    backgroundColor: Theme.surfaceContainerLow
+
+                    radius: 10
+                    percent: Interactions.currentSongTime / Interactions.currentSongDuration * 100
+
+                    onClick: (percent) => Interactions.seekPercent(percent)
+
+                    Timer {
+                        id: progressTimer
+                        interval: 150
+                        running: true
+                        repeat: true
+                        onTriggered: {
+                            songProgress.percent = Interactions.currentSongTime / Interactions.currentSongDuration * 100
+                        }
                     }
                 }
-            }
 
-            TextVariant.Default {
-                id: durationText
-                text: Interactions.currentSongDuration
+                TextVariant.Default {
+                    id: durationText
+                    text: Utils.secondsToHMS(Interactions.currentSongDuration)
+                }
             }
         }
     }

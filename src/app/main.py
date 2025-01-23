@@ -57,7 +57,6 @@ def main():
 
     engine = QQmlApplicationEngine()
     # engine.addImageProvider TODO: Add image provider
-    engine.addUrlInterceptor
     engine.quit.connect(app.quit)
     
     qml = os.path.join(universal.Paths.qmlPath, "main.qml")

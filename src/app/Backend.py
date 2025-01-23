@@ -127,6 +127,7 @@ class Backend(QObject):
     loadComplete = QSignal(name="loadComplete")
     activeTabChanged = QSignal(name="activeTabChanged")
     # tabModelChanged = QSignal(name="tabModelChanged")
+    queueVisibleChanged = QSignal(name="queueVisibleChanged")
     urlChanged = QSignal(name="urlChanged")
     _instance = None
     
@@ -139,6 +140,7 @@ class Backend(QObject):
             self._value = 0
             
         self.queueModel_ = universal.queueInstance.queueModel
+        self._queueVisible = False
         self.fakequeue = Queue()
         
     @Property(str, notify=urlChanged)
@@ -203,6 +205,15 @@ class Backend(QObject):
     @Property(QObject, constant=True)
     def queueFunctions(self):
         return self.fakequeue
+    
+    @Property(bool, notify=queueVisibleChanged)
+    def queueVisible(self):
+        return self._queueVisible
+    
+    @queueVisible.setter
+    def queueVisible(self, value):
+        self._queueVisible = value
+        self.queueVisibleChanged.emit()
     
     @Slot(str, int)
     def queueCall(self, func, *args, **kwargs):

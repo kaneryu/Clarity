@@ -54,7 +54,6 @@ class Interactions(QObject):
         universal.queueInstance.playingStatusChanged.connect(self.playingStatusMirror)
     
     def playingStatusMirror(self):
-        print("Interactions knows the playing status changed")
         self.playingStatusChanged.emit()
 
     @Slot(str)

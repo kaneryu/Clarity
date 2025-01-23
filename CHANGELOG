@@ -1,3 +1,11 @@
+# Version 0.17
+
+## New Features
+
+- Improve semantics around the play/pasue button, and fix a bug where it wouldn't update sometimes -- kaneryu on 2025-01-22
+
+
+
 # Version 0.16
 
 ## New Features
