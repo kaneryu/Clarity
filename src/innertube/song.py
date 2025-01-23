@@ -23,7 +23,9 @@ import src.innertube.song as song
 
 ydlOpts = {
     "external_downloader_args": ['-loglevel', 'panic'],
-    "quiet": False
+    "quiet": False,
+    "concurrent-fragments": True
+    
 }
 
 ytdl: yt_dlp_module.YoutubeDL
@@ -277,6 +279,7 @@ class Song(QObject):
         self.rawPlaybackInfo = c.get(identifier)
         if not self.rawPlaybackInfo:
             self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
+            print("ydl functioning")
             c.put(identifier, json.dumps(self.rawPlaybackInfo), byte = False, expiration = time.time() + 3600) # 1 hour
         else:
             self.rawPlaybackInfo = json.loads(self.rawPlaybackInfo)
@@ -350,9 +353,9 @@ class Song(QObject):
     
         audio.sort(key=lambda x: x["quality"])
         video.sort(key=lambda x: x["quality"])
-            
+        
         self.playbackInfo = {"audio": audio, "video": video}
-        # print(self.playbackInfo)
+        print(self.playbackInfo)
     
     def purge_playback(self):
         c = cacheManager.getCache("songs_cache")

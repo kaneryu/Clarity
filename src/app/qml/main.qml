@@ -246,7 +246,8 @@ ApplicationWindow {
             id: queueList
             anchors.fill: parent
             model: Backend.getqueueModel()
-            
+            clip: true
+
             delegate: Rectangle {
                 id: delegateItem
                 width: parent.width

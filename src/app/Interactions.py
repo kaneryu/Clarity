@@ -123,6 +123,7 @@ class Interactions(QObject):
     @Slot(str)
     def searchPress(self, id: str):
         q = universal.queueInstance
+        print("searchPress", id)
         q.add(id, goto=True)
     
     @Slot(int)
@@ -137,7 +138,7 @@ class Interactions(QObject):
         q.next()
         print("next")
     
-    @Slot()
+    @Slot(int)
     def setQueueIndex(self, index: int):
         q = universal.queueInstance
         q.setPointer(index)
