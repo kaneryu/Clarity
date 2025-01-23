@@ -593,7 +593,6 @@ class QueueModel(QAbstractListModel):
         self._queue: list[Song] = []
 
     def rowCount(self, parent=QModelIndex()):
-        print("Row Count", len(self._queue))
         return len(self._queue)
 
     def count(self):
@@ -604,10 +603,12 @@ class QueueModel(QAbstractListModel):
             return self._queue[index.row()].title
         if role == Qt.ItemDataRole.EditRole and index.isValid():
             return self._queue[index.row()]
-        if role == Qt.ItemDataRole.UserRole + 2 and index.isValid():
+        if role == Qt.ItemDataRole.UserRole + 1 and index.isValid():
             return self._queue[index.row()].artist
-        if role == Qt.ItemDataRole.UserRole + 3 and index.isValid():
+        if role == Qt.ItemDataRole.UserRole + 2 and index.isValid():
             return self._queue[index.row()].duration
+        if role == Qt.ItemDataRole.UserRole + 3 and index.isValid():
+            return "placeholder"
         if role == Qt.ItemDataRole.UserRole + 4 and index.isValid():
             return self._queue[index.row()].id
         if role == Qt.ItemDataRole.UserRole + 5 and index.isValid():
@@ -623,7 +624,6 @@ class QueueModel(QAbstractListModel):
             Qt.ItemDataRole.UserRole + 4: b"id",
             Qt.ItemDataRole.UserRole + 5: b"index",
             Qt.ItemDataRole.EditRole: b"qobject",    
-                  
         }
     
     def headerData(self, section, orientation, role = ...):

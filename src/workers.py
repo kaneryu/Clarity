@@ -51,7 +51,11 @@ class BackgroundWorker(threading.Thread):
 
     def add_job(self, func, *args, **kwargs):
         job = {"func": func, "args": args, "kwargs": kwargs}
-        self.jobs.append(job)
+        if inspect.iscoroutinefunction(func):
+            self.executor.submit(self.run_async, func, *args, **kwargs)
+        else:
+            self.executor.submit(self.run_sync, func, *args, **kwargs)
+        
 
 
 class Async_BackgroundWorker(threading.Thread):

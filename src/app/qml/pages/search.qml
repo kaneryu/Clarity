@@ -30,22 +30,18 @@ Item {
             property var thumbnail
 
             Text {
-                id: songResultDelegateTitle
+                id: _title
                 text: title
                 anchors.top: parent.top
-                anchors.left: parent.left
+                anchors.left: image.right
             }
 
             Image {
-                id: songResultDelegateImage
+                id: image
                 source: thumbnail.image
                 anchors.top: parent.top
                 width: 100
                 height: 100
-
-                onSourceChanged: {
-                    console.log("sourceChanged")
-                }
             }
             MouseArea {
                 anchors.fill: parent
@@ -53,10 +49,6 @@ Item {
                     console.log("Clicked: ", title)
                     Interactions.searchPress(ytid)
                 }
-            }
-
-            Component.onCompleted: {
-                console.log("Thumbnail: ", thumbnail)
             }
         }
     }
