@@ -51,9 +51,12 @@ class Interactions(QObject):
         self._currentSongCover = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=10)
         universal.queueInstance.songChanged.connect(self.changeSongKImage)
         universal.queueInstance.songChanged.connect(self.songChangeMirror)
-        universal.queueInstance.playingStatusChanged.connect(self.playingStatusChanged.emit)
-        
-        
+        universal.queueInstance.playingStatusChanged.connect(self.playingStatusMirror)
+    
+    def playingStatusMirror(self):
+        print("Interactions knows the playing status changed")
+        self.playingStatusChanged.emit()
+
     @Slot(str)
     def songChangeMirror(self):
         print("Interactions knows the song changed")
@@ -112,6 +115,10 @@ class Interactions(QObject):
     @Property(bool, notify=playingStatusChanged)
     def isPlaying(self):
         return universal.queueInstance.isPlaying
+
+    @Property(int, notify=playingStatusChanged)
+    def playingStatus(self):
+        return int(universal.queueInstance.playingStatus)
     
     
     @Slot(str)

@@ -137,7 +137,18 @@ Item {
             Components.Button {
                 id: playButton
                 isIcon: true
-                icon: (Interactions.isPlaying) ? AssetsPath + "icons/songbar/pause.svg" : AssetsPath + "icons/songbar/play.svg"
+                // icon: (Interactions.isPlaying) ? AssetsPath + "icons/songbar/pause.svg" : AssetsPath + "icons/songbar/play.svg"
+                // 0 = playing, 1 = paused, 2 = buffering, 3 = stopped, 4 = error
+                 
+                icon: (Interactions.playingStatus == 0) ? AssetsPath + "icons/songbar/pause.svg" : (Interactions.playingStatus == 1) ? AssetsPath + "icons/songbar/play.svg" : (Interactions.playingStatus == 2) ? AssetsPath + "icons/songbar/pending.svg" : (Interactions.playingStatus == 3) ? AssetsPath + "icons/songbar/close.svg" : AssetsPath + "icons/songbar/close.svg"
+
+                Connections {
+                    target: Interactions
+                    onPlayingStatusChanged: {
+                        console.log("Playing status changed")
+                        console.log(Interactions.playingStatus)
+                    }
+                }
 
                 Layout.preferredHeight: centerPanel.iconHeight
                 Layout.preferredWidth: height

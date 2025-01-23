@@ -574,6 +574,14 @@ class LoopType(enum.Enum):
     NONE = 0 # Halt after playing all songs
     SINGLE = 1 # Repeat the current song
     ALL = 2 # Repeat all songs in the queue
+
+class PlayingStatus(enum.IntEnum):
+    """Playing Status"""
+    PLAYING = 0 # Playing
+    PAUSED = 1 # Paused
+    BUFFERING = 2 # Media is buffering
+    STOPPED = 3 # No media is loaded
+    ERROR = 4 # Unrecoverable error
     
 class QueueModel(QAbstractListModel):
     def __init__(self):
@@ -635,7 +643,7 @@ class Queue(QObject):
     queueChanged = Signal()
     songChanged = Signal()
     pointerMoved = Signal()
-    playingStatusChanged = Signal()
+    playingStatusChanged = Signal(int)
     
     instance = None
     
@@ -659,7 +667,7 @@ class Queue(QObject):
 
         self.player: vlc.MediaPlayer = self.instance.media_player_new()
         
-        self.eventManager = self.player.event_manager()
+        self.eventManager: vlc.EventManager = self.player.event_manager()
         
         self._mutex = QMutex()
         self._queueAccessMutex = QMutex()
@@ -673,20 +681,55 @@ class Queue(QObject):
         else:
             cache = cacheManager.getCache("queueCache")
         
-        
         self.eventManager.event_attach(vlc.EventType.MediaPlayerEndReached, self.songFinished)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerEncounteredError, self.on_vlc_error)
+        
+        self.eventManager.event_attach(vlc.EventType.MediaPlayerPaused, self.onPauseEvent)
+        self.eventManager.event_attach(vlc.EventType.MediaPlayerPlaying, self.onPlayEvent)
+        self.eventManager.event_attach(vlc.EventType.MediaPlayerBuffering, self.onBufferingEvent)
+        self.__bufflastTime = 0
+        
+        self._playingStatus = PlayingStatus.STOPPED
+        
         
         self.cache = cache
         self.queue: list[Song]
         self.pointer: int
         self.currentSongObject: Song
         
-        self.songChanged.connect(self.playingStatusChanged)
-        self.playingStatusChanged.connect(lambda: print("Playing Status Changed"))
-        
         self.purgetries = {}
-        
+    
+    def onPlayEvent(self, event):
+        print("Play Event")
+        self._playingStatus = PlayingStatus.PLAYING
+        self.playingStatusChanged.emit(self._playingStatus)
+    
+    def onPauseEvent(self, event):
+        print("Pause Event")
+        self._playingStatus = PlayingStatus.PAUSED
+        self.playingStatusChanged.emit(self._playingStatus)
+    
+    def onBufferingEvent(self, event):
+        if time.time() - self.__bufflastTime < 1:
+            return
+        self.__bufflastTime = time.time()
+        self._playingStatus = PlayingStatus.BUFFERING
+        self.playingStatusChanged.emit(self._playingStatus)
+
+    @QProperty(bool, notify=playingStatusChanged)
+    def isPlaying(self):
+        with QMutexLocker(self._mutex):
+            if self._playingStatus == PlayingStatus.PLAYING:
+                return True
+    
+    @QProperty(int, notify=playingStatusChanged)
+    def playingStatus(self):
+        with QMutexLocker(self._mutex):
+            if self.player.get_media() == None:
+                return PlayingStatus.STOPPED
+            
+            return self._playingStatus
+    
     @QProperty(list, notify=queueChanged)
     def queue(self):
         with QMutexLocker(self._queueAccessMutex):
@@ -758,11 +801,6 @@ class Queue(QObject):
     @QProperty(int, notify=songChanged)
     def songFinishesAt(self):
         return time.time() + self.currentSongDuration - self.currentSongTime # current time + time left
-
-    @QProperty(bool, notify=playingStatusChanged)
-    def isPlaying(self):
-        return self.player.is_playing() == 1
-
         
     def checkError(self, url: str):
         r = requests.get(url)
@@ -820,12 +858,10 @@ class Queue(QObject):
     @Slot()
     def pause(self):
         self.player.pause()
-        self.playingStatusChanged.emit()
        
     @Slot()
     def resume(self):
         self.player.play()
-        self.playingStatusChanged.emit()
         
          
     @Slot()
