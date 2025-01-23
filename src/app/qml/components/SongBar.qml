@@ -101,43 +101,26 @@ Item {
         RowLayout {
             id: centerPanel
 
-            // Layout.fillHeight: true
-            Layout.preferredHeight: parent.height / 1.2
+            Layout.fillHeight: true
             Layout.preferredWidth: parent.width / 3
             Layout.alignment: Qt.AlignCenter
+            spacing: 0
 
+            property int iconHeight: 35
+
+
+            
             Components.Button {
                 id: likeButton
                 isIcon: true
                 isTransparent: true
                 icon: AssetsPath + "icons/songbar/fav.svg"
 
-                Layout.fillHeight: true
+                Layout.preferredHeight: centerPanel.iconHeight
                 Layout.preferredWidth: height
 
                 onClicked: Interactions.like()
                 enabled: false
-            }
-
-            Components.Button {
-                id: nextButton
-                isIcon: true
-                isTransparent: true
-                icon: AssetsPath + "icons/songbar/skip_next.svg"
-
-                Layout.fillHeight: true
-                Layout.preferredWidth: height
-                onClicked: Interactions.next()
-            }
-
-            Components.Button {
-                id: playButton
-                isIcon: true
-                icon: (Interactions.isPlaying) ? AssetsPath + "icons/songbar/pause.svg" : AssetsPath + "icons/songbar/play.svg"
-
-                Layout.fillHeight: true
-                Layout.preferredWidth: height
-                onClicked: Interactions.togglePlayback()
             }
 
             Components.Button {
@@ -146,9 +129,30 @@ Item {
                 isTransparent: true
                 icon: AssetsPath + "icons/songbar/skip_previous.svg"
 
-                Layout.fillHeight: true
+                Layout.preferredHeight: centerPanel.iconHeight
                 Layout.preferredWidth: height
                 onClicked: Interactions.back()
+            }
+
+            Components.Button {
+                id: playButton
+                isIcon: true
+                icon: (Interactions.isPlaying) ? AssetsPath + "icons/songbar/pause.svg" : AssetsPath + "icons/songbar/play.svg"
+
+                Layout.preferredHeight: centerPanel.iconHeight
+                Layout.preferredWidth: height
+                onClicked: Interactions.togglePlayback()
+            }
+
+            Components.Button {
+                id: nextButton
+                isIcon: true
+                isTransparent: true
+                icon: AssetsPath + "icons/songbar/skip_next.svg"
+
+                Layout.preferredHeight: centerPanel.iconHeight
+                Layout.preferredWidth: height
+                onClicked: Interactions.next()
             }
 
             Components.Button {
@@ -157,7 +161,7 @@ Item {
                 isTransparent: true
                 icon: (root.song.downloadStatus == 2) ? AssetsPath + "icons/songbar/downloaded.svg" : (root.song.downloadStatus == 0) ? AssetsPath + "icons/songbar/download.svg" : AssetsPath + "icons/songbar/downloading.svg"
 
-                Layout.fillHeight: true
+                Layout.preferredHeight: centerPanel.iconHeight
                 Layout.preferredWidth: height
                 onClicked: Interactions.downloadSong(Interactions.currentSongId)
 
