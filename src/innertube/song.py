@@ -587,22 +587,40 @@ class QueueModel(QAbstractListModel):
     def __init__(self):
         super().__init__()
         self._queueIds = []
-        self._queue = []
+        self._queue: list[Song] = []
 
     def rowCount(self, parent=QModelIndex()):
+        print("Row Count", len(self._queue))
         return len(self._queue)
 
     def count(self):
         return len(self._queue)
     
-    def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole and index.isValid():
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole and index.isValid():
+            return self._queue[index.row()].title
+        if role == Qt.ItemDataRole.EditRole and index.isValid():
             return self._queue[index.row()]
+        if role == Qt.ItemDataRole.UserRole + 2 and index.isValid():
+            return self._queue[index.row()].artist
+        if role == Qt.ItemDataRole.UserRole + 3 and index.isValid():
+            return self._queue[index.row()].duration
+        if role == Qt.ItemDataRole.UserRole + 4 and index.isValid():
+            return self._queue[index.row()].id
+        if role == Qt.ItemDataRole.UserRole + 5 and index.isValid():
+            return index.row()
         return None
 
     def roleNames(self):
         return {
-            Qt.DisplayRole: b"song"
+            Qt.ItemDataRole.DisplayRole: b"title",
+            Qt.ItemDataRole.UserRole + 1: b"artist",
+            Qt.ItemDataRole.UserRole + 2: b"length",
+            Qt.ItemDataRole.UserRole + 3: b"thumbnail",
+            Qt.ItemDataRole.UserRole + 4: b"id",
+            Qt.ItemDataRole.UserRole + 5: b"index",
+            Qt.ItemDataRole.EditRole: b"qobject",    
+                  
         }
     
     def headerData(self, section, orientation, role = ...):
@@ -636,6 +654,12 @@ class QueueModel(QAbstractListModel):
             self.beginMoveRows(QModelIndex(), from_index, from_index, QModelIndex(), to_index)
             self._queue.insert(to_index, self._queue.pop(from_index))
             self.endMoveRows()
+    
+    def insertRows(self, row, count):
+        self.beginInsertRows(QModelIndex(), row, row + count - 1)
+        self._queue.insert(row, [[] for _ in range(count)])
+        self.endInsertRows()
+    
             
 class Queue(QObject):
     """Combined Queue and Player"""
@@ -959,10 +983,12 @@ class Queue(QObject):
     def finishAdd(self, song: Song, index: int = -1, goto: bool = False):
         song.get_playback()
         if index == -1:
-            self.queue.append(song)
+            self.queueModel.insertRows(len(self.queue), 1)
+            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.EditRole)
             self.queueIds.append(song.id)
         else:
-            self.queue.insert(index, song)
+            self.queueModel.insertRows(index, 1)
+            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.EditRole)
             self.queueIds.insert(index, song.id)
 
         if goto:
