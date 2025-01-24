@@ -18,14 +18,6 @@ from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_Background
 from src.app.KImage import KImage, Placeholders, Status, KImageProxy
 from .AppUrl import AppUrl, appUrl
 
-oldprint = builtins.print
-def nprint(*args, **kwargs):
-    mythread = threading.current_thread()
-    time_  = time.strftime("%H:%M:%S")
-    oldprint(time_, mythread, *args, **kwargs)
-    return args
-builtins.print = nprint
-
 try:
     with open("version.txt") as f:
         version = versions.Version(f.read().strip())
@@ -52,14 +44,17 @@ asyncBgworker.add_job_sync(imageCache.collect)
 
 songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(datapath, "song_datastore"))
 
+songDataStore.integrityCheck()
+globalCache.integrityCheck()
+songCache.integrityCheck()
+imageCache.integrityCheck()
+
 song_module.DATASTORE_MODULE = dataStore_module
 song_module.CACHEMANAGER_MODULE = cacheManager_module
 
 queueInstance: innertube_module.Queue = innertube_module.Queue()
 search = search_module.search
 
-# bgworker.add_job(queueInstance.setQueue, ["F_mq88Lw2Lo", "DyTBxPyEG_M", "I8O-BFLzRF0", "UNQTvQGVjao", "IAW0oehOi24"])
-bgworker.add_job(queueInstance.setQueue, ["YPV676YeHNg", "a3mxLL7nX1E", "DimcNLjX50c", "r76AWibyDDQ", "fB8elptKFcQ"])
 searchModel = search_module.BasicSearchResultsModel()
 
 mainThread: QThread = QThread.currentThread()
@@ -77,3 +72,22 @@ print("root path:", Paths.rootpath)
 
 async def search_shorthand(query: str, ignore_spelling: bool = False) -> search_module.BasicSearchResultsModel:
     return await search_module.search(query, ignore_spelling = ignore_spelling, model = searchModel)
+
+
+
+oldprint = builtins.print
+def nprint(*args, **kwargs):
+    mythread = threading.current_thread()
+    time_  = time.strftime("%H:%M:%S")
+    oldprint(time_, mythread, *args, **kwargs)
+    return args
+builtins.print = nprint
+
+startupQueue = ["YPV676YeHNg", "a3mxLL7nX1E", "DimcNLjX50c", "r76AWibyDDQ", "fB8elptKFcQ"]
+def getAllDownloadedSongs() -> list:
+    l = list(songDataStore.getAll().keys())
+    l = [i for i in l if not i.endswith("_downloadMeta")]
+    return l
+
+startupQueue.extend(i for i in getAllDownloadedSongs())
+bgworker.add_job(queueInstance.setQueue, startupQueue)

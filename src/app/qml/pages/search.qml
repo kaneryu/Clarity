@@ -7,7 +7,8 @@ import QtQuick.Controls.Basic
 import "../components" as Components
 import "../components/base" as Base
 import "../colobjs" as ColObjs
-
+import "../js/utils.js" as Utils
+import "../components/text" as TextVariant
 
 Item {
     id: root
@@ -22,18 +23,20 @@ Item {
             width: 100
             height: 100
             
-            color: "white"
+            color: Theme.surfaceContainer
+            radius: 5
             property string title
             property string creator
             property string duration
             property string ytid
             property var thumbnail
 
-            Text {
+            TextVariant.Default {
                 id: _title
                 text: title
                 anchors.top: parent.top
                 anchors.left: image.right
+                anchors.leftMargin: 10
             }
 
             Image {
@@ -43,6 +46,7 @@ Item {
                 width: 100
                 height: 100
             }
+
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
@@ -62,9 +66,9 @@ Item {
         anchors.left: parent.left
 
         width: parent.width
-        height: parent.height * 0.8
+        height: parent.height
 
-
+        clip: true
         model: Backend.searchModel
         delegate: Item {
             width: searchListViewTest.width

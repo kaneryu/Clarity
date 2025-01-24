@@ -312,7 +312,7 @@ class DataStore:
         """
         self._print("running cleanup", ErrorLevel.INFO)
        
-        # use os.walk to check which keys are actually on disk
+        # use os.listdir to check which keys are actually on disk
         for i in os.listdir(self.absdir):
             if not os.path.isfile(os.path.join(self.absdir, i)):
                 continue
@@ -335,22 +335,14 @@ class DataStore:
         for i in self.__dataStore_path_map:
             if not os.path.exists(self.__dataStore_path_map[i]):
                 self._print(f"key {i} is orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
-                if restore:
-                    self._print(f"key {i} will be restored", ErrorLevel.INFO)
-                    data = open(os.path.join(self.absdir, i), 'r').read()
-                    os.remove(os.path.join(self.absdir, i))
-                    self.put(i, data, Btypes.AUTO)
-                else:
-                    self._print(f"key {i} will be not be restored", ErrorLevel.INFO)
+                self.delete(i)
                 continue
                 
             data = self.getMetadata(i)
             if data.get("expiration", -1) == None: # this happens sometimes :/
                 del self.metadata[i]["expiration"]
-        
-        self.collect()
-        # self.__metadataSave() collect calls metadatasave for us!
-        
+                
+        self.__metadataSave()
     
     def getMetadata(self, key: str) -> dict:
         """Get the metadata of an item from the dataStore
@@ -414,6 +406,14 @@ class DataStore:
         if not p:
             return False
         return os.path.exists(p)
+
+    def getAll(self) -> dict:
+        """Get all items in the dataStore
+
+        Returns:
+            dict: All items in the dataStore
+        """
+        return self.__dataStore_path_map
 
     def _print(self, message: str, level: ErrorLevel):
         """Internal function, prints a message
