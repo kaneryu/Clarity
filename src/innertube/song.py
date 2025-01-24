@@ -795,7 +795,6 @@ class Queue(QObject):
     def currentSongObject(self):
         return self.queue[self.pointer]
 
-
     @QProperty(int, notify=pointerMoved)
     def pointer(self):
         return self._pointer
@@ -997,26 +996,45 @@ class Queue(QObject):
             self.pointer = len(self.queue) -1 if index == -1 else index
             self.play()
     
-    def _seek(self, time: int):
-        if time < 0 or time > self.player.get_length() / 1000:
+    def _seek(self, seek_time: int):
+        if seek_time < 0 or seek_time > self.player.get_length():
             raise ValueError("Time must be between 0 and video length")
-        
         if not self.player.get_media() == None:
-            self.player.set_time(time * 1000)
+            self.player.set_time(seek_time)
+            time.sleep(0.1) # wait for the buffer event to be emitted
+            # override it
+            self.onPlayEvent(None)
         else:
             raise ValueError("No Media Loaded")
     
     @Slot(int)
     def seek(self, time: int):
-        self.player.set_time(time * 1000)
+        """Absolute seek
+
+        Args:
+            time (int): Time to seek to in seconds
+        """
+        self._seek(time * 1000)
     
     @Slot(int)
     def aseek(self, time: int):
-        self.player.set_time(self.player.get_time() + time * 1000)
+        """Relative seek
+
+        Args:
+            time (int): Time to move by in seconds (positive or negative)
+        """
+        self._seek(self.player.get_time() + time * 1000)
     
     @Slot(int)
     def pseek(self, percentage: int):
+        """Percentage seek
+
+        Args:
+            percentage (int): The percentage of the video to seek to
+
+        Raises:
+            ValueError: If the percentage is not between 0 and 100
+        """
         if percentage < 0 or percentage > 100:
             raise ValueError("Percentage must be between 0 and 100")
-        len = self.player.get_length()
-        self.player.set_time(len * percentage // 100)
+        self._seek(self.player.get_length() * percentage // 100)
