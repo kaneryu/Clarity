@@ -3,3 +3,7 @@
 ## New Features
 
 - Add functionality to the queueview -- kaneryu on 2025-01-23
+
+## Bugfixes
+
+- fix title in queue, fix overlapping issue in song results -- kaneryu on 2025-01-23

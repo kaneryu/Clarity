@@ -140,7 +140,6 @@ class Async_BackgroundWorker(threading.Thread):
             self.loop.call_soon_threadsafe(self.loop.stop)
       
 bgworker = BackgroundWorker()
-bgworker.start()
 
 asyncBgworker = Async_BackgroundWorker()
 asyncBgworker.start()

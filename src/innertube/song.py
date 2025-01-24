@@ -355,7 +355,6 @@ class Song(QObject):
         video.sort(key=lambda x: x["quality"])
         
         self.playbackInfo = {"audio": audio, "video": video}
-        print(self.playbackInfo)
     
     def purge_playback(self):
         c = cacheManager.getCache("songs_cache")
