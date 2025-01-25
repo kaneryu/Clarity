@@ -3,3 +3,9 @@
     - description: 'remove lazy_extractors'
       module_code: |
         pass
+
+- module-name: 'ytmusicapi'
+  data-files:
+    dest_path: '.'
+    dirs:
+      - 'locales'

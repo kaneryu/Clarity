@@ -210,17 +210,7 @@ Item {
 
                 TextVariant.Default {
                     id: currentTime
-                    text: Interactions.currentSongTime
-                    Timer {
-                        id: timeTimer
-                        interval: 1000
-                        running: true
-                        repeat: true
-                        
-                        onTriggered: {
-                            currentTime.text = Utils.secondsToHMS(Interactions.currentSongTime)
-                        }
-                    }       
+                    text: Interactions.currentSongTime    
                 }
 
                 Components.ProgressBar {
@@ -254,6 +244,18 @@ Item {
                     text: Utils.secondsToHMS(Interactions.currentSongDuration)
                 }
             }
+            Timer {
+                id: timeTimer
+                interval: 1000
+                running: true
+                repeat: true
+                
+                onTriggered: {
+                    currentTime.text = Utils.secondsToHMS(Interactions.currentSongTime)
+                    durationText.text = Utils.secondsToHMS(Interactions.currentSongDuration) // TODO: sometimes the duration has to be updated here, probably a threading issue
+                                                                                            // or a bug in the backend
+                }
+            }   
         }
     }
 }

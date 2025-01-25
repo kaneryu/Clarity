@@ -670,6 +670,7 @@ class Queue(QObject):
     songChanged = Signal()
     pointerMoved = Signal()
     playingStatusChanged = Signal(int)
+    durationChanged = Signal()
     
     instance = None
     
@@ -905,6 +906,7 @@ class Queue(QObject):
             
         self.player.set_media(Media(url))
         self.player.play()
+        self.durationChanged.emit()
     
     def migrate(self, MRL):
         """This function takes in a new MRL (for the same audio), and migrates the current song to that MRL, while trying to minimize interruptions.

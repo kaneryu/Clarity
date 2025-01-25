@@ -17,12 +17,8 @@ function secondsToHMS(seconds) {
     if (hours > 0) {
         retlist.push(hours.toString().padStart(2, '0'))
     }
-    if (minutes > 0) {
-        retlist.push(minutes.toString().padStart(2, '0'))
-    }
-    if (secs > 0) {
-        retlist.push(secs.toString().padStart(2, '0'))
-    }
+    retlist.push(minutes.toString().padStart(2, '0'))
+    retlist.push(secs.toString().padStart(2, '0'))
 
     return retlist.join(':');
 }
