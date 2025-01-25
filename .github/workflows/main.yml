@@ -24,12 +24,6 @@ jobs:
         id: generate_changelog
         run: |
           git fetch --tags
-          TAGS=$(git tag)
-          if [ -z "$TAGS" ]; then
-          LAST_TAG=$(git rev-list --max-parents=0 HEAD)
-          else
-          LAST_TAG=$(git describe --tags --abbrev=0)
-          fi
           LAST_TAG=$(git describe --tags --abbrev=0)
           echo "Last tag: $LAST_TAG"
           CHANGELOG=$(git log $LAST_TAG..HEAD --pretty=format:"* %s")
