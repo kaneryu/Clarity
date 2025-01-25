@@ -15,17 +15,30 @@ Item {
     
     property bool windowTooSmall: (root.height < 300) ? true : false
     
-    Components.Button {
-        anchors.left: parent.left
-        anchors.leftMargin: 52
-        id: button
-        text: "Go to auto-generated playlists page"
-        anchors.top: parent.bottom
-        width: 411
-        enabled: true
-        height: 39
-        onClicked: {
-            Backend.queueCall("next")
+    // Components.Button {
+    //     anchors.left: parent.left
+    //     anchors.leftMargin: 52
+    //     id: button
+    //     text: "Go to auto-generated playlists page"
+    //     anchors.top: parent.bottom
+    //     width: 411
+    //     enabled: true
+    //     height: 39
+    //     onClicked: {
+    //         Backend.queueCall("next")
+    //     }
+    // }
+
+    Text {
+        id: title
+        text: "\uF673"
+        font.family: "Material Symbols Rounded"
+        font.variableAxes: {
+            "fill": 0,
+            "grad": 200,
+            "opsz": 48,
+            "wght": 700
         }
+        font.pixelSize: 48
     }
 }

@@ -133,8 +133,50 @@ Item {
                 // icon: (Interactions.isPlaying) ? AssetsPath + "icons/songbar/pause.svg" : AssetsPath + "icons/songbar/play.svg"
                 // 0 = playing, 1 = paused, 2 = buffering, 3 = stopped, 4 = error
                  
-                icon: (Interactions.playingStatus == 0) ? AssetsPath + "icons/songbar/pause.svg" : (Interactions.playingStatus == 1) ? AssetsPath + "icons/songbar/play.svg" : (Interactions.playingStatus == 2) ? AssetsPath + "icons/songbar/pending.svg" : (Interactions.playingStatus == 3) ? AssetsPath + "icons/songbar/close.svg" : AssetsPath + "icons/songbar/close.svg"
+                icon: AssetsPath + "icons/songbar/play.svg"
 
+                states: [
+                    State {
+                        name: "playing"
+                        when: Interactions.playingStatus == 0
+                        PropertyChanges {
+                            target: playButton
+                            icon: AssetsPath + "icons/songbar/pause.svg"
+                        }
+                    },
+                    State {
+                        name: "paused"
+                        when: Interactions.playingStatus == 1
+                        PropertyChanges {
+                            target: playButton
+                            icon: AssetsPath + "icons/songbar/play.svg"
+                        }
+                    },
+                    State {
+                        name: "buffering"
+                        when: Interactions.playingStatus == 2
+                        PropertyChanges {
+                            target: playButton
+                            icon: AssetsPath + "icons/songbar/pending.svg"
+                        }
+                    },
+                    State {
+                        name: "stopped"
+                        when: Interactions.playingStatus == 3
+                        PropertyChanges {
+                            target: playButton
+                            icon: AssetsPath + "icons/songbar/close.svg"
+                        }
+                    },
+                    State {
+                        name: "error"
+                        when: Interactions.playingStatus == 4
+                        PropertyChanges {
+                            target: playButton
+                            icon: AssetsPath + "icons/songbar/close.svg"
+                        }
+                    }
+                ]
                 Connections {
                     target: Interactions
                     onPlayingStatusChanged: {
@@ -251,6 +293,9 @@ Item {
                 repeat: true
                 
                 onTriggered: {
+                    if (Interactions.currentSongTime > currentTime.text) {
+                        playButton.state = "playing"
+                    }
                     currentTime.text = Utils.secondsToHMS(Interactions.currentSongTime)
                     durationText.text = Utils.secondsToHMS(Interactions.currentSongDuration) // TODO: sometimes the duration has to be updated here, probably a threading issue
                                                                                             // or a bug in the backend
