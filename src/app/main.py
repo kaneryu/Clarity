@@ -22,7 +22,7 @@ from PySide6.QtWidgets import QApplication
 # local imports
 import src.app.materialInterface as materialInterface
 import src.universal as universal
-from . import Backend, Interactions
+from . import Backend, Interactions, fonts
 
 
 def generateRandomHexColor():
@@ -49,10 +49,7 @@ def main():
     app.setStyle("Material")
     app.aboutToQuit.connect(appQuitOverride)
     
-    fontDir = os.path.join(universal.Paths.assetsPath, "fonts")
-    font = os.path.join(fontDir, "Urbanist", "Urbanist-VariableFont_wght.ttf")
-    qf = QFontDatabase()
-    qf.addApplicationFont(font)
+    fonts.loadFonts()
     app.setFont(QFont("Urbanist"))
 
     engine = QQmlApplicationEngine()
