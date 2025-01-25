@@ -40,6 +40,7 @@ class Interactions(QObject):
     _instance = None
     songChanged = Signal()
     playingStatusChanged = Signal()
+    durationChanged = Signal()
     def __init__(self):
         super().__init__()
         if not hasattr(self, 'initialized'):
@@ -52,15 +53,20 @@ class Interactions(QObject):
         universal.queueInstance.songChanged.connect(self.changeSongKImage)
         universal.queueInstance.songChanged.connect(self.songChangeMirror)
         universal.queueInstance.playingStatusChanged.connect(self.playingStatusMirror)
+        universal.queueInstance.durationChanged.connect(self.durationChangedMirror)
     
     def playingStatusMirror(self):
         self.playingStatusChanged.emit()
 
-    @Slot(str)
+    @Slot()
     def songChangeMirror(self):
-        print("Interactions knows the song changed")
         self.songChanged.emit()
+        self.durationChanged.emit()
         print("after emit")
+    
+    @Slot()
+    def durationChangedMirror(self):
+        self.durationChanged.emit()
     
     @Slot(str)
     def changeSongKImage(self):
@@ -87,7 +93,7 @@ class Interactions(QObject):
         with QMutexLocker(universal.queueInstance._mutex):
             return universal.queueInstance.currentSongTime
     
-    @Property(int, notify=songChanged)
+    @Property(int, notify=durationChanged)
     def currentSongDuration(self):
         with QMutexLocker(universal.queueInstance._mutex):
             return universal.queueInstance.currentSongDuration
