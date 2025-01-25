@@ -4,83 +4,41 @@ on:
       - main
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [windows-latest] #, ubuntu-latest, macos-latest]
-
-    runs-on: ${{ matrix.os }}
-
+  create_release:
+    runs-on: ubuntu-latest
     steps:
-      - name: Check-out repository
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12' # Version range or exact version of a Python version to use, using SemVer's version range syntax
-          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+      - name: Read version number
+        id: read_version
+        run: echo "::set-output name=version::$(cat version.txt)"
 
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install Dependencies
+      - name: Check for prerelease file
+        id: check_prerelease
         run: |
-          pip install -r requirements.txt
+          if [ -f prerelease ]; then
+          echo "::set-output name=prerelease::true"
+          else
+          echo "::set-output name=prerelease::false"
+          fi
+      
+      - name: Generate changelog
+        id: generate_changelog
+        run: |
+          git fetch --tags
+          LAST_TAG=$(git describe --tags --abbrev=0)
+          echo "Last tag: $LAST_TAG"
+          CHANGELOG=$(git log $LAST_TAG..HEAD --pretty=format:"* %s")
+          echo "$CHANGELOG" > CHANGELOG.md
+          echo "::set-output name=changelog::$CHANGELOG"
 
-      - name: Build Executable
-        uses: Nuitka/Nuitka-Action@main
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          nuitka-version: main
-          script-name: run.py
-          mode: app
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ runner.os }} Build
-          path: |
-            build/*.exe
-            build/*.bin
-            build/*.app/**/*
-          include-hidden-files: true
-
-      # - name: Get Version
-      #   id: get_version
-      #   run: echo "::set-output name=version::$(cat version.txt)"
-
-      # - name: Check Prerelease
-      #   id: check_prerelease
-      #   run: |
-      #     if [ -f prerelease ]; then
-      #       echo "::set-output name=is_prerelease::true"
-      #     else
-      #       echo "::set-output name=is_prerelease::false"
-      #     fi
-
-      # - name: Create GitHub Release
-      #   id: create_release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: ${{ steps.get_version.outputs.version }}
-      #     release_name: Release ${{ steps.get_version.outputs.version }}
-      #     draft: false
-      #     prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
-
-      # - name: Upload Release Asset
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: build/*.exe
-      #     asset_name: ${{ runner.os }}-build.exe
-      #     asset_content_type: application/octet-stream
-
+          tag_name: v${{ steps.read_version.outputs.version }}
+          release_name: Release ${{ steps.read_version.outputs.version }}
+          prerelease: ${{ steps.check_prerelease.outputs.prerelease }}
+          body: ${{ steps.generate_changelog.outputs.changelog }}
