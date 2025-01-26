@@ -1,7 +1,7 @@
 import sys
 import os
 # Add the directory containing autover.py to the sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 import autover
 
 def main():
