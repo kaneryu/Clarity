@@ -1,0 +1,114 @@
+# Version 0.10
+
+## New Features
+
+- add prelim stuff for songbar -- kaneryu on 2024-12-23
+
+
+
+# Version 0.9
+
+## New Features
+
+- add pages to the app using a URL scheme, with innertune:// as the protocol -- kaneryu on 2024-12-21
+
+## Bugfixes
+
+- add versions as datafiles, add app icon to app. -- kaneryu on 2024-12-22
+
+
+
+# Version 0.8
+
+## New Features
+
+- added images to search results in QML, also refactored a few things to do so. -- kaneryu on 2024-12-21
+
+## Bugfixes
+
+- fix version file not being found causing application crash -- kaneryu on 2024-12-21
+
+
+
+# Version 0.7
+
+## New Features
+
+- added autoversioning using conventional commits -- kaneryu on 2024-12-19
+
+## Bugfixes
+
+- clean up autover.py for use in commit hooks -- kaneryu on 2024-12-19
+- fix bug in autover where commit history was reversed. -- kaneryu on 2024-12-19
+
+
+
+# Version 0.6
+
+## New Features
+
+- Added preliminary version of search, and made connection the the UI. it can also play songs from the results. -- kaneryu on 2024-12-19
+
+
+
+# Version 0.5
+
+## New Features
+
+- try a fix for build failing -- kaneryu on 2024-12-18
+
+## Bugfixes
+
+- Update run.py -- kaneryu on 2024-12-19
+- switched from using --standalone to --mode=app -- kaneryu on 2024-12-19
+- fix issues caused queue module having a name conflict -- kaneryu on 2024-12-19
+
+
+
+# Version 0.4
+
+## New Features
+
+- add requirements so workflow functions -- kaneryu on 2024-12-18
+
+## Bugfixes
+
+- update action -- kaneryu on 2024-12-18
+- Move yt_dlp fix (occured in untracked file, involved deleting a bunch of code) into a config.yaml. Also included proper dependencies in the requirements.txt for the aciton. -- kaneryu on 2024-12-18
+- windows only -- kaneryu on 2024-12-18
+
+
+
+# Version 0.3
+
+## New Features
+
+- enhance cache integrity checks and cleanup process via new integrityCheck function -- kaneryu on 2024-12-18
+
+## Bugfixes
+
+- made sure gitignore ignores cache files -- kaneryu on 2024-12-18
+- make some changes to make freezing via nuitka work, and add the configuration to run.py -- kaneryu on 2024-12-18
+
+
+
+# Version 0.2
+
+## New Features
+
+- added the QueueModel, and connected it to the QML. -- kaneryu on 2024-12-18
+
+## Bugfixes
+
+- make cache more resistant when data is deleted but the reference is not -- kaneryu on 2024-12-18
+
+
+
+# Version 0.1
+
+## New Features
+
+- added the basic queue and player, and made the connection from it to the GUI -- kaneryu on 2024-12-17
+
+
+
