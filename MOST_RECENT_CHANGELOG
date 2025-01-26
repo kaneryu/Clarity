@@ -1,11 +1,5 @@
-# Version 0.19
+# Version 0.20
 
 ## New Features
 
-- Add functionality to the queueview -- kaneryu on 2025-01-23
-
-## Bugfixes
-
-- fix title in queue, fix overlapping issue in song results -- kaneryu on 2025-01-23
-- fix bug where seeking would cause the play button to show buffering indef -- kaneryu on 2025-01-24
-- song duration not updating -- kaneryu on 2025-01-24
+- Add font files to the application with a test on the homepage -- kaneryu on 2025-01-25
