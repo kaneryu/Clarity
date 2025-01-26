@@ -23,12 +23,11 @@ jobs:
       - name: Generate changelog
         id: generate_changelog
         run: |
-          git fetch --tags
-          LAST_TAG=$(git describe --tags --abbrev=0)
-          echo "Last tag: $LAST_TAG"
-          CHANGELOG=$(git log $LAST_TAG..HEAD --pretty=format:"* %s")
-          echo "$CHANGELOG" > CHANGELOG.md
-          echo "::set-output name=changelog::$CHANGELOG"
+          if [ -f MOST_RECENT_CHANGELOG ]; then
+          echo "::set-output name=changelog::$(cat MOST_RECENT_CHANGELOG)"
+          else
+          echo "::set-output name=changelog::No changelog found"
+          fi
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
