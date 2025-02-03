@@ -7,3 +7,4 @@
 ## Bugfixes
 
 - bug in cacheManager that didn't use asyncio.lock on deleting a key, and also integrity check having incorrect implementation. -- kaneryu on 2025-02-02
+- fix bug in cachemanger caused by using async lock in non-async functions -- kaneryu on 2025-02-02

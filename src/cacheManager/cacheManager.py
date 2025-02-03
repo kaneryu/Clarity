@@ -72,6 +72,21 @@ def run_sync(coro):
     else:
         return asyncio.run(coro)
     
+class CustomLock:
+    def __init__(self):
+        self.lock = False
+    
+    def __enter__(self):
+        if self.lock:
+            while self.lock:
+                time.sleep(1/15)
+            # at this point, the lock is free
+            self.lock = True
+        
+    
+    def __exit__(self, *args):
+        self.lock = False
+        
 class CacheManager:
     def __init__(self, name: str, directory: str = ""):
         """Initialize the CacheManager.
@@ -91,7 +106,7 @@ class CacheManager:
         else:
             self.directory = directory
             
-        self.lock = asyncio.Lock()
+        self.lock = CustomLock()
         self.plevel = ErrorLevel.WARNING
         
         self.statistics = {

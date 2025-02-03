@@ -50,6 +50,7 @@ class Interactions(QObject):
         self.queueModel_ = universal.queueInstance.queueModel
         
         self._currentSongCover = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=10)
+        self._currentSongCover.imageChanged.connect(self.coverChangedTest)
         universal.queueInstance.songChanged.connect(self.changeSongKImage)
         universal.queueInstance.songChanged.connect(self.songChangeMirror)
         universal.queueInstance.playingStatusChanged.connect(self.playingStatusMirror)
@@ -57,6 +58,9 @@ class Interactions(QObject):
     
     def playingStatusMirror(self):
         self.playingStatusChanged.emit()
+    
+    def coverChangedTest(self):
+        print("cover changed")
 
     @Slot()
     def songChangeMirror(self):
