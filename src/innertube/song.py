@@ -278,8 +278,6 @@ class Song(QObject):
         identifier = self.id + "_playbackinfo"
         self.rawPlaybackInfo = c.get(identifier)
         if not self.rawPlaybackInfo:
-            self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
-            print("ydl functioning")
             c.put(identifier, json.dumps(self.rawPlaybackInfo), byte = False, expiration = time.time() + 3600) # 1 hour
         else:
             self.rawPlaybackInfo = json.loads(self.rawPlaybackInfo)
@@ -842,7 +840,6 @@ class Queue(QObject):
     @Slot(str, bool)
     def setQueue(self, queue: list, skipSetData: bool = False):
         for i in queue:
-            print("Adding", i)
             self.add(i)
 
     def songFinished(self, event):

@@ -364,8 +364,7 @@ class DataStore:
         Returns:
             str: The path of the file on disk
         """
-        
-        print(self.__dataStore_path_map[key])
+
         
         if not key in self.__dataStore_path_map:
             self._print("dataStore miss: " + key, ErrorLevel.INFO)
