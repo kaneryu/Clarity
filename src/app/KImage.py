@@ -61,7 +61,9 @@ class KImage(QObject):
         self.radius = radius
         if not deffered:
             self.beginDownload()
-    
+
+        self.images_cache = cacheManager.getCache("images_cache")
+        
     @Slot()
     def download(self):
         self.beginDownload()
@@ -109,7 +111,7 @@ class KImage(QObject):
         self.status = Status.DOWNLOADING
         hash_ = cacheManager.ghash(url)
         
-        if image := cacheManager.getCache("images_cache").getKeyPath(hash_):
+        if image := self.images_cache.getKeyPath(hash_):
             self.status = Status.DOWNLOADED
             self.image = image
             return
@@ -124,7 +126,7 @@ class KImage(QObject):
                     extension = mimetypes.guess_extension(content_type)
                 else:
                     extension
-                cacheManager.getCache("images_cache").put(key=hash_, value=temp, byte=True, filext=extension)
+                self.images_cache.put(key=hash_, value=temp, byte=True, filext=extension)
                 
                 self.status = Status.DOWNLOADED
             except Exception as e:
@@ -132,18 +134,17 @@ class KImage(QObject):
                 self.status = Status.FAILED
         
         if self.cover:
-            
-            if image := cacheManager.getCache("images_cache").getKeyPath(hash_ + "coverconverted"):
+            if image := self.images_cache.getKeyPath(hash_ + "coverconverted"):
                 self.image = image
                 return # return if the image is already converted, and in the cache
             
-            image = cacheManager.getCache("images_cache").getKeyPath(hash_)
+            image = self.images_cache.getKeyPath(hash_)
             image = await asyncBgworker.putCoverConvert(callback=self.coverCallback, path=image, radius=self.radius, size=50, identify=hash_ + "coverconverted")
         else:
-            self.image = cacheManager.getCache("images_cache").getKeyPath(hash_)
+            self.image = self.images_cache.getKeyPath(hash_)
         
     def coverCallback(self, path: str):
-        self.image = path
+        self.image = self.images_cache.getKeyPath(path)
     
     def setRadius(self, radius: int):
         self.radius = radius
@@ -157,7 +158,7 @@ class KImage(QObject):
             self._url = url
         
         identifier = id if id else self._url
-        if image := cacheManager.getCache("images_cache").getKeyPath(cacheManager.ghash(identifier)):
+        if image := self.images_cache.getKeyPath(cacheManager.ghash(identifier)):
             self.status = Status.DOWNLOADED
             self.image = image
             return

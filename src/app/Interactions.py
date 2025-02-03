@@ -50,6 +50,7 @@ class Interactions(QObject):
         self.queueModel_ = universal.queueInstance.queueModel
         
         self._currentSongCover = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=10)
+        self._currentSongCover.setParent(self)
         self._currentSongCover.imageChanged.connect(self.coverChangedTest)
         universal.queueInstance.songChanged.connect(self.changeSongKImage)
         universal.queueInstance.songChanged.connect(self.songChangeMirror)
@@ -79,7 +80,7 @@ class Interactions(QObject):
 
     @Property(QObject, constant=True)
     def currentSongCover(self):
-        return universal.KImageProxy(self._currentSongCover, self)
+        return self._currentSongCover
     
     @Property(str, notify=songChanged)
     def currentSongTitle(self):

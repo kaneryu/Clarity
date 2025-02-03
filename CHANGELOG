@@ -8,6 +8,7 @@
 
 - bug in cacheManager that didn't use asyncio.lock on deleting a key, and also integrity check having incorrect implementation. -- kaneryu on 2025-02-02
 - fix bug in cachemanger caused by using async lock in non-async functions -- kaneryu on 2025-02-02
+- fix bug in workers that didn't call the callback if using putcoverconvert, and fix bug that didn't convert coverconvert key into path before returing it to the UI -- kaneryu on 2025-02-02
 
 
 

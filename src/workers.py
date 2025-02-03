@@ -127,11 +127,11 @@ class Async_BackgroundWorker(threading.Thread):
     
     async def putCoverConvert(self, callback, path: str, radius: int, size: int = 50, identify: str = ""):
         d = {"path": path, "radius": radius, "size": size, "identify": identify}
-        await self.jobs.put({"func": utils.convertTocover.convertToCover_path, "args": [], "kwargs": d})
+        await self.add_job(func = utils.convertTocover.convertToCover_path, callback=callback, path=path, radius=radius, size=size, identify=identify)
     
     def putCoverConvert_sync(self, callback, path: str, radius: int, size: int = 50, identify: str = ""):
         d = {"path": path, "radius": radius, "size": size, "identify": identify}
-        self.jobs.put_nowait({"func": utils.convertTocover.convertToCover_path, "args": [], "kwargs": d})
+        self.add_job_sync(func = utils.convertTocover.convertToCover_path, callback=callback, usestar=False, a=[path, radius, size, identify])
     
     def stop(self):
         self.stopped = True
