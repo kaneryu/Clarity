@@ -62,7 +62,6 @@ class Interactions(QObject):
     def songChangeMirror(self):
         self.songChanged.emit()
         self.durationChanged.emit()
-        print("after emit")
     
     @Slot()
     def durationChangedMirror(self):
@@ -110,11 +109,7 @@ class Interactions(QObject):
     
     @Property(QObject, notify=songChanged)
     def currentSong(self):
-        print("executing currentSong")
         f: universal.song_module.Song = universal.song_module.SongProxy(universal.queueInstance.currentSongObject, self)
-        print(f.thread())
-        print(universal.mainThread)
-        print(universal.queueInstance.currentSongObject.thread())
         return f
     
     @Property(bool, notify=playingStatusChanged)
@@ -142,8 +137,7 @@ class Interactions(QObject):
     def next(self):
         q = universal.queueInstance
         q.next()
-        print("next")
-    
+
     @Slot(int)
     def setQueueIndex(self, index: int):
         q = universal.queueInstance

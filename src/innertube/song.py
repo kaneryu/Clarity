@@ -112,7 +112,7 @@ class Song(QObject):
     
     _instances = {}
     
-    def __new__(cls, id: str = "", givenInfo: dict = {"None": None}, fs: bool = False) -> object:
+    def __new__(cls, id: str = "", givenInfo: dict = {"None": None}, fs: bool = False) -> "Song":
         # fs refers to the fakesong override
         if not fs:
             if id in cls._instances:
