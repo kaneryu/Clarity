@@ -11,6 +11,7 @@
 - fix bug in workers that didn't call the callback if using putcoverconvert, and fix bug that didn't convert coverconvert key into path before returing it to the UI -- kaneryu on 2025-02-02
 - fix bug where non-rounded cover would be returned when retrieveing cover from cache -- kaneryu on 2025-02-02
 - fix bug in kimage that wouldn't initialize a variable before downlading the image -- kaneryu on 2025-02-03
+- fix bug in song where playback info was never downloaded in the first place -- kaneryu on 2025-02-03
 
 
 

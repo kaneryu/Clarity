@@ -277,12 +277,12 @@ class Song(QObject):
         c = cacheManager.getCache("songs_cache")
         identifier = self.id + "_playbackinfo"
         self.rawPlaybackInfo = c.get(identifier)
-        if not self.rawPlaybackInfo:
+        if not self.rawPlaybackInfo: # if not cached
+            self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
             c.put(identifier, json.dumps(self.rawPlaybackInfo), byte = False, expiration = time.time() + 3600) # 1 hour
         else:
             self.rawPlaybackInfo = json.loads(self.rawPlaybackInfo)
         
-        # self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
         
         # open("playbackinfo.json", "w").write(json.dumps(self.rawPlaybackInfo))
         
