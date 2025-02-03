@@ -58,11 +58,11 @@ class KImage(QObject):
         # self.moveToThread(mainThread)
         
         self.cover = cover
+        self.images_cache = cacheManager.getCache("images_cache")
         self.radius = radius
+        
         if not deffered:
             self.beginDownload()
-
-        self.images_cache = cacheManager.getCache("images_cache")
         
     @Slot()
     def download(self):
