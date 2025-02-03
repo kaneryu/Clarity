@@ -3,3 +3,7 @@
 ## New Features
 
 - Add font files to the application with a test on the homepage -- kaneryu on 2025-01-25
+
+## Bugfixes
+
+- bug in cacheManager that didn't use asyncio.lock on deleting a key, and also integrity check having incorrect implementation. -- kaneryu on 2025-02-02

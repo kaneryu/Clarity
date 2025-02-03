@@ -266,18 +266,19 @@ class CacheManager:
         Args:
             key (str): The key used to refer to the item. The key *should not* contain a file extension. It will break things.
         """
-        if key in self.__cache_path_map:
-            self.statistics["size"] -= self.metadata[key].get("size", 0)
-            self.statistics["deletions"] += 1
-            if os.path.exists(self.__cache_path_map[key]):
-                    os.remove(self.__cache_path_map[key])
-            del self.__cache_path_map[key]
-            del self.metadata[key]
-            del self.last_used[key]
-        else:
-            self._print(f"key {key} not found", ErrorLevel.WARNING)
-        
-        self.__metadataSave()
+        with self.lock:
+            if key in self.__cache_path_map:
+                self.statistics["size"] -= self.metadata[key].get("size", 0)
+                self.statistics["deletions"] += 1
+                if os.path.exists(self.__cache_path_map[key]):
+                        os.remove(self.__cache_path_map[key])
+                del self.__cache_path_map[key]
+                del self.metadata[key]
+                del self.last_used[key]
+            else:
+                self._print(f"key {key} not found", ErrorLevel.WARNING)
+            
+            self.__metadataSave()
     
     def clear(self):
         """Clear all values in the cache
@@ -319,13 +320,7 @@ class CacheManager:
         for i in self.__cache_path_map:
             if not os.path.exists(self.__cache_path_map[i]):
                 self._print(f"key {i} is orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
-                if restore:
-                    self._print(f"key {i} will be restored", ErrorLevel.INFO)
-                    data = open(os.path.join(self.absdir, i), 'r').read()
-                    os.remove(os.path.join(self.absdir, i))
-                    self.put(i, data, Btypes.AUTO)
-                else:
-                    self._print(f"key {i} will be not be restored", ErrorLevel.INFO)
+                self.__cache_path_map.pop(i)
                 continue
                 
             data = self.getMetadata(i)
