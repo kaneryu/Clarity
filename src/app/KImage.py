@@ -111,10 +111,15 @@ class KImage(QObject):
         self.status = Status.DOWNLOADING
         hash_ = cacheManager.ghash(url)
         
-        if image := self.images_cache.getKeyPath(hash_):
-            self.status = Status.DOWNLOADED
-            self.image = image
-            return
+        if not self.cover:
+            if image := self.images_cache.getKeyPath(hash_):
+                self.status = Status.DOWNLOADED
+                self.image = image
+                return
+        else:
+            if image := self.images_cache.getKeyPath(hash_ + "coverconvertedrounded"):
+                self.image = image
+                return
         
         async with httpx.AsyncClient() as client:
             try:
@@ -139,7 +144,7 @@ class KImage(QObject):
                 return # return if the image is already converted, and in the cache
             
             image = self.images_cache.getKeyPath(hash_)
-            image = await asyncBgworker.putCoverConvert(callback=self.coverCallback, path=image, radius=self.radius, size=50, identify=hash_ + "coverconverted")
+            image = await asyncBgworker.putCoverConvert(callback=self.coverCallback, path=image, radius=self.radius, size=100, identify=hash_ + "coverconverted")
         else:
             self.image = self.images_cache.getKeyPath(hash_)
         

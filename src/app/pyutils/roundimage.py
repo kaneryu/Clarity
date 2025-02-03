@@ -5,7 +5,7 @@ from io import BytesIO
 
 
 imageCache = getCache("images_cache")
-async def roundimage(image: str, radius = 20, cache: CacheManager = imageCache) -> int:
+async def roundimage(image: str, radius = 20, cache: CacheManager = imageCache, identifier = "") -> int:
     """rounds an image from local path, and returns key of the image in cache
     """
     hsh = ghash(image + "rounded" + str(radius))
@@ -24,7 +24,10 @@ async def roundimage(image: str, radius = 20, cache: CacheManager = imageCache) 
     im.save(buffer, format='PNG')
     image_bytes = buffer.getvalue()
     
-    key = cache.put(ghash(image + "rounded" + str(radius)), image_bytes, byte=True, filext='.png', expiration=None)
+    if identifier:
+        key = cache.put(identifier, image_bytes, byte=True, filext='.png', expiration=None)
+    else:
+        key = cache.put(ghash(image + "rounded" + str(radius)), image_bytes, byte=True, filext='.png', expiration=None)
     
     return key
 

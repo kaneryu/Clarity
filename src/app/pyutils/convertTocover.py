@@ -30,14 +30,13 @@ async def convertToCover(link: str, radius: int, size: int):
     
     path = cache.getKeyPath(cache.put(ghash(identifier + "coverconverted"), image_bytes, byte=True, filext='.png', expiration=None))
     
-    
-    
     return await roundimage.roundimage(path, radius, cache=cache)
 
 
 async def convertToCover_path(path: str, radius: int, size: int = -100, identify: str = ""):
+    custom_identifier = identify
     """takes in a path, crops it to a square, rounds the corners, and returns the key to the image in the cache"""
-    identifier = ghash(path + str(radius) + str(size))
+    auto_identifier = ghash(path + str(radius) + str(size))
     image = Image.open(path)
     width, height = image.size
     if width > height:
@@ -46,6 +45,8 @@ async def convertToCover_path(path: str, radius: int, size: int = -100, identify
         image = image.crop((0, 0, width, width))
     
     # resize the image to the desired size
+    if size == None:
+        size = width
     image = image.resize((size, size), Image.LANCZOS)
     
     buffer = BytesIO()
@@ -54,11 +55,13 @@ async def convertToCover_path(path: str, radius: int, size: int = -100, identify
     
     cache = getCache("images_cache")
     
-    if identify:
-        path = cache.getKeyPath(cache.put(ghash(identify), image_bytes, byte=True, filext='.png', expiration=None))
+    if custom_identifier:
+        path = cache.getKeyPath(cache.put(custom_identifier, image_bytes, byte=True, filext='.png', expiration=None))
     else:
-        path = cache.getKeyPath(cache.put(ghash(identifier + "coverconverted"), image_bytes, byte=True, filext='.png', expiration=None))
+        path = cache.getKeyPath(cache.put(ghash(auto_identifier + "coverconverted"), image_bytes, byte=True, filext='.png', expiration=None))
     
     
-    
-    return await roundimage.roundimage(path, radius, cache=cache)
+    if identify:
+        return await roundimage.roundimage(path, radius, cache=cache, identifier=custom_identifier + "rounded")
+    else:
+        return await roundimage.roundimage(path, radius, cache=cache, identifier=ghash(auto_identifier + "coverconverted" + "rounded"))

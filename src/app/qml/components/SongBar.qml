@@ -61,7 +61,7 @@ Item {
         id: masterLayout
         spacing: 5
         anchors.fill: parent
-        anchors.leftMargin: 10
+        anchors.leftMargin: 5
         anchors.rightMargin: 10
 
 
