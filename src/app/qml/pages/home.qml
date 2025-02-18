@@ -41,4 +41,8 @@ Item {
         }
         font.pixelSize: 48
     }
+
+    Base.Song {
+        id: r76AWibyDDQ
+    }
 }

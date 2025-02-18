@@ -1,6 +1,7 @@
 # stdlib imports
 import json
 import inspect
+from typing import overload
 
 # library imports
 from PySide6.QtCore import (
@@ -166,6 +167,26 @@ class Interactions(QObject):
         smodule = universal.song_module
         song = smodule.Song(id)
         universal.asyncBgworker.add_job_sync(song.download)
+    
+    @Slot(str, result=QObject)
+    def getSong(self, id: str):
+        smodule = universal.song_module
+        song = smodule.SongProxy(smodule.Song(id), self)
+        return song
+
+    @Slot(QObject, result=QObject)
+    def getSongCover(self, song: universal.song_module.Song) -> QObject:
+        i = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=50)
+        i.setId(song.id)
+        i.beginDownload()
+        return i
+    
+    @Slot(str, result=QObject)
+    def getSongCoverId(self, arg: str) -> QObject:
+        i = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=50)
+        i.setId(arg)
+        i.beginDownload()
+        return i
     
     # convenience functions for interacting with the song class
     # all functions will take in an ID

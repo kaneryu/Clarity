@@ -15,8 +15,8 @@
 # nuitka-project: --copyright="This is free and open-source software -- GNU GPL v3"
 # nuitka-project: --windows-product-name="InnerTuneDesktop"
 
-# nuitka-project: --product-version=0.20.6
-# nuitka-project: --file-version=0.20.6
+# nuitka-project: --product-version=0.20.7
+# nuitka-project: --file-version=0.20.7
 
 # nuitka-project: --output-filename=InnerTuneDesktop
 # disabled: --disable-console

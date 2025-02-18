@@ -91,14 +91,7 @@ ApplicationWindow {
             }
         }
     }
-    // Button {
-    //     id: reloadButton
-    //     text: "Reload"
-    //     anchors.top: parent.top
-    //     anchors.right: parent.right
-    //     onClicked: webview.reload()
-    //     z: 999
-    // }
+
     ColObjs.ColRect {
         id: content
         anchors.top: header.bottom

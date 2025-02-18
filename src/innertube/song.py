@@ -102,6 +102,16 @@ class DownloadStatus(enum.Enum):
     DOWNLOADING = 1
     DOWNLOADED = 2
 
+class PlayingStatus(enum.IntEnum):
+    """Playing Status"""
+    PLAYING = 0 # Playing
+    PAUSED = 1 # Paused
+    BUFFERING = 2 # Media is buffering
+    STOPPED = 3 # No media is loaded
+    ERROR = 4 # Unrecoverable error
+    
+    NOT_PLAYING = 5 # Only for songproxy class; Returned when the current song is not currently playing
+
 class Song(QObject):
     
     idChanged = Signal(str)
@@ -109,6 +119,8 @@ class Song(QObject):
     downloadedChanged = Signal(bool)
     downloadStatusChanged = Signal(enum.Enum)
     downloadProgressChanged = Signal(int)
+    
+    songInfoFetched = Signal()
     
     _instances = {}
     
@@ -270,6 +282,8 @@ class Song(QObject):
         self.category: str = self.rawMicroformatData["microformatDataRenderer"]["category"]
         
         self.isFamilySafe: bool = self.rawMicroformatData["microformatDataRenderer"]["familySafe"]
+        
+        self.songInfoFetched.emit()
 
     def download_playbackInfo(self) -> None:
         """Because ytdlp isn't async, input this function into the BackgroundWorker to do the slow part in a different thread.
@@ -474,13 +488,15 @@ class Song(QObject):
         self.lyrics = await self.api.get_lyrics(self.id)
         return self.lyrics
 
-
 class SongProxy(QObject):
     idChanged = Signal(str)
     sourceChanged = Signal(str)
     downloadedChanged = Signal(bool)
     downloadStatusChanged = Signal(enum.Enum)
     downloadProgressChanged = Signal(int)
+    playingStatusChanged = Signal(int)
+    
+    infoChanged = Signal()
     
     def __init__(self, target: Song, parent: QObject) -> None:
         super().__init__()
@@ -491,6 +507,8 @@ class SongProxy(QObject):
         self.target.downloadedChanged.connect(self.downloadedChanged)
         self.target.downloadStatusChanged.connect(self.downloadStatusChanged)
         self.target.downloadProgressChanged.connect(self.downloadProgressChanged)
+        
+        self.target.songInfoFetched.connect(self.infoChanged)
         
         self.target.idChanged.connect(lambda: self.update("id"))
         self.target.sourceChanged.connect(lambda: self.update("source"))
@@ -521,45 +539,53 @@ class SongProxy(QObject):
         # Forward any unknown attribute access to target
         return getattr(self.target, name)
     
-    @QProperty(str, constant=True)
+    @QProperty(str, notify=infoChanged)
     def title(self) -> str:
-        return self.target.title
+        return getattr(self.target, "title")
     
-    @QProperty(str, constant=True)
+    @QProperty(str, notify=infoChanged)
     def artist(self) -> str:
-        return self.target.artist
+        return getattr(self.target, "artist")
     
-    @QProperty(str, constant=True)
+    @QProperty(str, notify=infoChanged)
     def description(self) -> str:
-        return self.target.description
-    
-    @QProperty(str, constant=True)
+        return getattr(self.target, "description")
+
+    @QProperty(str, notify=infoChanged)
     def uploadDate(self) -> str:
-        return self.target.uploadDate
+        return getattr(self.target, "uploadDate")
     
-    @QProperty(str, constant=True)
+    @QProperty(str, notify=infoChanged)
     def views(self) -> str:
-        return self.target.views
+        return getattr(self.target, "views")
         
     @QProperty(str, notify=idChanged)
     def id(self) -> str:
-        return self._id
+        return getattr(self, "_id")
 
     @QProperty(str, notify=sourceChanged)
     def source(self) -> str:
-        return self._source
+        return getattr(self, "_source")
 
     @QProperty(bool, notify=downloadedChanged)
     def downloaded(self) -> bool:
-        return self._downloaded
+        return getattr(self, "_downloaded")
 
     @QProperty(enum.Enum, notify=downloadStatusChanged)
     def downloadStatus(self) -> enum.Enum:
-        return self._downloadStatus
+        return getattr(self, "_downloadStatus")
 
     @QProperty(int, notify=downloadProgressChanged)
     def downloadProgress(self) -> int:
-        return self._downloadProgress
+        return getattr(self, "_downloadProgress")
+    
+    @QProperty(int, notify=playingStatusChanged)
+    def playingStatus(self) -> int:
+        q = Queue()
+        if q.currentSongId == self.id:
+            return q.playingStatus
+        else:
+            return PlayingStatus.NOT_PLAYING
     
     @Slot()
     def test(self):
@@ -575,14 +601,6 @@ class LoopType(enum.Enum):
     SINGLE = 1 # Repeat the current song
     ALL = 2 # Repeat all songs in the queue
 
-class PlayingStatus(enum.IntEnum):
-    """Playing Status"""
-    PLAYING = 0 # Playing
-    PAUSED = 1 # Paused
-    BUFFERING = 2 # Media is buffering
-    STOPPED = 3 # No media is loaded
-    ERROR = 4 # Unrecoverable error
-    
 class QueueModel(QAbstractListModel):
     def __init__(self):
         super().__init__()
@@ -672,7 +690,7 @@ class Queue(QObject):
     
     instance = None
     
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> "Queue":
         if cls.instance is None:
             cls.instance = super(Queue, cls).__new__(cls, *args, **kwargs)
         return cls.instance

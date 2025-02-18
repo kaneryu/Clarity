@@ -6,34 +6,40 @@ import QtQuick.Effects
 
 import "../../colobjs" as ColObjs
 import "../../components" as Components
+import "../../js/utils.js" as Utils
 
 Item {
     id: root
 
-    property QtObject song: null
+    property string id
+    property QtObject song: Interactions.currentSong
 
     /* debug */
-    property string songTitle: "testing"
-    property string songArtist: "the tester"
-    property string songLength: "2:04"
-    property string imageUrl: "https://img.youtube.com/vi/tI7e34KfwB4/maxresdefault.jpg"
+    property string songTitle: song.title
+    property string songArtist: song.artist
+    property string songLength: Utils.secondsToHMS(song.duration)
+    property QtObject cover: Interactions.getSongCover(song)
 
-    enum DownloadStatus { NotDownloaded, Downloading, Downloaded }
-    property int songDownloadStatus: DownloadStatus.NotDownloaded
+    /*
+    NOT_DOWNLOADED = 0
+    DOWNLOADING = 1
+    DOWNLOADED = 2
+    */
+    property int songDownloadStatus: song.downloadStatus
 
-    enum SongType { Local, Remote }
-    property int songSourceType: SongType.Local
+    // enum SongType { Local, Remote }
+    // property int songSourceType: SongType.Local
 
-    enum SongStatus { Playing, Paused, Stopped }
-    property int songPlayStatus: SongStatus.Stopped
+    // enum SongStatus { Playing, Paused, Stopped }
+    // property int songPlayStatus: SongStatus.Stopped
 
-    enum LibraryStatus { NotInLibrary, InLibrary }
-    property int songLibraryStatus: LibraryStatus.NotInLibrary
+    // enum LibraryStatus { NotInLibrary, InLibrary }
+    // property int songLibraryStatus: LibraryStatus.NotInLibrary
 
-    enum LikeStatus { NotLiked, Liked }
-    property int songLikeStatus: LikeStatus.NotLiked
+    // enum LikeStatus { NotLiked, Liked }
+    // property int songLikeStatus: LikeStatus.NotLiked
 
-    property bool songIsSelected: false
+    // property bool songIsSelected: false
 
     /*
     Image | Song title
@@ -47,21 +53,9 @@ Item {
 
     Image {
         id: songImage
-        property int radius: 60
-        source: Backend.convertToCover(imageUrl, radius, width)
+        source: cover.image
         width: 80
         height: 80
-    }
-    
-    Timer {
-        id: coverChangeTimer
-        interval: 5000
-        running: false
-        repeat: false
-        onTriggered: {
-            console.log("changing cover")
-            root.imageUrl = "https://images.unsplash.com/photo-1721332155637-8b339526cf4c?q=80&w=1935&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-        }
     }
 
     ColumnLayout {
@@ -77,7 +71,7 @@ Item {
 
         ColObjs.ColText {
             id: songTitleText
-            text: songTitle
+            text: root.songTitle
 
             color: Theme.onSurface
         }
@@ -87,7 +81,7 @@ Item {
             spacing: 0
             ColObjs.ColText {
                 id: songArtistText
-                text: songArtist
+                text: root.songArtist
                 color: Theme.onSurface
             }
 
@@ -99,7 +93,7 @@ Item {
 
             ColObjs.ColText {
                 id: songLengthText
-                text: songLength
+                text: root.songLength
                 color: Theme.onSurface
             }
         }

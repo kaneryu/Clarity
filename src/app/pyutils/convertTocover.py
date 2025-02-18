@@ -34,8 +34,8 @@ async def convertToCover(link: str, radius: int, size: int):
 
 
 async def convertToCover_path(path: str, radius: int, size: int = -100, identify: str = ""):
-    custom_identifier = identify
     """takes in a path, crops it to a square, rounds the corners, and returns the key to the image in the cache"""
+    custom_identifier = identify
     auto_identifier = ghash(path + str(radius) + str(size))
     image = Image.open(path)
     width, height = image.size

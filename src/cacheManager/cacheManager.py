@@ -162,9 +162,18 @@ class CacheManager:
         if not os.path.exists(metadata_path):
             return False
         
-        with open(metadata_path, 'r') as f:
-            metadata = json.load(f)
         
+        try:
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+        except json.JSONDecodeError:
+            
+            self._print("metadata is not valid JSON", ErrorLevel.ERROR)
+            self._print("metadata will be deleted, and cache will be wiped!", ErrorLevel.ERROR)
+            os.remove(metadata_path)
+            self.clear()
+            return False
+            
         if not "version" in metadata:
             self._print("metadata version not found", ErrorLevel.ERROR)
             return False
@@ -286,10 +295,18 @@ class CacheManager:
                 self.statistics["size"] -= self.metadata[key].get("size", 0)
                 self.statistics["deletions"] += 1
                 if os.path.exists(self.__cache_path_map[key]):
+                    
+                    try:
                         os.remove(self.__cache_path_map[key])
-                del self.__cache_path_map[key]
-                del self.metadata[key]
-                del self.last_used[key]
+                    except (FileNotFoundError, PermissionError) as e:
+                        self._print(f"Error removing cache item {key}: {e}", ErrorLevel.WARNING)
+                try:
+                    del self.__cache_path_map[key]
+                    del self.metadata[key]
+                    del self.last_used[key]
+                    
+                except KeyError as e:
+                    self._print(f"KeyError encountered for key {key}: {e}", ErrorLevel.WARNING)
             else:
                 self._print(f"key {key} not found", ErrorLevel.WARNING)
             
@@ -300,7 +317,7 @@ class CacheManager:
         """
         for key in self.__cache_path_map:
             if os.path.exists(self.__cache_path_map[key]):
-                    os.remove(self.__cache_path_map[key])
+                    self.delete(key)
         self.__cache_path_map.clear()
         self.metadata.clear()
         self.last_used.clear()
@@ -324,18 +341,12 @@ class CacheManager:
             
             if not i in self.__cache_path_map:
                 self._print(f"key {i} is orphaned (data is on disk but reference is missing)", ErrorLevel.WARNING)
-                if restore:
-                    self._print(f"key {i} will be restored", ErrorLevel.INFO)
-                    data = open(os.path.join(self.absdir, i), 'r').read()
-                    os.remove(os.path.join(self.absdir, i))
-                    self.put(i, data, Btypes.AUTO, expiration=None)
-                else:
-                    self._print(f"key {i} will be not be restored", ErrorLevel.INFO)
+                self.delete(i)
         
-        for i in self.__cache_path_map:
+        for i in list(self.__cache_path_map.keys()):
             if not os.path.exists(self.__cache_path_map[i]):
                 self._print(f"key {i} is orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
-                self.__cache_path_map.pop(i)
+                self.delete(i)
                 continue
                 
             data = self.getMetadata(i)
@@ -352,7 +363,7 @@ class CacheManager:
         self._print("collecting expired items", ErrorLevel.INFO)
         now = time.time()
         
-        keys_to_delete = [key for key in list(self.metadata.keys()) if (-1 if self.metadata[key].get("expiration", -1) == None else self.metadata[key].get("expiration", -1)) < now]
+        keys_to_delete = [key for key in list(self.metadata.keys()) if (-1 if self.metadata[key].get("expiration", 1.79e309) == None else self.metadata[key].get("expiration", 1.79e309)) < now]
     
         for key in keys_to_delete:
             self._print(f"deleting key {key} because it expired", ErrorLevel.INFO)

@@ -49,8 +49,22 @@ class KImage(QObject):
     statusChanged = Signal(str)
     imageChanged = Signal(str)
     
+    _instances = {}
+    
+    # def __new__(cls, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 10) -> "KImage":
+    #     if url in cls._instances:
+    #         return cls._instances[url]
+    #     instance = super(KImage, cls).__new__(cls, placeholder, url, parent, deffered, cover, radius)
+    #     cls._instances[url] = instance
+    #     return instance
+        
     def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 10):
         super().__init__(parent)
+        
+        # if hasattr(self, "_init"):
+        #    return
+        
+        # self._init = True
         self._placeholder = placeholder
         self._url = url
         self._image = None
@@ -121,22 +135,24 @@ class KImage(QObject):
                 self.image = image
                 return
         
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(url)
-                response.raise_for_status()
-                temp = response.content
-                content_type = response.headers.get("Content-Type")
-                if content_type:
-                    extension = mimetypes.guess_extension(content_type)
-                else:
-                    extension
-                self.images_cache.put(key=hash_, value=temp, byte=True, filext=extension)
-                
-                self.status = Status.DOWNLOADED
-            except Exception as e:
+        if not (self.cover and self.images_cache.getKeyPath(hash_)):
+            # if we're in cover mode and the image is downloaded, skip this step.
+            async with httpx.AsyncClient() as client:
+                try:
+                    response = await client.get(url)
+                    response.raise_for_status()
+                    temp = response.content
+                    content_type = response.headers.get("Content-Type")
+                    if content_type:
+                        extension = mimetypes.guess_extension(content_type)
+                    else:
+                        extension
+                    self.images_cache.put(key=hash_, value=temp, byte=True, filext=extension)
+                    
+                    self.status = Status.DOWNLOADED
+                except Exception as e:
 
-                self.status = Status.FAILED
+                    self.status = Status.FAILED
         
         if self.cover:
             if image := self.images_cache.getKeyPath(hash_ + "coverconverted"):
