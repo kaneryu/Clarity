@@ -1,16 +1,5 @@
-# Version 0.20
+# Version 0.21
 
 ## New Features
 
-- Add font files to the application with a test on the homepage -- kaneryu on 2025-01-25
-
-## Bugfixes
-
-- bug in cacheManager that didn't use asyncio.lock on deleting a key, and also integrity check having incorrect implementation. -- kaneryu on 2025-02-02
-- fix bug in cachemanger caused by using async lock in non-async functions -- kaneryu on 2025-02-02
-- fix bug in workers that didn't call the callback if using putcoverconvert, and fix bug that didn't convert coverconvert key into path before returing it to the UI -- kaneryu on 2025-02-02
-- fix bug where non-rounded cover would be returned when retrieveing cover from cache -- kaneryu on 2025-02-02
-- fix bug in kimage that wouldn't initialize a variable before downlading the image -- kaneryu on 2025-02-03
-- fix bug in song where playback info was never downloaded in the first place -- kaneryu on 2025-02-03
-- fix various bugs in cacheManager, while working on the Song tile -- kaneryu on 2025-02-17
-- fix bug where status wasn't updated when fetching image from cache -- kaneryu on 2025-02-17
+- assosiate song kimages with songs #3 -- kaneryu on 2025-02-18

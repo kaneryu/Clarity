@@ -49,7 +49,7 @@ class KImage(QObject):
     statusChanged = Signal(str)
     imageChanged = Signal(str)
     
-    _instances = {}
+    # _instances = {}
     
     # def __new__(cls, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 10) -> "KImage":
     #     if url in cls._instances:
@@ -58,7 +58,7 @@ class KImage(QObject):
     #     cls._instances[url] = instance
     #     return instance
         
-    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 10):
+    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 10, id: str = "", song: song.Song = None) -> None:
         super().__init__(parent)
         
         # if hasattr(self, "_init"):
@@ -75,8 +75,14 @@ class KImage(QObject):
         self.images_cache = cacheManager.getCache("images_cache")
         self.radius = radius
         
+        if song:
+            if song.source == "full":
+                self._url = song.largestThumbailUrl
+                
         if not deffered:
             self.beginDownload()
+        else:
+            self.status = Status.WAITING
         
     @Slot()
     def download(self):
@@ -84,8 +90,12 @@ class KImage(QObject):
         
     @QProperty(str, notify=imageChanged)
     def image(self):
+        if self.status == Status.WAITING:
+            self.beginDownload()
+            return "file:///" + Placeholders.LOADING
+        
         if not self.status == Status.DOWNLOADED:
-            if self.status == Status.WAITING or self.status == Status.DOWNLOADING or self.status == Status.INITIALIZING:
+            if self.status == Status.DOWNLOADING or self.status == Status.INITIALIZING:
                 return "file:///" + Placeholders.LOADING
             if self.status == Status.FAILED:
                 return "file:///" + Placeholders.ERROR
@@ -138,23 +148,18 @@ class KImage(QObject):
         
         if not (self.cover and self.images_cache.getKeyPath(hash_)):
             # if we're in cover mode and the image is downloaded, skip this step.
-            async with httpx.AsyncClient() as client:
-                try:
-                    response = await client.get(url)
-                    response.raise_for_status()
-                    temp = response.content
-                    content_type = response.headers.get("Content-Type")
-                    if content_type:
-                        extension = mimetypes.guess_extension(content_type)
-                    else:
-                        extension
-                    self.images_cache.put(key=hash_, value=temp, byte=True, filext=extension)
-                    
-                    self.status = Status.DOWNLOADED
-                except Exception as e:
+            content, content_type = await self.__downloadImage(url)
+            if content is not None:
+                if content_type:
+                    extension = mimetypes.guess_extension(content_type)
+                else:
+                    extension = None
+                self.images_cache.put(key=hash_, value=content, byte=True, filext=extension)
 
-                    self.status = Status.FAILED
-        
+                self.status = Status.DOWNLOADED
+            else:
+                self.status = Status.FAILED
+                
         if self.cover:
             if image := self.images_cache.getKeyPath(hash_ + "coverconverted"):
                 self.image = image
@@ -165,6 +170,15 @@ class KImage(QObject):
         else:
             self.image = self.images_cache.getKeyPath(hash_)
         
+    async def __downloadImage(self, url: str):
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(url)
+                response.raise_for_status()
+                return (response.content, response.headers.get("Content-Type"))
+            except Exception as e:
+                return (None, None)
+
     def coverCallback(self, path: str):
         self.image = self.images_cache.getKeyPath(path)
     
@@ -174,7 +188,6 @@ class KImage(QObject):
     def setId(self, id: str):
         self.beginDownload(id=id)
         
-    
     def beginDownload(self, url: str = "", id: str = ""):
         if url:
             self._url = url
@@ -187,7 +200,10 @@ class KImage(QObject):
         
         asyncBgworker.add_job_sync(func=self.imageDownload, url=self._url, id=id)
         self.status = Status.WAITING
-        
+    
+    def __del__(self):
+        pass
+    
 class KImageProxy(QObject):
     imageChanged = Signal(str)
     statusChanged = Signal(str)

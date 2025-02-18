@@ -169,6 +169,7 @@ class Song(QObject):
         self._initialized = True
         
         # self.moveToThread(g.mainThread)
+        self._cover = g.assosiateCover(self)
         return None
     
     
@@ -216,6 +217,11 @@ class Song(QObject):
     def downloadProgress(self, value: int) -> None:
         self._downloadProgress = value
         self.downloadProgressChanged.emit(self._downloadProgress)
+        
+    @QProperty(str, constant=True)
+    def cover(self) -> object:
+        return self._cover
+
     
     def from_search_result(self, search_result: dict) -> None:
         self.source = "search"

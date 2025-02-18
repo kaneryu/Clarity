@@ -89,5 +89,8 @@ def getAllDownloadedSongs() -> list:
     l = [i for i in l if not i.endswith("_downloadMeta")]
     return l
 
+def assosiateCover(song: song_module.Song):
+    return KImage(placeholder=Placeholders.SONG, deffered=True, cover=True, radius=50, song=song)
+
 startupQueue.extend(i for i in getAllDownloadedSongs())
 bgworker.add_job(queueInstance.setQueue, startupQueue)
