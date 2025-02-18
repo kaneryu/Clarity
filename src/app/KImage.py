@@ -132,6 +132,7 @@ class KImage(QObject):
                 return
         else:
             if image := self.images_cache.getKeyPath(hash_ + "coverconvertedrounded"):
+                self.status = Status.DOWNLOADED
                 self.image = image
                 return
         

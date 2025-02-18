@@ -13,3 +13,4 @@
 - fix bug in kimage that wouldn't initialize a variable before downlading the image -- kaneryu on 2025-02-03
 - fix bug in song where playback info was never downloaded in the first place -- kaneryu on 2025-02-03
 - fix various bugs in cacheManager, while working on the Song tile -- kaneryu on 2025-02-17
+- fix bug where status wasn't updated when fetching image from cache -- kaneryu on 2025-02-17
