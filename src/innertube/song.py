@@ -7,10 +7,13 @@ import enum
 import requests
 from concurrent.futures import ThreadPoolExecutor
 import os
+import builtins
 
-from PySide6.QtCore import QObject, Signal, Slot, Qt, Property as QProperty, QThread, QMutex, QMutexLocker
-from PySide6.QtCore import QAbstractListModel, QModelIndex
-from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtCore import Property as QProperty
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtNetwork import *
+from PySide6.QtQuick import QQuickImageProvider
 
 import ytmusicapi as ytm
 import yt_dlp as yt_dlp_module
@@ -19,6 +22,7 @@ import vlc
 
 from src import universal as g
 from src import cacheManager
+from src import network
 import src.innertube.song as song
 
 ydlOpts = {
@@ -97,6 +101,14 @@ def convert_to_timestamp(date_str: str) -> float:
 
     return timestamp
 
+def run_sync(func, *args, **kwargs):
+    coro = func(*args, **kwargs)
+    if asyncio.iscoroutine(coro):
+        future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
+        future.result() # wait for the result
+    else:
+        return coro
+
 class DownloadStatus(enum.Enum):
     NOT_DOWNLOADED = 0
     DOWNLOADING = 1
@@ -169,7 +181,7 @@ class Song(QObject):
         self._initialized = True
         
         # self.moveToThread(g.mainThread)
-        self._cover = g.assosiateCover(self)
+        self._cover = g.associateCover(self)
         return None
     
     
@@ -228,6 +240,10 @@ class Song(QObject):
         
         self.title = search_result["title"]
         self.id = search_result["videoId"]
+    
+    async def ensure_info(self) -> None:
+        if not self.source:
+            await self.get_info()
         
     async def get_info(self, api) -> None:
         """
@@ -262,7 +278,7 @@ class Song(QObject):
         self.smallestThumbail: dict = self.thumbails[0]
         self.largestThumbail: dict = self.thumbails[-1]
         self.smallestThumbailUrl: str = self.smallestThumbail["url"]
-        self.largestThumbailUrl: str = self.largestThumbail["url"]
+        self.largestThumbnailUrl: str = self.largestThumbail["url"]
         
         self.views: int = int(self.rawVideoDetails["viewCount"])
         
@@ -601,6 +617,97 @@ class SongProxy(QObject):
         setattr(self, "_"+name, getattr(self.target, name))
         exec("self."+name+"Changed.emit(getattr(self, '_"+name+"'))")
 
+
+class SongImageProvider(QQuickImageProvider):
+    sendRequest = Signal(QNetworkRequest, str, name = "sendRequest")
+    
+    def __init__(self):
+        super().__init__(QQuickImageProvider.ImageType.Image, QQuickImageProvider.Flag.ForceAsynchronousImageLoading)
+        
+        self.cached_masks = {}
+        self.defaultMask = self.createRoundingImage(QSize(544, 544), 20)
+        self.sendRequest.connect(network.accessManager.get, type = Qt.ConnectionType.BlockingQueuedConnection)
+        
+    
+    def createRoundingImage(self, size: QSize, radius: int) -> QPixmap:
+        # create a mask 3x the size of the image
+        # draw the rounded rect on the mask
+        # anti-alias the mask down to the size of the image
+        # return the mask
+        
+        if (size, radius) in self.cached_masks:
+            r = QPixmap()
+            r.loadFromData(self.cached_masks[(size, radius)])
+            return r
+        
+        maskSize = size * 3
+        if size.width() < 0 or size.height() < 0:
+            maskSize = QSize(544, 544)
+            size = QSize(544, 544)
+        
+        
+        mask = QPixmap(maskSize)
+        mask.fill(Qt.GlobalColor.black)
+        mask = mask.scaled(maskSize, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    
+        
+        
+        painter = QPainter(mask)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setBrush(Qt.GlobalColor.white)
+        painter.setPen(Qt.GlobalColor.white)
+        painter.drawRoundedRect(QRect(0, 0, maskSize.width(), maskSize.height()), radius, radius, mode = Qt.SizeMode.AbsoluteSize)
+        
+        painter.end()
+        
+        mask = mask.scaled(size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        
+        buff = QBuffer()
+        buff.open(QBuffer.OpenModeFlag.ReadWrite)
+        mask.save(buff, "PNG", 100)
+        buff.seek(0)
+        self.cached_masks[(size, radius)] = buff.data()
+        buff.close()
+        
+        return mask
+        
+        
+    
+    def requestImage(self, id, size, requestedSize):
+        # should be in a diff. thread, if i read the docs right
+        # ID will be in the format songID/radius
+        
+        
+        song_id, radius = id.split("/")
+        song = Song(song_id)
+        run_sync(song.ensure_info)
+        thumbUrl = song.largestThumbnailUrl
+        # request = QNetworkRequest(thumbUrl)
+        
+        # self.sendRequest.emit(request, str(builtins.id(request)))
+        # reply: QNetworkReply = network.accessManager.getReply(str(builtins.id(request)))
+        # reply.waitForReadyRead(10000)
+        request = requests.get(thumbUrl)
+        
+        img = QImage()
+        if request.status_code != 200:
+            return img
+        
+        img.loadFromData(request.content)
+
+        if requestedSize.width() < 0 or requestedSize.height() < 0:
+            requestedSize = QSize(544, 544)
+
+        img = img.scaled(requestedSize, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        mask = self.createRoundingImage(requestedSize, int(radius))
+        
+        img.setAlphaChannel(mask.toImage())
+        
+        return img
+        
+        
+
+
 class LoopType(enum.Enum):
     """Loop Types"""
     NONE = 0 # Halt after playing all songs
@@ -683,7 +790,6 @@ class QueueModel(QAbstractListModel):
         self.beginInsertRows(QModelIndex(), row, row + count - 1)
         self._queue.insert(row, [[] for _ in range(count)])
         self.endInsertRows()
-    
             
 class Queue(QObject):
     """Combined Queue and Player"""

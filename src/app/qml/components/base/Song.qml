@@ -18,7 +18,6 @@ Item {
     property string songTitle: song.title
     property string songArtist: song.artist
     property string songLength: Utils.secondsToHMS(song.duration)
-    property QtObject cover: Interactions.getSongCover(song)
 
     /*
     NOT_DOWNLOADED = 0
@@ -53,7 +52,8 @@ Item {
 
     Image {
         id: songImage
-        source: cover.image
+        source: "image://SongCover/" + song.id + "/350"
+        mipmap: true
         width: 80
         height: 80
     }

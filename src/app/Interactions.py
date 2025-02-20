@@ -50,7 +50,7 @@ class Interactions(QObject):
             
         self.queueModel_ = universal.queueInstance.queueModel
         
-        self._currentSongCover = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=50)
+        self._currentSongCover = universal.KImage(placeholder=universal.Placeholders.GENERIC, deferred=True, cover=True, radius=50)
         self._currentSongCover.setParent(self)
         self._currentSongCover.imageChanged.connect(self.coverChangedTest)
         universal.queueInstance.songChanged.connect(self.changeSongKImage)
@@ -76,12 +76,15 @@ class Interactions(QObject):
     @Slot(str)
     def changeSongKImage(self):
         print("changing song kimage")
-        id = universal.queueInstance.currentSongId
-        self._currentSongCover.setId(id)
+        # id = universal.queueInstance.currentSongId
+        # self._currentSongCover.setId(id)
 
     @Property(QObject, constant=True)
     def currentSongCover(self):
-        return self._currentSongCover
+        print(self.currentSong.cover)
+        print("currentSongCover")
+        print(self.currentSong.cover.image)
+        return self.currentSong.cover
     
     @Property(str, notify=songChanged)
     def currentSongTitle(self):
@@ -114,7 +117,7 @@ class Interactions(QObject):
             return universal.queueInstance.currentSongId
     
     @Property(QObject, notify=songChanged)
-    def currentSong(self):
+    def currentSong(self) -> universal.song_module.Song:
         f: universal.song_module.Song = universal.song_module.SongProxy(universal.queueInstance.currentSongObject, self)
         return f
     
@@ -176,13 +179,11 @@ class Interactions(QObject):
 
     @Slot(QObject, result=QObject)
     def getSongCover(self, song: universal.song_module.Song) -> QObject:
-        i = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=50)
-        i.setId(song.id)
-        return i
+        return song.cover
     
     @Slot(str, result=QObject)
     def getSongCoverId(self, arg: str) -> QObject:
-        i = universal.KImage(placeholder=universal.Placeholders.GENERIC, deffered=True, cover=True, radius=50)
+        i = universal.KImage(placeholder=universal.Placeholders.GENERIC, deferred=True, cover=True, radius=50)
         i.setId(arg)
         return i
     

@@ -1,9 +1,5 @@
-from src.cacheManager import cacheManager as cacheManager_module, dataStore as dataStore_module
-import src.innertube as innertube_module
-from src.innertube import search as search_module
-from src.innertube import song as song_module
 import threading
-import asyncio
+import concurrent.futures
 import types
 from hashlib import md5
 import time
@@ -11,13 +7,21 @@ import builtins
 import versions
 import os
 
-from PySide6.QtCore import QThread
+
+from src.cacheManager import cacheManager as cacheManager_module, dataStore as dataStore_module
+import src.innertube as innertube_module
+from src.innertube import search as search_module
+from src.innertube import song as song_module
+
+from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG
 
 from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_BackgroundWorker
 
 from src.app.KImage import KImage, Placeholders, Status, KImageProxy
 from .AppUrl import AppUrl, appUrl
 
+
+mainThread: QThread = QThread.currentThread()
 try:
     with open("version.txt") as f:
         version = versions.Version(f.read().strip())
@@ -37,10 +41,6 @@ datapath = os.path.abspath("data")
 globalCache = cacheManager_module.CacheManager(name="cache", directory=os.path.join(datapath, "cache"))
 songCache = cacheManager_module.CacheManager(name="songs_cache", directory=os.path.join(datapath, "songs_cache"))
 imageCache = cacheManager_module.CacheManager(name="images_cache", directory=os.path.join(datapath, "images_cache"))
-
-asyncBgworker.add_job_sync(globalCache.collect)
-asyncBgworker.add_job_sync(songCache.collect)
-asyncBgworker.add_job_sync(imageCache.collect)
 
 songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(datapath, "song_datastore"))
 
@@ -89,8 +89,17 @@ def getAllDownloadedSongs() -> list:
     l = [i for i in l if not i.endswith("_downloadMeta")]
     return l
 
-def assosiateCover(song: song_module.Song):
-    return KImage(placeholder=Placeholders.SONG, deffered=True, cover=True, radius=50, song=song)
+# def runInMainThread(func, *args, **kwargs):
+#     if threading.current_thread() == mainThread:
+#         return func(*args, **kwargs)
+#     f = mainThreadExcecutor.submit(lambda: func(*args, **kwargs))
+#     return f.result()
+
+def associateCover(song: song_module.Song):
+    k = KImage(placeholder=Placeholders.SONG, deferred=True, cover=True, radius=50, song=song)
+    k.moveToThread(mainThread)
+    return k
+    
 
 startupQueue.extend(i for i in getAllDownloadedSongs())
 bgworker.add_job(queueInstance.setQueue, startupQueue)

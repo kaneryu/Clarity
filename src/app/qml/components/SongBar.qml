@@ -19,6 +19,7 @@ Item {
     visible: true
     property bool settingsButton: true
     property QtObject song: Interactions.currentSong
+    // property QtObject songCover: Interactions.currentSongCover
 
     // Connections {
     //     target: Interactions
@@ -73,7 +74,7 @@ Item {
             Layout.alignment: Qt.AlignCenter
             Image {
                 id: songImage
-                source: Interactions.currentSongCover.image
+                source: "image://SongCover/" + song.id + "/300"
 
                 mipmap: true
                 Layout.preferredHeight: 30
@@ -82,6 +83,8 @@ Item {
                 onSourceChanged: {
                     console.log("Song image changed")
                 }
+                
+
             }
 
             TextVariant.Small {

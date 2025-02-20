@@ -1,5 +1,5 @@
-# Version 0.21
+# Version 0.22
 
 ## New Features
 
-- assosiate song kimages with songs #3 -- kaneryu on 2025-02-18
+- add song image provider, to start moving away from KImage (#4) -- kaneryu on 2025-02-20

@@ -72,6 +72,9 @@ def main():
     engine.rootContext().setContextProperty("QMLPath", "file:///" + universal.Paths.qmlPath.replace("\\", "/") + "/")
     engine.rootContext().setContextProperty("RootPath", "file:///" + universal.Paths.rootpath.replace("\\", "/")+ "/")
 
+    sip = universal.song_module.SongImageProvider()
+    engine.addImageProvider("SongCover", sip)
+    
     icon = QIcon(os.path.join(universal.Paths.assetsPath, "Logo.png"))
     app.setWindowIcon(icon)
     app.setApplicationName("InnerTuneDesktop")

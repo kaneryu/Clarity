@@ -51,14 +51,14 @@ class KImage(QObject):
     
     # _instances = {}
     
-    # def __new__(cls, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 10) -> "KImage":
+    # def __new__(cls, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deferred: bool = False, cover: bool = False, radius: int = 10) -> "KImage":
     #     if url in cls._instances:
     #         return cls._instances[url]
-    #     instance = super(KImage, cls).__new__(cls, placeholder, url, parent, deffered, cover, radius)
+    #     instance = super(KImage, cls).__new__(cls, placeholder, url, parent, deferred, cover, radius)
     #     cls._instances[url] = instance
     #     return instance
         
-    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deffered: bool = False, cover: bool = False, radius: int = 10, id: str = "", song: song.Song = None) -> None:
+    def __init__(self, placeholder: Placeholders = Placeholders.GENERIC, url: str = "", parent = None, deferred: bool = False, cover: bool = False, radius: int = 10, id: str = "", song: song.Song = None) -> None:
         super().__init__(parent)
         
         # if hasattr(self, "_init"):
@@ -77,9 +77,9 @@ class KImage(QObject):
         
         if song:
             if song.source == "full":
-                self._url = song.largestThumbailUrl
+                self._url = song.largestThumbnailUrl
                 
-        if not deffered:
+        if not deferred:
             self.beginDownload()
         else:
             self.status = Status.WAITING
@@ -126,7 +126,7 @@ class KImage(QObject):
             api = asyncBgworker.API
             song_: song.Song = song.Song(id)
             await song_.get_info(api)
-            url = song_.largestThumbailUrl
+            url = song_.largestThumbnailUrl
             
         if not id and not url:
             self.status = Status.FAILED
@@ -200,9 +200,6 @@ class KImage(QObject):
         
         asyncBgworker.add_job_sync(func=self.imageDownload, url=self._url, id=id)
         self.status = Status.WAITING
-    
-    def __del__(self):
-        pass
     
 class KImageProxy(QObject):
     imageChanged = Signal(str)
