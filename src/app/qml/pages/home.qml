@@ -7,7 +7,7 @@ import QtQuick.Controls.Basic
 import "../components" as Components
 import "../components/base" as Base
 import "../colobjs" as ColObjs
-
+import "../components/text" as TextVariant
 
 Item {
     id: root
@@ -29,20 +29,25 @@ Item {
     //     }
     // }
 
-    Text {
-        id: title
-        text: "\uF673"
-        font.family: "Material Symbols Rounded"
-        font.variableAxes: {
-            "fill": 0,
-            "grad": 200,
-            "opsz": 48,
-            "wght": 700
-        }
-        font.pixelSize: 48
-    }
+    // Text {
+    //     id: title
+    //     text: "\uF673"
+    //     font.family: "Material Symbols Rounded"
+    //     font.variableAxes: {
+    //         "fill": 0,
+    //         "grad": 200,
+    //         "opsz": 48,
+    //         "wght": 700
+    //     }
+    //     font.pixelSize: 48
+    // }
 
-    Base.Song {
-        id: r76AWibyDDQ
+    // Base.Song {
+    //     id: r76AWibyDDQ
+    // }
+    TextVariant.Default {
+        id: _title
+        text: "awaawawawwawawawawawaawawawawawwa"
+
     }
 }

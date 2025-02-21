@@ -197,8 +197,81 @@ ApplicationWindow {
             id: queueBackground
             anchors.fill: parent
             color: Utils.addAlpha("80", Theme.surfaceContainerHighest)
-            radius: 10
+            radius: 15
 
+        }
+
+        Rectangle {
+            id: topshade
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 35
+            topLeftRadius: 15; topRightRadius: 15
+            z: 1
+
+            gradient: Gradient {
+                GradientStop {
+                    position: 1
+                    color: Utils.addAlpha("00", Theme.surfaceContainerLowest)
+                }
+                GradientStop {
+                    position: 0
+                    color: Utils.addAlpha("FF", Theme.surfaceContainerLowest)
+                }
+            }
+            state: (!queueList.atYBeginning) ? "visible" : "hidden"
+            
+            states: [
+                State {
+                    name: "visible"
+                    PropertyChanges {
+                        target: topshade
+                        visible: true
+                        opacity: 1
+                    }
+                },
+                State {
+                    name: "hidden"
+                    PropertyChanges {
+                        target: topshade
+                        visible: false
+                        opacity: 0
+                    }
+                }
+            ]
+            transitions: [
+                Transition {
+                    from: "visible"
+                    to: "hidden"
+                    SequentialAnimation {
+                        NumberAnimation {
+                            properties: "opacity"
+                            duration: 200
+                        }
+                        PropertyAction {
+                            target: topshade
+                            property: "visible"
+                            value: false
+                        }
+                    }
+                },
+                Transition {
+                    from: "hidden"
+                    to: "visible"
+                    SequentialAnimation {
+                        PropertyAction {
+                            target: topshade
+                            property: "visible"
+                            value: true
+                        }
+                        NumberAnimation {
+                            properties: "opacity"
+                            duration: 200
+                        }
+                    }
+                }
+            ]
         }
 
         state: (Backend.queueVisible == true) ? "visible" : "hidden"
@@ -238,6 +311,13 @@ ApplicationWindow {
         ListView {
             id: queueList
             anchors.fill: parent
+            anchors.leftMargin: 5
+            anchors.rightMargin: 5
+            anchors.topMargin: 5
+            anchors.bottomMargin: 5
+
+            spacing: 5
+            
             model: Backend.getqueueModel()
             clip: true
 
