@@ -173,7 +173,6 @@ class Interactions(QObject):
     
     @Slot(str, result=QObject)
     def getSong(self, id: str):
-        print("getSong" + id)
         smodule = universal.song_module
         song = smodule.SongProxy(smodule.Song(id), self)
         return song
