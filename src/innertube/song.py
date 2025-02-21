@@ -574,6 +574,10 @@ class SongProxy(QObject):
     @QProperty(str, notify=infoChanged)
     def description(self) -> str:
         return getattr(self.target, "description")
+    
+    @QProperty(int, notify=infoChanged)
+    def duration(self) -> int:
+        return getattr(self.target, "duration")
 
     @QProperty(str, notify=infoChanged)
     def uploadDate(self) -> str:

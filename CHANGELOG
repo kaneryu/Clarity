@@ -7,6 +7,7 @@
 ## Bugfixes
 
 - fixed a few startup bugs, made queueview use the Song object -- kaneryu on 2025-02-21
+- made duration available from song object -- kaneryu on 2025-02-21
 
 
 
