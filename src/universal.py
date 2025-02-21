@@ -102,4 +102,4 @@ def associateCover(song: song_module.Song):
     
 
 startupQueue.extend(i for i in getAllDownloadedSongs())
-bgworker.add_job(queueInstance.setQueue, startupQueue)
+queueInstance.setQueue(startupQueue)

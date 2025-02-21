@@ -23,7 +23,7 @@ import vlc
 from src import universal as g
 from src import cacheManager
 from src import network
-import src.innertube.song as song
+# import src.innertube.song as song
 
 ydlOpts = {
     "external_downloader_args": ['-loglevel', 'panic'],
@@ -628,7 +628,7 @@ class SongImageProvider(QQuickImageProvider):
         
         self.cached_masks = {}
         self.defaultMask = self.createRoundingImage(QSize(544, 544), 20)
-        self.sendRequest.connect(network.accessManager.get, type = Qt.ConnectionType.BlockingQueuedConnection)
+        # self.sendRequest.connect(network.accessManager.get, type = Qt.ConnectionType.BlockingQueuedConnection)
         
     
     def createRoundingImage(self, size: QSize, radius: int) -> QPixmap:

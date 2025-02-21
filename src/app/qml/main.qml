@@ -241,20 +241,18 @@ ApplicationWindow {
             model: Backend.getqueueModel()
             clip: true
 
-            delegate: Rectangle {
-                id: delegateItem
+            delegate: Base.Song {
+                required property var qobject
+                required property var index
+                required property var id
                 width: parent.width
-                height: 50
-                color: "transparent"
+                height: 80
+                song: Interactions.getSong(id)
 
-                TextVariant.Small {
-                    id: songTitle
-                    text: model.title + " - " + model.artist
-                }
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        Interactions.setQueueIndex(model.index)
+                        Interactions.setQueueIndex(index)
                     }
                 }
             }
