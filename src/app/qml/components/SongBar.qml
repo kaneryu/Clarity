@@ -84,6 +84,12 @@ Item {
                     console.log("Song image changed")
                 }
                 
+                BusyIndicator {
+                    id: imageLoader
+                    anchors.fill: parent
+                    running: true
+                    visible: songImage.status === Image.Loading
+                }
 
             }
 

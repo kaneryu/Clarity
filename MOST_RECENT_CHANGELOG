@@ -1,5 +1,5 @@
-# Version 0.22
+# Version 0.23
 
 ## New Features
 
-- add song image provider, to start moving away from KImage (#4) -- kaneryu on 2025-02-20
+- Added busyindicators to image to show when the image is loading -- kaneryu on 2025-02-21

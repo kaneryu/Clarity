@@ -243,7 +243,7 @@ class Song(QObject):
     
     async def ensure_info(self) -> None:
         if not self.source:
-            await self.get_info()
+            await self.get_info(g.asyncBgworker.API)
         
     async def get_info(self, api) -> None:
         """
@@ -251,6 +251,8 @@ class Song(QObject):
         """
         api: ytm.YTMusic = api
         c = cacheManager.getCache("songs_cache")
+        if not self.id or self.id == "":
+            return
         identifier = self.id + "_info"
         self.rawdata = c.get(identifier)
         if not self.rawdata:
@@ -680,6 +682,8 @@ class SongImageProvider(QQuickImageProvider):
         
         song_id, radius = id.split("/")
         song = Song(song_id)
+        if song_id == '' or song_id is None:
+            return
         run_sync(song.ensure_info)
         thumbUrl = song.largestThumbnailUrl
         # request = QNetworkRequest(thumbUrl)

@@ -41,10 +41,18 @@ Item {
 
             Image {
                 id: image
-                source: thumbnail.image
+                source: "image://SongCover/" + parent.ytid + "/350"
                 anchors.top: parent.top
                 width: 100
                 height: 100
+                mipmap: true
+
+                BusyIndicator {
+                    id: imageLoader
+                    anchors.fill: parent
+                    running: true
+                    visible: parent.status === Image.Loading
+                }
             }
 
             MouseArea {

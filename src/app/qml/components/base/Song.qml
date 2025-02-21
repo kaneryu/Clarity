@@ -56,6 +56,13 @@ Item {
         mipmap: true
         width: 80
         height: 80
+        
+        BusyIndicator {
+            id: imageLoader
+            anchors.fill: parent
+            running: true
+            visible: songImage.status === Image.Loading
+        }
     }
 
     ColumnLayout {
