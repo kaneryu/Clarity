@@ -193,6 +193,18 @@ ApplicationWindow {
         //     sourceRect: Qt.rect(x,y, width, height)
         // }
 
+        MouseArea {
+            id: clickblocker
+            anchors.fill: parent
+            z: 0
+            onClicked: {
+                mouse.accepted = false
+            }
+            onWheel: {
+                // wheel.accepted = false
+            }
+        }
+
         Rectangle {
             id: queueBackground
             anchors.fill: parent
@@ -208,7 +220,7 @@ ApplicationWindow {
             anchors.right: parent.right
             height: 35
             topLeftRadius: 15; topRightRadius: 15
-            z: 1
+            z: 2
 
             gradient: Gradient {
                 GradientStop {
@@ -315,7 +327,7 @@ ApplicationWindow {
             anchors.rightMargin: 5
             anchors.topMargin: 5
             anchors.bottomMargin: 5
-
+            z: 1
             spacing: 5
             
             model: Backend.getqueueModel()

@@ -4,6 +4,10 @@
 
 - improve queueview visuals -- kaneryu on 2025-02-21
 
+## Bugfixes
+
+- add mouseblocker on queue view so clicks and scrolls don't pass through it -- kaneryu on 2025-02-21
+
 
 
 # Version 0.23
