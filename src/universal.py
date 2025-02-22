@@ -99,7 +99,11 @@ def associateCover(song: song_module.Song):
     k = KImage(placeholder=Placeholders.SONG, deferred=True, cover=True, radius=50, song=song)
     k.moveToThread(mainThread)
     return k
-    
+
+def createSongMainThread(songId: str) -> song_module.Song:
+    song = song_module.Song(songId)
+    song.moveToThread(mainThread)
+    return song
 
 startupQueue.extend(i for i in getAllDownloadedSongs())
 queueInstance.setQueue(startupQueue)

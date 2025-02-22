@@ -7,3 +7,4 @@
 ## Bugfixes
 
 - add mouseblocker on queue view so clicks and scrolls don't pass through it -- kaneryu on 2025-02-21
+- make search use the default song thing -- kaneryu on 2025-02-22

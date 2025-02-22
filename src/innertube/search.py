@@ -9,7 +9,7 @@ from typing import Union
 import asyncio
 import src.universal as universal
 
-from PySide6.QtCore import QObject, Signal, QAbstractListModel, QModelIndex, Qt, Property
+from PySide6.QtCore import QObject, Signal, QAbstractListModel, QModelIndex, Qt, Property, QMetaObject, QMetaMethod
 
 
 
@@ -26,7 +26,7 @@ class BasicSearchResultsModel(QAbstractListModel):
         # thumbnail: thumbnail
         # duration: duration (for albums, playists its the number of songs, for podcasts, videos, episodes, songs its the duration)
         
-        self._data = [{"type": "song", "title": "adam", "creator": "", "id": "", "parentId": "", "thumbnail": None, "duration": ""}]
+        self._data = [{"type": "", "title": "", "creator": "", "id": "", "parentId": "", "thumbnail": None, "duration": "", "object": None}]
         # self.dataChanged.connect(self.log)
     
     def rowCount(self, parent: QModelIndex = QModelIndex()):
@@ -49,7 +49,8 @@ class BasicSearchResultsModel(QAbstractListModel):
             Qt.ItemDataRole.UserRole + 3: b"ytid",
             Qt.ItemDataRole.UserRole + 4: b"duration",
             Qt.ItemDataRole.UserRole + 5: b"thumbnail",
-            Qt.ItemDataRole.UserRole + 6: b"parentId"
+            Qt.ItemDataRole.UserRole + 6: b"parentId",
+            Qt.ItemDataRole.UserRole + 7: b"object"
         }
 
     def data(self, index: QModelIndex, role: int):
@@ -74,6 +75,9 @@ class BasicSearchResultsModel(QAbstractListModel):
             return universal.KImageProxy(data["thumbnail"], self)
         if role == Qt.ItemDataRole.UserRole + 6:
             return data["parentId"]
+        if role == Qt.ItemDataRole.UserRole + 7:
+            print(data["object"])
+            return data["object"]
         return None
     
     def headerData(self, section: int, orientation: Qt.Orientation, role: int):
@@ -111,12 +115,14 @@ class BasicSearchResultsModel(QAbstractListModel):
             self._data[index.row()]["parentId"] = value
         if role == Qt.ItemDataRole.UserRole + 5:
             self._data[index.row()]["thumbnail"] = value
+        if role == Qt.ItemDataRole.UserRole + 7:
+            self._data[index.row()]["object"] = value
         self.dataChanged.emit(index, index)
         return True
 
     def insertRow(self, row: int, parent: QModelIndex):
         self.beginInsertRows(parent, row, row)
-        self._data.insert(row, {"type": "", "title": "", "creator": "", "id": "", "parentId": "", "thumbnail": None, "duration": ""})
+        self._data.insert(row, {"type": "", "title": "", "creator": "", "id": "", "parentId": "", "thumbnail": None, "duration": "", "object": None})
         self.endInsertRows()
         return True
 
@@ -129,6 +135,7 @@ class BasicSearchResultsModel(QAbstractListModel):
         self.setData(self.index(len(self._data) - 1, 0), data["duration"], Qt.ItemDataRole.UserRole + 4)
         self.setData(self.index(len(self._data) - 1, 0), data["thumbnail"], Qt.ItemDataRole.UserRole + 5)
         self.setData(self.index(len(self._data) - 1, 0), data["parentId"], Qt.ItemDataRole.UserRole + 6)
+        self.setData(self.index(len(self._data) - 1, 0), data["object"], Qt.ItemDataRole.UserRole + 7)
     
     def resetModel(self):
         self.beginResetModel()
@@ -224,7 +231,7 @@ async def search(query: str, filter: searchFilters = searchFilters.SONGS, limit:
         searchResult: A class that contains the results.
     """
     API = universal.asyncBgworker.API
-    def parseSong(item: dict):
+    async def parseSong(item: dict):
         try:
             type_ = "song"
             title = item.get("title", "")
@@ -234,9 +241,13 @@ async def search(query: str, filter: searchFilters = searchFilters.SONGS, limit:
             thumbnail = universal.KImage(url = item["thumbnails"][-1]["url"]) if item.get("thumbnails", None) else ""
             duration = item["duration_seconds"]
             explicit = item["isExplicit"]
+            song = universal.createSongMainThread(id)
+            await song.get_info(universal.asyncBgworker.API)
+            print("after sinfo")
+            print(song.title)
         except KeyError:
             return None
-        return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "thumbnail": thumbnail, "duration": duration}
+        return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "thumbnail": thumbnail, "duration": duration, "object": universal.song_module.Song(id)}
     
     def parseVideo(item: dict):
         pass
@@ -256,11 +267,11 @@ async def search(query: str, filter: searchFilters = searchFilters.SONGS, limit:
         
     if model.rowCount(QModelIndex()) > 0:
         model.resetModel()
-    s = await API.search(query, filter = filter, limit = limit, ignore_spelling = ignore_spelling)
+        
     # print(json.dumps(s))
     for result in await API.search(query, filter = filter, limit = limit, ignore_spelling = ignore_spelling):
         if result["category"].lower() == "songs":
-            p = parseSong(result)
+            p = await parseSong(result)
             if p == None:
                 continue
             model._newResult(p)

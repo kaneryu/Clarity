@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Qt.labs.platform
 import QtQuick.Controls.Basic
+import Qt.labs.qmlmodels
 
 import "../components" as Components
 import "../components/base" as Base
@@ -16,56 +17,19 @@ Item {
 
     property bool windowTooSmall: (root.height < 300) ? true : false
 
-    Component{
-        id: songResultDelegate
-        Rectangle {
-            id: songResultDelegateRect
-            width: 100
-            height: 100
-            
-            color: Theme.surfaceContainer
-            radius: 5
-            property string title
-            property string creator
-            property string duration
-            property string ytid
-            property var thumbnail
-
-            TextVariant.Default {
-                id: _title
-                text: title
-                anchors.top: parent.top
-                anchors.left: image.right
-                anchors.leftMargin: 10
-            }
-
-            Image {
-                id: image
-                source: "image://SongCover/" + parent.ytid + "/350"
-                anchors.top: parent.top
-                width: 100
-                height: 100
-                mipmap: true
-
-                BusyIndicator {
-                    id: imageLoader
-                    anchors.fill: parent
-                    running: true
-                    visible: parent.status === Image.Loading
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    console.log("Clicked: ", title)
-                    Interactions.searchPress(ytid)
-                }
-            }
-        }
-    }
     Item {
         id: albumResultDelegate
+    }
+
+    Item {
+        id: loadingIndicator
+        anchors.centerIn: parent
+        visible: Backend.searchModel.count === 0
+
+        BusyIndicator {
+            anchors.centerIn: parent
+            running: true
+        }
     }
 
     ListView {
@@ -78,32 +42,55 @@ Item {
 
         clip: true
         model: Backend.searchModel
-        delegate: Item {
-            width: searchListViewTest.width
-            height: 100
-            Rectangle {
-                width: parent.width
-                height: 100
-                color: "transparent"
-                Text {
-                    text: model.title + " - " + model.creator
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                }
-                Loader {
-                    id: delegateLoader
-                    anchors.fill: parent
-                    sourceComponent: model.type === "song" ? songResultDelegate : albumResultDelegate
-                    onLoaded: {
-                        item.title = model.title
-                        item.creator = model.creator
-                        item.duration = model.duration
-                        item.ytid = model.ytid
-                        item.thumbnail = model.thumbnail
-                        console.log("Loaded: ", item.title)
+
+        spacing: 10
+
+        DelegateChooser {
+            id: delegateChooser
+            role: "type"
+            DelegateChoice {
+                roleValue: "song"
+                Rectangle {
+                    required property string ytid
+                    id: bg
+
+                    width: 330 + 7
+                    height: 80 + 7
+                    color: Theme.surfaceContainer
+
+                    radius: 20
+
+                    Base.Song {
+                        property string ytid: bg.ytid
+
+                        id: song
+                        song: Interactions.getSong(ytid)
+
+                        textColor: Theme.onSurface
+
+                        anchors.fill: parent
+                        anchors.margins: 5
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                Interactions.searchPress(song.id)
+                            }
+                        }
                     }
                 }
             }
+            DelegateChoice {
+                roleValue: "album"
+                // Base.Album {
+                //     required property string object
+                //     id: album
+
+                //     album: object
+                //     anchors.fill: parent
+                // }
+            }
         }
+        delegate: delegateChooser
     }
 }

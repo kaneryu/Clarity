@@ -14,7 +14,6 @@ Item {
     property string id
     property QtObject song: Interactions.currentSong
 
-    /* debug */
     property string songTitle: song.title
     property string songArtist: song.artist
     property string songLength: Utils.secondsToHMS(song.duration)
@@ -25,6 +24,8 @@ Item {
     DOWNLOADED = 2
     */
     property int songDownloadStatus: song.downloadStatus
+
+    property color textColor: Theme.onSurface
 
     // enum SongType { Local, Remote }
     // property int songSourceType: SongType.Local
@@ -80,7 +81,7 @@ Item {
             id: songTitleText
             text: root.songTitle
 
-            color: Theme.onSurface
+            color: root.textColor
         }
 
         RowLayout {
@@ -89,19 +90,19 @@ Item {
             ColObjs.ColText {
                 id: songArtistText
                 text: root.songArtist
-                color: Theme.onSurface
+                color: root.textColor
             }
 
             ColObjs.ColText {
                 id: spacer
                 text: " • "
-                color: Theme.onSurface
+                color: root.textColor
             }
 
             ColObjs.ColText {
                 id: songLengthText
                 text: root.songLength
-                color: Theme.onSurface
+                color: root.textColor
             }
         }
     }
