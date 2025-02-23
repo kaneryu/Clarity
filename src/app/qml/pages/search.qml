@@ -74,7 +74,7 @@ Item {
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
-                                Interactions.searchPress(song.id)
+                                Interactions.searchPress(ytid)
                             }
                         }
                     }

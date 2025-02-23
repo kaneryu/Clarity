@@ -254,13 +254,15 @@ class Song(QObject):
         if not self.id or self.id == "":
             return
         identifier = self.id + "_info"
-        self.rawdata = c.get(identifier)
-        if not self.rawdata:
+        self.rawData = c.get(identifier)
+        if not self.rawData:
             self.rawData: dict = await api.get_song(self.id)
             c.put(identifier, json.dumps(self.rawData), byte = False)
         else:
-            self.rawData = json.loads(self.rawdata)
+            self.rawData = json.loads(self.rawData)
             
+            if self.rawData.get("playabilityStatus", {}).get("status") == "ERROR":
+                raise Exception(f"Song cannot be retrieved due to playability issues. id: {self.id} " + self.rawData.get("playabilityStatus", {}).get("reason"))
 
         self.source = "full"
         
