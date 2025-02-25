@@ -9,6 +9,7 @@
 - add mouseblocker on queue view so clicks and scrolls don't pass through it -- kaneryu on 2025-02-21
 - make search use the default song thing -- kaneryu on 2025-02-22
 - bug where search used the wrong ID in searchpress -- kaneryu on 2025-02-23
+- remove kimage from interactions -- kaneryu on 2025-02-25
 
 
 
