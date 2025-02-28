@@ -243,8 +243,6 @@ async def search(query: str, filter: searchFilters = searchFilters.SONGS, limit:
             explicit = item["isExplicit"]
             song = universal.createSongMainThread(id)
             await song.get_info(universal.asyncBgworker.API)
-            print("after sinfo")
-            print(song.title)
         except KeyError:
             return None
         return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "thumbnail": thumbnail, "duration": duration, "object": universal.song_module.Song(id)}

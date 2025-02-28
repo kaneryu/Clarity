@@ -7,7 +7,7 @@ import enum
 import requests
 from concurrent.futures import ThreadPoolExecutor
 import os
-import builtins
+import logging
 
 from PySide6.QtCore import Property as QProperty
 from PySide6.QtCore import *
@@ -24,6 +24,8 @@ from src import universal as g
 from src import cacheManager
 from src import network
 # import src.innertube.song as song
+
+import src.discotube.presence as presence
 
 ydlOpts = {
     "external_downloader_args": ['-loglevel', 'panic'],
@@ -182,6 +184,7 @@ class Song(QObject):
         
         # self.moveToThread(g.mainThread)
         self._cover = g.associateCover(self)
+        self.logger = logging.getLogger("Song")
         return None
     
     
@@ -820,18 +823,15 @@ class Queue(QObject):
     def __init__(self):
         if hasattr(self, 'initialized'):
             return
+        
         super().__init__()
         self.initialized = True
-
+        self.logger = logging.getLogger("Queue")
         self._pointer = 0
         
         vlc_args = ["h254-fps=15", "network-caching", "file-caching", "verbose=1", "vv", "log-verbose=3"]
-        
-
         self.instance: vlc.Instance = vlc.Instance(vlc_args)
-
         self.player: vlc.MediaPlayer = self.instance.media_player_new()
-        
         self.eventManager: vlc.EventManager = self.player.event_manager()
         
         self._mutex = QMutex()
@@ -848,7 +848,6 @@ class Queue(QObject):
         
         self.eventManager.event_attach(vlc.EventType.MediaPlayerEndReached, self.songFinished)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerEncounteredError, self.on_vlc_error)
-        
         self.eventManager.event_attach(vlc.EventType.MediaPlayerPaused, self.onPauseEvent)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerPlaying, self.onPlayEvent)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerBuffering, self.onBufferingEvent)
@@ -856,21 +855,21 @@ class Queue(QObject):
         
         self._playingStatus = PlayingStatus.STOPPED
         
-        
         self.cache = cache
         self.queue: list[Song]
         self.pointer: int
         self.currentSongObject: Song
         
         self.purgetries = {}
+        self.presence = presence.initialize_discord_presence(self)
     
     def onPlayEvent(self, event):
-        print("Play Event")
+        self.logger.info("Play Event")
         self._playingStatus = PlayingStatus.PLAYING
         self.playingStatusChanged.emit(self._playingStatus)
     
     def onPauseEvent(self, event):
-        print("Pause Event")
+        self.logger.info("Pause Event")
         self._playingStatus = PlayingStatus.PAUSED
         self.playingStatusChanged.emit(self._playingStatus)
     
@@ -884,15 +883,13 @@ class Queue(QObject):
     @QProperty(bool, notify=playingStatusChanged)
     def isPlaying(self):
         with QMutexLocker(self._mutex):
-            if self._playingStatus == PlayingStatus.PLAYING:
-                return True
+            return self._playingStatus == PlayingStatus.PLAYING
     
     @QProperty(int, notify=playingStatusChanged)
     def playingStatus(self):
         with QMutexLocker(self._mutex):
-            if self.player.get_media() == None:
+            if self.player.get_media() is None:
                 return PlayingStatus.STOPPED
-            
             return self._playingStatus
     
     @QProperty(list, notify=queueChanged)
@@ -941,10 +938,9 @@ class Queue(QObject):
     @pointer.setter
     def pointer(self, value):
         if value == -1:
-            self._pointer = len(self.queue) - 1 # special case for setting pointer to last song
+            self._pointer = len(self.queue) - 1  # special case for setting pointer to last song
         if value < 0 or value >= len(self.queue):
             raise ValueError("Pointer must be between 0 and length of queue")
-        
         self.pointerMoved.emit()
         self._pointer = value
         
@@ -964,14 +960,11 @@ class Queue(QObject):
     
     @QProperty(int, notify=songChanged)
     def songFinishesAt(self):
-        return time.time() + self.currentSongDuration - self.currentSongTime # current time + time left
+        return time.time() + self.currentSongDuration - self.currentSongTime
         
     def checkError(self, url: str):
         r = requests.get(url)
-        if r.status_code == 200:
-            return False
-        else:
-            return True
+        return r.status_code != 200
 
     @Slot(result=dict)
     def getCurrentInfo(self) -> dict:
@@ -983,27 +976,27 @@ class Queue(QObject):
             self.add(i)
 
     def songFinished(self, event):
-        print("Song Finished")
-        print(self.player.get_state())
+        self.logger.info("Song Finished")
+        self.logger.info("Player state: %s", self.player.get_state())
         if self.loop == LoopType.SINGLE:
             self.play()
         elif self.loop == LoopType.ALL or self.loop == LoopType.NONE:
             self.next()
         else:
-            print("LoopType Invalid")
-            print("Treating as LoopType.NONE")
+            self.logger.error("LoopType Invalid")
+            self.logger.info("Treating as LoopType.NONE")
             self.next()
         self.songChanged.emit()
     
     def on_vlc_error(self, event):
-        print("VLC Error")
-        print(event)
+        self.logger.error("VLC Error")
+        self.logger.error("VLC error event: %s", event)
         g.bgworker.add_job(self.refetch)
     
     def refetch(self):
         self.purgetries[self.queueIds[self.pointer]] = self.purgetries.get(self.queueIds[self.pointer], 0) + 1
         if self.purgetries[self.queueIds[self.pointer]] > 1:
-            print("Purge Failed")
+            self.logger.error("Purge Failed")
             self.stop()
             return
         else:
@@ -1014,7 +1007,6 @@ class Queue(QObject):
     def goToSong(self, id: str):
         if not id in self.queue:
             self.add(id)
-        
         self.pointer = self.queueIds.index(id)
         self.play()
     
@@ -1025,11 +1017,9 @@ class Queue(QObject):
     @Slot()
     def resume(self):
         self.player.play()
-        
-         
+    
     @Slot()
     def play(self):
-        
         def Media(mrl):
             media: vlc.Media = self.instance.media_new(mrl)
             media.add_option("http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Herring/97.1.8280.8")
@@ -1038,25 +1028,24 @@ class Queue(QObject):
 
         self.songChanged.emit()
         url = self.queue[self.pointer].get_best_playback_MRL()
-        if not self.player.get_media() == None:
+        if self.player.get_media() is not None:
             self.player.stop()
-            
         self.player.set_media(Media(url))
         self.player.play()
         self.durationChanged.emit()
     
     def migrate(self, MRL):
-        """This function takes in a new MRL (for the same audio), and migrates the current song to that MRL, while trying to minimize interruptions.
-        """
-        paused = self.player.is_playing() == 0
+        paused = (self.player.is_playing() == 0)
         newMedia = self.instance.media_new(MRL)
         self.player.pause()
         t = self.player.get_time()
         self.player.set_media(newMedia)
-        self.player.play() if not paused else self.player.pause()
+        if not paused:
+            self.player.play()
+        else:
+            self.player.pause()
         self.player.set_time(t)
         
-    
     @Slot()
     def stop(self):
         self.player.stop()
@@ -1072,22 +1061,21 @@ class Queue(QObject):
     
     @Slot()
     def next(self):
-        print("Next")
-        print("Pointer: " + str(self.pointer), "Length: " + str(len(self.queue)))
+        self.logger.info("Next")
+        self.logger.info("Pointer: %s, Length: %s", self.pointer, len(self.queue))
         if self.pointer == len(self.queue) - 1:
-            print("Queue Finished")
+            self.logger.info("Queue Finished")
             if self.loop == LoopType.SINGLE:
-                self.play() # pointer doesn't change, song doesn't change
+                self.play()  # pointer doesn't change, song doesn't change
                 return
             elif self.loop == LoopType.ALL:
                 self.pointer = 0
                 self.play()
                 return
             else:
-                print("Queue Exhaused")
+                self.logger.error("Queue Exhausted")
                 self.stop()
                 return
-        
         self.pointer += 1
         self.play()
     
@@ -1105,7 +1093,6 @@ class Queue(QObject):
             }
 
         song_ = self.queue[pointer]
-        
         return {
             "title": song_.title,
             "uploader": song_.artist,
@@ -1113,11 +1100,10 @@ class Queue(QObject):
         }
     
     def add(self, id: str, index: int = -1, goto: bool = False):
-        s: Song = Song(id = id)
+        s: Song = Song(id=id)
         coro = s.get_info(g.asyncBgworker.API)
         future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
-        future.result() # wait for the result
-        
+        future.result()  # wait for the result
         g.bgworker.add_job(self.finishAdd, s, index, goto)
 
     def finishAdd(self, song: Song, index: int = -1, goto: bool = False):
@@ -1130,50 +1116,30 @@ class Queue(QObject):
             self.queueModel.insertRows(index, 1)
             self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.EditRole)
             self.queueIds.insert(index, song.id)
-
         if goto:
-            self.pointer = len(self.queue) -1 if index == -1 else index
+            self.pointer = len(self.queue) - 1 if index == -1 else index
             self.play()
     
     def _seek(self, seek_time: int):
         if seek_time < 0 or seek_time > self.player.get_length():
             raise ValueError("Time must be between 0 and video length")
-        if not self.player.get_media() == None:
+        if self.player.get_media() is not None:
             self.player.set_time(seek_time)
-            time.sleep(0.1) # wait for the buffer event to be emitted
-            # override it
+            time.sleep(0.1)
             self.onPlayEvent(None)
         else:
             raise ValueError("No Media Loaded")
     
     @Slot(int)
     def seek(self, time: int):
-        """Absolute seek
-
-        Args:
-            time (int): Time to seek to in seconds
-        """
         self._seek(time * 1000)
     
     @Slot(int)
     def aseek(self, time: int):
-        """Relative seek
-
-        Args:
-            time (int): Time to move by in seconds (positive or negative)
-        """
         self._seek(self.player.get_time() + time * 1000)
     
     @Slot(int)
     def pseek(self, percentage: int):
-        """Percentage seek
-
-        Args:
-            percentage (int): The percentage of the video to seek to
-
-        Raises:
-            ValueError: If the percentage is not between 0 and 100
-        """
         if percentage < 0 or percentage > 100:
             raise ValueError("Percentage must be between 0 and 100")
         self._seek(self.player.get_length() * percentage // 100)
