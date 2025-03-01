@@ -162,11 +162,6 @@ class Interactions(QObject):
     def getSongCover(self, song: universal.song_module.Song) -> QObject:
         return song.cover
     
-    @Slot(str, result=QObject)
-    def getSongCoverId(self, arg: str) -> QObject:
-        i = universal.KImage(placeholder=universal.Placeholders.GENERIC, deferred=True, cover=True, radius=50)
-        i.setId(arg)
-        return i
     
     # convenience functions for interacting with the song class
     # all functions will take in an ID

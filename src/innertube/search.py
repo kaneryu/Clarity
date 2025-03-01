@@ -23,10 +23,9 @@ class BasicSearchResultsModel(QAbstractListModel):
         # creator: creator
         # id: id
         # parentId: id of the parent (for songs its the album id, for albums its the artist id, for playlists its the creator id, for podcasts its the creator id, for episodes its the podcast id, for videos its the creator id)
-        # thumbnail: thumbnail
         # duration: duration (for albums, playists its the number of songs, for podcasts, videos, episodes, songs its the duration)
         
-        self._data = [{"type": "", "title": "", "creator": "", "id": "", "parentId": "", "thumbnail": None, "duration": "", "object": None}]
+        self._data = [{"type": "", "title": "", "creator": "", "id": "", "parentId": "", "duration": "", "object": None}]
         # self.dataChanged.connect(self.log)
     
     def rowCount(self, parent: QModelIndex = QModelIndex()):
@@ -48,7 +47,6 @@ class BasicSearchResultsModel(QAbstractListModel):
             Qt.ItemDataRole.UserRole + 2: b"creator",
             Qt.ItemDataRole.UserRole + 3: b"ytid",
             Qt.ItemDataRole.UserRole + 4: b"duration",
-            Qt.ItemDataRole.UserRole + 5: b"thumbnail",
             Qt.ItemDataRole.UserRole + 6: b"parentId",
             Qt.ItemDataRole.UserRole + 7: b"object"
         }
@@ -69,10 +67,6 @@ class BasicSearchResultsModel(QAbstractListModel):
             return data["id"]
         if role == Qt.ItemDataRole.UserRole + 4:
             return data["duration"]
-        if role == Qt.ItemDataRole.UserRole + 5:
-            if not data["thumbnail"]:
-                return None
-            return universal.KImageProxy(data["thumbnail"], self)
         if role == Qt.ItemDataRole.UserRole + 6:
             return data["parentId"]
         if role == Qt.ItemDataRole.UserRole + 7:
@@ -113,8 +107,6 @@ class BasicSearchResultsModel(QAbstractListModel):
             self._data[index.row()]["duration"] = value
         if role == Qt.ItemDataRole.UserRole + 6:
             self._data[index.row()]["parentId"] = value
-        if role == Qt.ItemDataRole.UserRole + 5:
-            self._data[index.row()]["thumbnail"] = value
         if role == Qt.ItemDataRole.UserRole + 7:
             self._data[index.row()]["object"] = value
         self.dataChanged.emit(index, index)
@@ -122,7 +114,7 @@ class BasicSearchResultsModel(QAbstractListModel):
 
     def insertRow(self, row: int, parent: QModelIndex):
         self.beginInsertRows(parent, row, row)
-        self._data.insert(row, {"type": "", "title": "", "creator": "", "id": "", "parentId": "", "thumbnail": None, "duration": "", "object": None})
+        self._data.insert(row, {"type": "", "title": "", "creator": "", "id": "", "parentId": "", "duration": "", "object": None})
         self.endInsertRows()
         return True
 
@@ -133,7 +125,6 @@ class BasicSearchResultsModel(QAbstractListModel):
         self.setData(self.index(len(self._data) - 1, 0), data["creator"], Qt.ItemDataRole.UserRole + 2)
         self.setData(self.index(len(self._data) - 1, 0), data["id"], Qt.ItemDataRole.UserRole + 3)
         self.setData(self.index(len(self._data) - 1, 0), data["duration"], Qt.ItemDataRole.UserRole + 4)
-        self.setData(self.index(len(self._data) - 1, 0), data["thumbnail"], Qt.ItemDataRole.UserRole + 5)
         self.setData(self.index(len(self._data) - 1, 0), data["parentId"], Qt.ItemDataRole.UserRole + 6)
         self.setData(self.index(len(self._data) - 1, 0), data["object"], Qt.ItemDataRole.UserRole + 7)
     
@@ -238,15 +229,14 @@ async def search(query: str, filter: searchFilters = searchFilters.SONGS, limit:
             creator = item["artists"][0]["id"] if item.get("artists", None) else ""
             id = item["videoId"] if item.get("videoId", None) else item["browseId"]
             parentId = item["album"]["id"] if len(item.get("album", [])) > 0 else item["artists"][0]["id"] if item.get("artists", None) else ""
-            thumbnail = universal.KImage(url = item["thumbnails"][-1]["url"]) if item.get("thumbnails", None) else ""
             duration = item["duration_seconds"]
             explicit = item["isExplicit"]
             song = universal.createSongMainThread(id)
             await song.get_info(universal.asyncBgworker.API)
         except KeyError:
             return None
-        return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "thumbnail": thumbnail, "duration": duration, "object": universal.song_module.Song(id)}
-    
+        return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "duration": duration, "object": universal.song_module.Song(id)}
+
     def parseVideo(item: dict):
         pass
 

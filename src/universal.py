@@ -17,7 +17,6 @@ from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG
 
 from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_BackgroundWorker
 
-from src.app.KImage import KImage, Placeholders, Status, KImageProxy
 from .AppUrl import AppUrl, appUrl
 
 
@@ -94,11 +93,6 @@ def getAllDownloadedSongs() -> list:
 #         return func(*args, **kwargs)
 #     f = mainThreadExcecutor.submit(lambda: func(*args, **kwargs))
 #     return f.result()
-
-def associateCover(song: song_module.Song):
-    k = KImage(placeholder=Placeholders.SONG, deferred=True, cover=True, radius=50, song=song)
-    k.moveToThread(mainThread)
-    return k
 
 def createSongMainThread(songId: str) -> song_module.Song:
     song = song_module.Song(songId)

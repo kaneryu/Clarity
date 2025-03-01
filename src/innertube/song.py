@@ -183,7 +183,6 @@ class Song(QObject):
         self._initialized = True
         
         # self.moveToThread(g.mainThread)
-        self._cover = g.associateCover(self)
         self.logger = logging.getLogger("Song")
         return None
     
