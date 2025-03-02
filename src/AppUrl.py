@@ -12,8 +12,7 @@ class AppUrl:
 
     def __init__(self):
         if not hasattr(self, 'initialized'):
-            self.history = ["innertune:///page/home?firstlauch=true"]
-            # self.history = ["innertune:///page/texttest"]
+            self.history = ["clarity:///page/home?firstlauch=true"]
             
             self.pointer = 0
             self.initialized = True

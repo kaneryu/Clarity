@@ -26,7 +26,7 @@ Item {
         enabled: true
         height: 39
         onClicked: {
-            Backend.visitPath("innertune:///page/texttest")
+            Backend.visitPath("clarity:///page/texttest")
         }
     }
 }

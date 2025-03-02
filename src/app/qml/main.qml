@@ -21,7 +21,7 @@ ApplicationWindow {
     minimumWidth: 840 / 2
     minimumHeight: 480 / 2
 
-    // title: "InnerTuneDesktop"
+    title: "Clarity"
 
     Connections {
         target: Backend
@@ -59,11 +59,15 @@ ApplicationWindow {
 
         color: Theme.surfaceContainerLow
 
-        Components.Logo {
+        Image {
             id: logo
             anchors.left: parent.left
             anchors.leftMargin: 5
             anchors.verticalCenter: parent.verticalCenter
+
+            source: AssetsPath + "clarityLogo.png"
+            mipmap: true
+            fillMode: Image.PreserveAspectFit
             width: 35
             height: 35
         }

@@ -86,7 +86,7 @@ class PresenceManagerThread(QThread):
                 start=start,
                 end=end,
                 large_image=cover,
-                large_text="InnerTune Desktop",
+                large_text="Clarity",
                 buttons=buttons
             )
             self.logger.info(f"Updated presence: {title} - {channel}")

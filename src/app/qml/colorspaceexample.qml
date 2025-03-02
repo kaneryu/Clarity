@@ -18,7 +18,7 @@ ApplicationWindow {
     minimumWidth: 840 / 2
     minimumHeight: 480 / 2
 
-    title: "InnerTuneDesktop"
+    title: "Clarity"
 
     Connections {
         target: Backend

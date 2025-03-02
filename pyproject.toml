@@ -4,25 +4,6 @@ build-backend = "hatchling.build"
 
 [project]
 version = "0.0.1"
-name = "InnertuneDesktop"
+name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"
-description = "A desktop application for Innertune."
-
-dependencies = [
-    "materialyoucolors",
-    "https://github.com/OmLanke/async-ytmusicapi/archive/async.zip"
-    "PySide6",
-    "PySide6_Addons",
-    "PySide6_Essentials",
-    "shiboken6"
-]
-
-[project.optional-dependencies]
-gui = [
-
-]
-cli = [
-    "blessed",
-    "tqdm",
-]

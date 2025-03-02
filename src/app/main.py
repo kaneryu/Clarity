@@ -75,10 +75,9 @@ def main():
     sip = universal.song_module.SongImageProvider()
     engine.addImageProvider("SongCover", sip)
     
-    icon = QIcon(os.path.join(universal.Paths.assetsPath, "Logo.png"))
+    icon = QIcon(os.path.join(universal.Paths.assetsPath, "clarityLogo.png"))
     app.setWindowIcon(icon)
-    app.setApplicationName("InnerTuneDesktop")
-    
+    app.setApplicationName("Clarity")
     engine.load(qml)
     if not engine.rootObjects():
         sys.exit(-1)

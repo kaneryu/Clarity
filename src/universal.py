@@ -28,7 +28,7 @@ except FileNotFoundError:
     print("version.txt not found, using 0.0.0")
     version = versions.Version("0.0.0")
     
-print("InnerTune version", version)
+print("Clarity version", version)
 # input()
 
 def ghash(thing):

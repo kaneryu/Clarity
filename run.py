@@ -11,14 +11,14 @@
 # nuitka-project: --include-data-file=src/version.txt=src/version.txt
 # nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
 
-# nuitka-project: --file-description="InnerTuneDesktop -- A music player."
+# nuitka-project: --file-description="Clarity -- A music player."
 # nuitka-project: --copyright="This is free and open-source software -- GNU GPL v3"
-# nuitka-project: --windows-product-name="InnerTuneDesktop"
+# nuitka-project: --windows-product-name="Clarity"
 
 # nuitka-project: --product-version=0.26.1
 # nuitka-project: --file-version=0.26.1
 
-# nuitka-project: --output-filename=InnerTuneDesktop
+# nuitka-project: --output-filename=Clarity
 # disabled: --disable-console
 # nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml 
 

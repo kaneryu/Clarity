@@ -115,7 +115,6 @@ Item {
             Backend.setSearchURL(searchbarField.text)
             Backend.search(searchbarField.text)
             searchbarField.text = ""
-
         }
     }
 

@@ -179,7 +179,7 @@ class Backend(QObject):
     
     @Slot(str)
     def setSearchURL(self, query):
-        self.url = "innertune:///page/search?query=" + query
+        self.url = "clarity:///page/search?query=" + query
         
     @Slot(result=QObject)
     def getqueueModel(self):
