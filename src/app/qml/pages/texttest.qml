@@ -23,7 +23,6 @@ Item {
         height: 50
         anchors.centerIn: parent
         onClicked: {
-            console.log("Button clicked")
             l.sourceComponent = null
             l.sourceComponent = thingie
         }

@@ -19,14 +19,6 @@ Item {
     visible: true
     property bool settingsButton: true
     property QtObject song: Interactions.currentSong
-    // property QtObject songCover: Interactions.currentSongCover
-
-    // Connections {
-    //     target: Interactions
-    //     function onSongChanged() {
-    //         console.log("Song changed")
-    //     }
-    // }
 
     ColObjs.ColRect {
         id: songbarBackground
@@ -79,10 +71,6 @@ Item {
                 mipmap: true
                 Layout.preferredHeight: 30
                 Layout.preferredWidth: 30
-
-                onSourceChanged: {
-                    console.log("Song image changed")
-                }
                 
                 BusyIndicator {
                     id: imageLoader
@@ -188,10 +176,6 @@ Item {
                 ]
                 Connections {
                     target: Interactions
-                    onPlayingStatusChanged: {
-                        console.log("Playing status changed")
-                        console.log(Interactions.playingStatus)
-                    }
                 }
 
                 Layout.preferredHeight: centerPanel.iconHeight
