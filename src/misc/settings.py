@@ -3,6 +3,8 @@ import logging
 
 from src.paths import Paths
 
+from PySide6.QtCore import QObject, Qt, Property, Signal, Slot, QAbstractTableModel
+
 f = open(Paths.VERSIONPATH, "r")
 version = f.read().strip()
 f.close()
@@ -25,7 +27,8 @@ type_map = {
     "int": int,
     "float": float
 }
-def get_type(type: str):
+
+def get_type(type: str) -> type:
     return type_map.get(type, str)
 
 class Settings:
@@ -41,7 +44,7 @@ class Settings:
         
         self.load()
     
-    def load(self):
+    def load(self) -> None:
         try:
             with open(self.settings_file, "r") as f:
                 self.settings = json.load(f)
@@ -55,7 +58,7 @@ class Settings:
         for key, value in self.settings.get("settings", {}).items():
             name = value.get("name")
             value_ = value.get("value")
-            type_ = value.get("type")
+            type_ = value.get("type", "")
             
             try:
                 type_ = get_type(type_)
@@ -119,7 +122,7 @@ class Settings:
         self.save()
 
 class Setting:
-    def __init__(self, key: str, value, type: type, description: str, group: str = None, hidden: bool = False, name: str = None):
+    def __init__(self, key: str, value, type: type, description: str, group: str | None = None, hidden: bool = False, name: str | None = None):
         if not isinstance(key, str):
             raise TypeError("Key must be a string")
         if not isinstance(description, str):

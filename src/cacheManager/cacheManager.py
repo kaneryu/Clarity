@@ -11,6 +11,7 @@ import collections
 import concurrent.futures
 import enum
 from hashlib import md5
+import logging
 
 def ghash(thing):
     # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
@@ -102,12 +103,14 @@ class CacheManager:
         self.name = name or ""
         self.event_loop = asyncio.get_event_loop()
         if directory == "":
-            self.directory = f"{os.pathsep}{name}-cache" if not "cache" in name.lower() else f".{os.pathsep}{name}"
+            self.directory = os.path.abspath(f"{os.pathsep}{name}-cache" if not "cache" in name.lower() else f".{os.pathsep}{name}")
         else:
-            self.directory = directory
+            self.directory = os.path.abspath(directory)
             
         self.lock = CustomLock()
         self.plevel = ErrorLevel.WARNING
+        
+        self.log = logging.getLogger(f"cache-{name}")
         
         self.statistics = {
             "hits": 0,
@@ -168,17 +171,18 @@ class CacheManager:
                 metadata = json.load(f)
         except json.JSONDecodeError:
             
-            self._print("metadata is not valid JSON", ErrorLevel.ERROR)
-            self._print("metadata will be deleted, and cache will be wiped!", ErrorLevel.ERROR)
+            self.log.error("metadata is not valid JSON")
+            self.log.error("metadata will be deleted, and cache will be wiped!")
+            
             os.remove(metadata_path)
             self.clear()
             return False
             
         if not "version" in metadata:
-            self._print("metadata version not found", ErrorLevel.ERROR)
+            self.log.error("metadata version not found")
             return False
         elif metadata["version"] != loadversion:
-            self._print("metadata version mismatch", ErrorLevel.ERROR)
+            self.log.error("metadata version mismatch")
             return False
         
         
@@ -187,6 +191,8 @@ class CacheManager:
         self.last_used = json.loads(metadata["last_used"], object_pairs_hook=collections.OrderedDict)
         self.statistics = json.loads(metadata["statistics"])
     
+    def __get_abspath(self, fname: str) -> str:
+        return os.path.join(self.absdir, fname)
     
     def put(self, key: str, value: Any, byte: bool, filext: Optional[str] = None, expiration: Optional[int] = None) -> str:
         """Put a value into the cache
@@ -206,7 +212,7 @@ class CacheManager:
         """
         estimated_size = len(value) if isinstance(value, (str, bytes)) else 0
         if self.statistics["size"] + estimated_size > self.max_size:
-            self._print("cache full", ErrorLevel.WARNING)
+            self.log.warning("cache full")
             self.evict(EvictionMethod.LRU, 1)
 
         if any(c in key for c in ["\\", "/", ":", "*", "?", "\"", "<", ">", "|", " "]):
@@ -222,16 +228,19 @@ class CacheManager:
             
         self.last_used[key] = time.time()
         self.metadata[key] = {"filext": filext, "expiration": expiration, "accessCount": 0, "bytes": byte, "dict": dictmode}
-        self.__cache_path_map[key] = os.path.abspath(os.path.join(self.absdir, key + filext))
+        self.__cache_path_map[key] = key + filext
         
-        if os.path.exists(self.__cache_path_map[key]):
-            print("Warning: overwriting cache item at " + self.__cache_path_map[key])
-            os.remove(self.__cache_path_map[key])
+        filename = key + filext
+        absfilepath = self.__get_abspath(filename)
+        
+        if os.path.exists(absfilepath):
+            print("Warning: overwriting cache item at " + absfilepath)
+            os.remove(absfilepath)
             
-        with open(self.__cache_path_map[key], 'wb' if byte else 'w') as file:
+        with open(absfilepath, 'wb' if byte else 'w') as file:
             file.write(value if not dictmode else json.dumps(value))
         
-        s = os.path.getsize(self.__cache_path_map[key])
+        s = os.path.getsize(absfilepath)
         self.statistics["size"] += s
         
         self.metadata[key]["size"] = s
@@ -252,13 +261,13 @@ class CacheManager:
             Any: The value stored. When passing in an item of type 'bytes', it will be written to disk using wb
         """
         if not key in self.__cache_path_map:
-            self._print("cache miss: " + key, ErrorLevel.INFO)
+            self.log.info("cache miss: " + key)
             self.statistics["misses"] += 1
             return False
-        elif not os.path.exists(self.__cache_path_map[key]): # if the key is in the cache, but it's not actually on disk
+        elif not os.path.exists(self.__get_abspath(self.__cache_path_map[key])): # if the key is in the cache, but it's not actually on disk
                 self.delete(key)
-                self._print(f"key {key} was orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
-                self._print("cache miss: " + key, ErrorLevel.INFO)
+                self.log.warning(f"key {key} was orphaned (data was deleted but reference still exists)")
+                self.log.info("cache miss: " + key)
                 self.statistics["misses"] += 1
                 return False
     
@@ -267,15 +276,15 @@ class CacheManager:
         
         if self.metadata[key].get("expiration", -1):
             if time.time() > self.metadata[key].get("expiration", -1):
-                self._print("cache miss: " + key + " expired", ErrorLevel.INFO)
+                self.log.info("cache miss: " + key + " expired")
                 self.delete(key)
                 return False
         
         self.last_used.move_to_end(key)
-        value = self.__cache_path_map.get(key)
+        filepath = self.__get_abspath(self.__cache_path_map.get(key))
         self.statistics["hits"] += 1
         self.metadata[key]["accessCount"] += 1
-        with open(value, 'r' if not b else 'rb') as file:
+        with open(filepath, 'r' if not b else 'rb') as file:
             value = file.read()
         
         self.last_used[key] = time.time()
@@ -292,23 +301,23 @@ class CacheManager:
         """
         with self.lock:
             if key in self.__cache_path_map:
-                self.statistics["size"] -= self.metadata[key].get("size", 0)
-                self.statistics["deletions"] += 1
-                if os.path.exists(self.__cache_path_map[key]):
-                    
+                filepath = self.__get_abspath(self.__cache_path_map[key])
+                if os.path.exists(filepath):
                     try:
-                        os.remove(self.__cache_path_map[key])
+                        os.remove(filepath)
                     except (FileNotFoundError, PermissionError) as e:
-                        self._print(f"Error removing cache item {key}: {e}", ErrorLevel.WARNING)
+                        self.log.warning(f"Error removing cache item {key}: {e}")
                 try:
+                    self.statistics["size"] -= self.metadata[key].get("size", 0)
+                    self.statistics["deletions"] += 1
                     del self.__cache_path_map[key]
                     del self.metadata[key]
                     del self.last_used[key]
                     
                 except KeyError as e:
-                    self._print(f"KeyError encountered for key {key}: {e}", ErrorLevel.WARNING)
+                    self.log.warning(f"KeyError encountered for key {key}: {e}")
             else:
-                self._print(f"key {key} not found", ErrorLevel.WARNING)
+                self.log.warning(f"key {key} not found")
             
             self.__metadataSave()
     
@@ -316,7 +325,7 @@ class CacheManager:
         """Clear all values in the cache
         """
         for key in self.__cache_path_map:
-            if os.path.exists(self.__cache_path_map[key]):
+            if os.path.exists(self.__get_abspath(self.__cache_path_map[key])):
                     self.delete(key)
         self.__cache_path_map.clear()
         self.metadata.clear()
@@ -327,7 +336,7 @@ class CacheManager:
     def integrityCheck(self, restore: bool = False):
         """Runs collect and checks for cache integrity.
         """
-        self._print("running cleanup", ErrorLevel.INFO)
+        self.log.info("running cleanup")
        
         # use os.walk to check which keys are actually on disk
         for i in os.listdir(self.absdir):
@@ -340,12 +349,12 @@ class CacheManager:
             i = i.split(os.path.extsep)[0]
             
             if not i in self.__cache_path_map:
-                self._print(f"key {i} is orphaned (data is on disk but reference is missing)", ErrorLevel.WARNING)
+                self.log.warning(f"key {i} is orphaned (data is on disk but reference is missing)")
                 self.delete(i)
         
         for i in list(self.__cache_path_map.keys()):
-            if not os.path.exists(self.__cache_path_map[i]):
-                self._print(f"key {i} is orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
+            if not os.path.exists(self.__get_abspath(self.__cache_path_map[i])):
+                self.log.warning(f"key {i} is orphaned (data was deleted but reference still exists)")
                 self.delete(i)
                 continue
                 
@@ -359,14 +368,14 @@ class CacheManager:
     def collect(self):
         """Collect expired values from the cache
         """
-        self._print("collecting expired items", ErrorLevel.INFO)
-        self._print("collecting expired items", ErrorLevel.INFO)
+        self.log.info("collecting expired items")
+        self.log.info("collecting expired items")
         now = time.time()
         
         keys_to_delete = [key for key in list(self.metadata.keys()) if (-1 if self.metadata[key].get("expiration", 1.79e309) == None else self.metadata[key].get("expiration", 1.79e309)) < now]
     
         for key in keys_to_delete:
-            self._print(f"deleting key {key} because it expired", ErrorLevel.INFO)
+            self.log.info(f"deleting key {key} because it expired")
             self.delete(key)
     
         self.__metadataSave()
@@ -393,7 +402,7 @@ class CacheManager:
                 self.statistics["evictions"] += 1
                 self.delete(key)
         else:
-            self._print("unknown eviction method", ErrorLevel.ERROR)
+            self.log.error("unknown eviction method")
         
         self.__metadataSave()
     
@@ -418,13 +427,13 @@ class CacheManager:
             str: The path of the item on disk
         """
         if not key in self.__cache_path_map:
-            self._print("cache miss: " + key, ErrorLevel.INFO)
+            self.log.info("cache miss: " + key)
             self.statistics["misses"] += 1
             return False
-        elif not os.path.exists(self.__cache_path_map[key]): # if the key is in the cache, but it's not actually on disk
+        elif not os.path.exists(self.__get_abspath(self.__cache_path_map[key])): # if the key is in the cache, but it's not actually on disk
                 self.delete(key)
-                self._print(f"key {key} was orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
-                self._print("cache miss: " + key, ErrorLevel.INFO)
+                self.log.warning(f"key {key} was orphaned (data was deleted but reference still exists)")
+                self.log.info("cache miss: " + key)
                 self.statistics["misses"] += 1
                 return False
     
@@ -433,7 +442,7 @@ class CacheManager:
         
         if self.metadata[key].get("expiration", -1):
             if time.time() > self.metadata[key].get("expiration", -1):
-                self._print("cache miss: " + key + " expired", ErrorLevel.INFO)
+                self.log.info("cache miss: " + key + " expired")
                 self.delete(key)
                 return False
         
@@ -441,7 +450,7 @@ class CacheManager:
         self.statistics["hits"] += 1
         self.last_used[key] = time.time()
         self.__metadataSave()
-        return self.__cache_path_map.get(key)
+        return self.__get_abspath(self.__cache_path_map.get(key))
 
     def getStatistics(self) -> dict:
         """Get the statistics of the cache
@@ -455,8 +464,6 @@ class CacheManager:
         """Check if an item is in the cache.
         # This function is only meant for 'checking' purposes. It does not take into account expiration or any other factors.
         If you're checking if you should call get() on the key, please call get() directly and check if it returns false.
-        If you're checking if a key exists, you should call get() also, so it takes into account key expiration.
-        In 70% of cases, what you need is get().
 
         Args:
             key (str): The key used to refer to the item. The key *should not* contain a file extension. It will break things.
@@ -466,11 +473,3 @@ class CacheManager:
         """
         return key in self.__cache_path_map
 
-    def _print(self, message: str, level: ErrorLevel):
-        """Internal function, prints a message
-
-        Args:
-            message (str): The message to print
-            level (ErrorLevel): The level of the message
-        """
-        print(f"cache {self.name} says: {message} | {level}") if level >= self.plevel else None

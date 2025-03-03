@@ -13,6 +13,7 @@ import enum
 from hashlib import md5
 
 import io
+import logging
 
 def ghash(thing):
     # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
@@ -88,6 +89,8 @@ class DataStore:
         
         dataStores[name] = self
         
+        self.logging = logging.getLogger(f"{name}-dataStore")
+        
         if not self.__metadataLoad():
             self.__metadataSave()
             
@@ -130,10 +133,10 @@ class DataStore:
             metadata = json.load(f)
         
         if not "version" in metadata:
-            self._print("metadata version not found", ErrorLevel.ERROR)
+            self.logging.error("metadata version not found")
             return False
         elif metadata["version"] != loadversion:
-            self._print("metadata version mismatch", ErrorLevel.ERROR)
+            self.logging.error("metadata version mismatch")
             return False
         
         
@@ -147,7 +150,7 @@ class DataStore:
         
         estimated_size = len(value) if isinstance(value, (str, bytes)) else 0
         if self.statistics["size"] + estimated_size > self.max_size:
-            self._print("dataStore full", ErrorLevel.WARNING)
+            self.logging.warning("dataStore full")
 
         if any(c in key for c in ["\\", "/", ":", "*", "?", "\"", "<", ">", "|", " "]):
             raise ValueError("Invalid character in key")
@@ -164,7 +167,7 @@ class DataStore:
         self.__dataStore_path_map[key] = os.path.abspath(os.path.join(self.absdir, key + ext))
         
         if os.path.exists(self.__dataStore_path_map[key]):
-            self._print(f"key {key} already exists", ErrorLevel.ERROR)
+            self.logging.error(f"key {key} already exists")
             return False
 
         return (byte, ext)
@@ -196,8 +199,8 @@ class DataStore:
         byte = byte or isinstance(value, bytes)
 
         setres = self.__wfsetup(key, value, byte, ext)
-        if setres == False:
-            return False
+        
+        if setres == False: return False
         
         byte, ext = setres
         
@@ -250,13 +253,13 @@ class DataStore:
             Any: The value stored. When passing in an item of type 'bytes', it will be written to disk using wb
         """
         if not key in self.__dataStore_path_map:
-            self._print("dataStore miss: " + key, ErrorLevel.INFO)
+            self.logging.info("dataStore miss: " + key)
             self.statistics["misses"] += 1
             return False
         elif not os.path.exists(self.__dataStore_path_map[key]): # if the key is in the dataStore, but it's not actually on disk
                 self.delete(key)
-                self._print(f"key {key} was orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
-                self._print("dataStore miss: " + key, ErrorLevel.INFO)
+                self.logging.warning(f"key {key} was orphaned (data was deleted but reference still exists)")
+                self.logging.info("dataStore miss: " + key)
                 self.statistics["misses"] += 1
                 return False
     
@@ -291,7 +294,7 @@ class DataStore:
             del self.metadata[key]
             del self.last_used[key]
         else:
-            self._print(f"key {key} not found", ErrorLevel.WARNING)
+            self.logging.warning(f"key {key} not found")
         
         self.__metadataSave()
     
@@ -310,7 +313,7 @@ class DataStore:
     def integrityCheck(self, restore: bool = False):
         """Runs collect and checks for dataStore integrity.
         """
-        self._print("running cleanup", ErrorLevel.INFO)
+        self.logging.info("running cleanup")
        
         # use os.listdir to check which keys are actually on disk
         for i in os.listdir(self.absdir):
@@ -323,18 +326,18 @@ class DataStore:
             i = i.split(os.path.extsep)[0]
             
             if not i in self.__dataStore_path_map:
-                self._print(f"key {i} is orphaned (data is on disk but reference is missing)", ErrorLevel.WARNING)
+                self.logging.warning(f"key {i} is orphaned (data is on disk but reference is missing)")
                 if restore:
-                    self._print(f"key {i} will be restored", ErrorLevel.INFO)
+                    self.logging.info(f"key {i} will be restored")
                     data = open(os.path.join(self.absdir, i), 'r').read()
                     os.remove(os.path.join(self.absdir, i))
                     self.put(i, data, Btypes.AUTO, expiration=None)
                 else:
-                    self._print(f"key {i} will be not be restored", ErrorLevel.INFO)
+                    self.logging.info(f"key {i} will be not be restored")
         
         for i in self.__dataStore_path_map:
             if not os.path.exists(self.__dataStore_path_map[i]):
-                self._print(f"key {i} is orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
+                self.logging.warning(f"key {i} is orphaned (data was deleted but reference still exists)")
                 self.delete(i)
                 continue
                 
@@ -367,13 +370,13 @@ class DataStore:
 
         
         if not key in self.__dataStore_path_map:
-            self._print("dataStore miss: " + key, ErrorLevel.INFO)
+            self.logging.info("dataStore miss: " + key)
             self.statistics["misses"] += 1
             return False
         elif not os.path.exists(self.__dataStore_path_map[key]): # if the key is in the dataStore, but it's not actually on disk
                 self.delete(key)
-                self._print(f"key {key} was orphaned (data was deleted but reference still exists)", ErrorLevel.WARNING)
-                self._print("dataStore miss: " + key, ErrorLevel.INFO)
+                self.logging.warning(f"key {key} was orphaned (data was deleted but reference still exists)")
+                self.logging.info("dataStore miss: " + key)
                 self.statistics["misses"] += 1
                 return False
         
@@ -413,12 +416,3 @@ class DataStore:
             dict: All items in the dataStore
         """
         return self.__dataStore_path_map
-
-    def _print(self, message: str, level: ErrorLevel):
-        """Internal function, prints a message
-
-        Args:
-            message (str): The message to print
-            level (ErrorLevel): The level of the message
-        """
-        print(f"dataStore {self.name} says: {message} | {level}")
