@@ -5,6 +5,7 @@ import Qt.labs.platform
 import QtQuick.Effects
 
 import "../../colobjs" as ColObjs
+import "../text" as TextVariant
 import "../../components" as Components
 import "../../js/utils.js" as Utils
 
@@ -77,29 +78,31 @@ Item {
 
         Layout.alignment: Qt.AlignTop | Qt.AlignLeft
 
-        ColObjs.ColText {
+        TextVariant.Default {
             id: songTitleText
             text: root.songTitle
-
+            width: parent.width
             color: root.textColor
+            marquee: true
         }
 
         RowLayout {
             id: songArtistLength
             spacing: 0
-            ColObjs.ColText {
+            TextVariant.Default {
                 id: songArtistText
                 text: root.songArtist
                 color: root.textColor
+                marquee: true
             }
 
-            ColObjs.ColText {
+            TextVariant.Default {
                 id: spacer
                 text: " • "
                 color: root.textColor
             }
 
-            ColObjs.ColText {
+            TextVariant.Default {
                 id: songLengthText
                 text: root.songLength
                 color: root.textColor

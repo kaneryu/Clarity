@@ -1,11 +1,5 @@
-# Version 0.26
+# Version 0.27
 
 ## New Features
 
-- added base for settings -- kaneryu on 2025-03-01
-
-## Bugfixes
-
-- remove KImage (closes #4) -- kaneryu on 2025-03-01
-- use logging in both datastore and cache, and make cache more resilient to being moved. -- kaneryu on 2025-03-02
-- Fix bug where going to the next song would hang the application; also improve job handling in background workers & split queue class up for easier managment -- kaneryu on 2025-03-03
+- Add functioning marquee to text elements -- kaneryu on 2025-03-04
