@@ -23,9 +23,12 @@ import vlc
 from src import universal as g
 from src import cacheManager
 from src import network
-# import src.innertube.song as song
+# Update import to use player.py instead
+from src.innertube.player import PlayingStatus
 
 import src.discotube.presence as presence
+
+from functools import lru_cache
 
 ydlOpts = {
     "external_downloader_args": ['-loglevel', 'panic'],
@@ -115,16 +118,6 @@ class DownloadStatus(enum.Enum):
     NOT_DOWNLOADED = 0
     DOWNLOADING = 1
     DOWNLOADED = 2
-
-class PlayingStatus(enum.IntEnum):
-    """Playing Status"""
-    PLAYING = 0 # Playing
-    PAUSED = 1 # Paused
-    BUFFERING = 2 # Media is buffering
-    STOPPED = 3 # No media is loaded
-    ERROR = 4 # Unrecoverable error
-    
-    NOT_PLAYING = 5 # Only for songproxy class; Returned when the current song is not currently playing
 
 class Song(QObject):
     
@@ -236,7 +229,6 @@ class Song(QObject):
     def cover(self) -> object:
         return self._cover
 
-    
     def from_search_result(self, search_result: dict) -> None:
         self.source = "search"
         
@@ -953,6 +945,8 @@ class Queue(QObject):
     @QProperty(int, notify=songChanged)
     def currentSongTime(self):
         try:
+            if self.player.get_media() is None:
+                return 0
             return self.player.get_time() // 1000
         except OSError:
             return 0
@@ -977,15 +971,8 @@ class Queue(QObject):
     def songFinished(self, event):
         self.logger.info("Song Finished")
         self.logger.info("Player state: %s", self.player.get_state())
-        if self.loop == LoopType.SINGLE:
-            self.play()
-        elif self.loop == LoopType.ALL or self.loop == LoopType.NONE:
-            self.next()
-        else:
-            self.logger.error("LoopType Invalid")
-            self.logger.info("Treating as LoopType.NONE")
-            self.next()
-        self.songChanged.emit()
+        # Queue the method call to happen on the object's thread
+        QMetaObject.invokeMethod(self, "next", Qt.ConnectionType.QueuedConnection)
     
     def on_vlc_error(self, event):
         self.logger.error("VLC Error")
@@ -1019,18 +1006,31 @@ class Queue(QObject):
     
     @Slot()
     def play(self):
+        if self.player.get_state() in [vlc.State.Error, vlc.State.Opening, vlc.State.Buffering]:
+            self.logger.warning(f"Player in unstable state {self.player.get_state()}, delaying operation")
+            QTimer.singleShot(100, self.play)  # Retry a bit later
+            return
+        
+        # If stopping previous media, add a small delay
+        if self.player.get_media() is not None:
+            self.player.stop()
+            # Add a brief delay to allow VLC to clean up
+            QTimer.singleShot(10, self._do_play)
+        else:
+            self._do_play()
+        
+    def _do_play(self):
+        # Move media creation and playback here
         def Media(mrl):
             media: vlc.Media = self.instance.media_new(mrl)
             media.add_option("http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Herring/97.1.8280.8")
             media.add_option("http-referrer=https://www.youtube.com/")
             return media
 
-        self.songChanged.emit()
         url = self.queue[self.pointer].get_best_playback_MRL()
-        if self.player.get_media() is not None:
-            self.player.stop()
         self.player.set_media(Media(url))
         self.player.play()
+        self.songChanged.emit()
         self.durationChanged.emit()
     
     def migrate(self, MRL):

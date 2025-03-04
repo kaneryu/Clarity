@@ -1,5 +1,3 @@
-import src.innertube.song_queue
-# from src.innertube.song_queue import Queue
 from src.innertube.song import Queue, Song
 
 '''

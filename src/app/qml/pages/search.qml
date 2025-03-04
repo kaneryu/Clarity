@@ -50,32 +50,21 @@ Item {
             role: "type"
             DelegateChoice {
                 roleValue: "song"
-                Rectangle {
+                Base.Song {
                     required property string ytid
-                    id: bg
 
-                    width: 330 + 7
-                    height: 80 + 7
-                    color: Theme.surfaceContainer
+                    id: song
+                    song: Interactions.getSong(ytid)
 
-                    radius: 20
+                    textColor: Theme.onSurface
 
-                    Base.Song {
-                        property string ytid: bg.ytid
+                    anchors.fill: parent
+                    anchors.margins: 5
 
-                        id: song
-                        song: Interactions.getSong(ytid)
-
-                        textColor: Theme.onSurface
-
+                    MouseArea {
                         anchors.fill: parent
-                        anchors.margins: 5
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                Interactions.searchPress(ytid)
-                            }
+                        onClicked: {
+                            Interactions.searchPress(ytid)
                         }
                     }
                 }
