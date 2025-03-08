@@ -42,10 +42,11 @@ def appQuitOverride():
 def main():
     global app, engine, backend, theme
 
-    # QQmlDebuggingEnabler.enableDebugging(True)
+    QQmlDebuggingEnabler.enableDebugging(True)
     # print("Starting debug server")
     # QQmlDebuggingEnabler.startTcpDebugServer(52150, QQmlDebuggingEnabler.StartMode.DoNotWaitForClient, "localhost")
-    app = QApplication()
+    app = QApplication(sys.argv)
+
     app.setStyle("Material")
     app.aboutToQuit.connect(appQuitOverride)
     

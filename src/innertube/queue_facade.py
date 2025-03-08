@@ -155,7 +155,7 @@ class Queue(QObject):
     
     def checkError(self, url: str):
         """Check if a URL returns an error"""
-        r = requests.get(url)
+        r = g.networkManager.get(url)
         return r.status_code != 200
     
     @Slot(str)

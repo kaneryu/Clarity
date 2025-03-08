@@ -4,20 +4,21 @@ import QtQuick.Layouts
 import Qt.labs.platform
 
 Item {
+    id: root
     property string text: ""
-    property string spacing: "      "
-    property string combined: text + spacing
-    property string display: combined.substring(step) + combined.substring(0, step)
-    property int step: 0
+    property int spacing: 30
 
     property bool marquee: false
     property bool alwaysMarquee: false
     property bool _marquee: false
     property bool selectable: false
+
     property alias color: textItem.color
     property alias font: textItem.font
     
-    width: textItem.width
+    clip: true
+
+    width: textItem.width + spacing
     height: textItem.height
 
     onTextChanged: recalcShouldDoMarquee()
@@ -42,19 +43,52 @@ Item {
         }
     }
 
-    Timer {
-        interval: 200
-        running: parent._marquee 
-        repeat: true
-        onTriggered: parent.step = (parent.step + 1) % parent.combined.length
+    on_MarqueeChanged: {
+        if (!_marquee) {
+            marqueAnim.stop()
+            textItem.x = 0
+        } else {
+            marqueAnim.start()
+        }
     }
-
+    
+    // Animation for seamless scrolling
+    NumberAnimation {
+        id: marqueAnim
+        target: textItem
+        property: "x"
+        from: 0
+        to: -textMetrics.width - root.spacing
+        duration: Math.max(3000, textMetrics.width * 15) // Adjust speed based on text length
+        loops: Animation.Infinite
+        running: root._marquee
+    }
+    
     Text {
         id: textItem
-        text: (parent._marquee) ? parent.display : parent.text
+        text: parent.text
         color: Theme.onSurface
         font.pixelSize: 16
-        
+
+        // Second copy of the text for continuous scrolling
+        Text {
+            id: secondText
+            x: textMetrics.width + root.spacing // Position right after first text
+            text: parent.text
+            font: parent.font
+            color: parent.color
+
+            // Only visible when marquee is active
+            visible: root._marquee
+
+            Behavior on color {
+                ColorAnimation {
+                    easing.type: Easing.InOutQuad
+                    duration: 200
+                }
+            }
+        }
+
         Behavior on color {
             ColorAnimation {
                 easing.type: Easing.InOutQuad

@@ -49,251 +49,246 @@ Item {
         }
 
     }
+    RowLayout {
+        id: leftPanel
+        
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        
+        anchors.leftMargin: 5
+
+        Image {
+            id: songImage
+            source: "image://SongCover/" + song.id + "/300"
+
+            mipmap: true
+            Layout.preferredHeight: 30
+            Layout.preferredWidth: 30
+            
+            BusyIndicator {
+                id: imageLoader
+                anchors.fill: parent
+                running: true
+                visible: songImage.status === Image.Loading
+            }
+
+        }
+
+        TextVariant.Small {
+            id: songTitle
+            text: root.song.title + " - " + root.song.artist
+
+            color: Theme.onSurface
+        }
+    }
 
     RowLayout {
-        id: masterLayout
-        spacing: 5
-        anchors.fill: parent
-        anchors.leftMargin: 5
+        id: centerPanel
+
+        anchors.centerIn: parent
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+
+        property int iconHeight: 35
+
+        Components.Button {
+            id: likeButton
+            isIcon: true
+            isTransparent: true
+            icon: AssetsPath + "icons/songbar/fav.svg"
+
+            Layout.preferredHeight: centerPanel.iconHeight
+            Layout.preferredWidth: height
+
+            onClicked: Interactions.like()
+            enabled: false
+        }
+
+        Components.Button {
+            id: backButton
+            isIcon: true
+            isTransparent: true
+            icon: AssetsPath + "icons/songbar/skip_previous.svg"
+
+            Layout.preferredHeight: centerPanel.iconHeight
+            Layout.preferredWidth: height
+            onClicked: Interactions.back()
+        }
+
+        Components.Button {
+            id: playButton
+            isIcon: true
+            // icon: (Interactions.isPlaying) ? AssetsPath + "icons/songbar/pause.svg" : AssetsPath + "icons/songbar/play.svg"
+            // 0 = playing, 1 = paused, 2 = buffering, 3 = stopped, 4 = error
+                
+            icon: AssetsPath + "icons/songbar/play.svg"
+
+            states: [
+                State {
+                    name: "playing"
+                    when: Interactions.playingStatus == 0
+                    PropertyChanges {
+                        target: playButton
+                        icon: AssetsPath + "icons/songbar/pause.svg"
+                    }
+                },
+                State {
+                    name: "paused"
+                    when: Interactions.playingStatus == 1
+                    PropertyChanges {
+                        target: playButton
+                        icon: AssetsPath + "icons/songbar/play.svg"
+                    }
+                },
+                State {
+                    name: "buffering"
+                    when: Interactions.playingStatus == 2
+                    PropertyChanges {
+                        target: playButton
+                        icon: AssetsPath + "icons/songbar/pending.svg"
+                    }
+                },
+                State {
+                    name: "stopped"
+                    when: Interactions.playingStatus == 3
+                    PropertyChanges {
+                        target: playButton
+                        icon: AssetsPath + "icons/songbar/close.svg"
+                    }
+                },
+                State {
+                    name: "error"
+                    when: Interactions.playingStatus == 4
+                    PropertyChanges {
+                        target: playButton
+                        icon: AssetsPath + "icons/songbar/close.svg"
+                    }
+                }
+            ]
+            Connections {
+                target: Interactions
+            }
+
+            Layout.preferredHeight: centerPanel.iconHeight
+            Layout.preferredWidth: height
+            onClicked: Interactions.togglePlayback()
+        }
+
+        Components.Button {
+            id: nextButton
+            isIcon: true
+            isTransparent: true
+            icon: AssetsPath + "icons/songbar/skip_next.svg"
+
+            Layout.preferredHeight: centerPanel.iconHeight
+            Layout.preferredWidth: height
+            onClicked: Interactions.next()
+        }
+
+        Components.Button {
+            id: downloadButton
+            isIcon: true
+            isTransparent: true
+            icon: (root.song.downloadStatus == 2) ? AssetsPath + "icons/songbar/downloaded.svg" : (root.song.downloadStatus == 0) ? AssetsPath + "icons/songbar/download.svg" : AssetsPath + "icons/songbar/downloading.svg"
+
+            Layout.preferredHeight: centerPanel.iconHeight
+            Layout.preferredWidth: height
+            onClicked: Interactions.downloadSong(Interactions.currentSongId)
+
+            Components.ProgressBar {
+                id: downloadProgress
+                anchors.fill: parent
+
+                vertical: false
+                input: false
+                fillColor: Utils.addAlpha("50", Theme.primary)
+                backgroundColor: "transparent"
+
+                radius: downloadButton.radius
+                percent: root.song.downloadProgress
+            }
+
+        }
+    }
+    
+    RowLayout {
+        id: rightPanel
+
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+
+        width: parent.width / 5
+
         anchors.rightMargin: 10
 
+        Components.Button {
+            id: queueButton
+            isIcon: true
+            isTransparent: true
+            icon: AssetsPath + "icons/songbar/queue_music.svg"
+            colortype: (Backend.queueVisible) ? "secondary" : "primary"
 
-        RowLayout {
-            id: leftPanel
-
-            Layout.fillHeight: true
-            Layout.preferredWidth: parent.width / 3
-            Layout.alignment: Qt.AlignCenter
-            Image {
-                id: songImage
-                source: "image://SongCover/" + song.id + "/300"
-
-                mipmap: true
-                Layout.preferredHeight: 30
-                Layout.preferredWidth: 30
-                
-                BusyIndicator {
-                    id: imageLoader
-                    anchors.fill: parent
-                    running: true
-                    visible: songImage.status === Image.Loading
-                }
-
-            }
-
-            TextVariant.Small {
-                id: songTitle
-                text: root.song.title + " - " + root.song.artist
-
-                color: Theme.onSurface
-            }
+            Layout.preferredHeight: centerPanel.iconHeight
+            Layout.preferredWidth: height
+            onClicked: Backend.queueVisible = !Backend.queueVisible
         }
 
-        RowLayout {
-            id: centerPanel
 
-            Layout.fillHeight: true
-            Layout.preferredWidth: parent.width / 3
-            Layout.alignment: Qt.AlignCenter
-            spacing: 0
-            
-
-            property int iconHeight: 35
-
-            Components.Button {
-                id: likeButton
-                isIcon: true
-                isTransparent: true
-                icon: AssetsPath + "icons/songbar/fav.svg"
-
-                Layout.preferredHeight: centerPanel.iconHeight
-                Layout.preferredWidth: height
-
-                onClicked: Interactions.like()
-                enabled: false
-            }
-
-            Components.Button {
-                id: backButton
-                isIcon: true
-                isTransparent: true
-                icon: AssetsPath + "icons/songbar/skip_previous.svg"
-
-                Layout.preferredHeight: centerPanel.iconHeight
-                Layout.preferredWidth: height
-                onClicked: Interactions.back()
-            }
-
-            Components.Button {
-                id: playButton
-                isIcon: true
-                // icon: (Interactions.isPlaying) ? AssetsPath + "icons/songbar/pause.svg" : AssetsPath + "icons/songbar/play.svg"
-                // 0 = playing, 1 = paused, 2 = buffering, 3 = stopped, 4 = error
-                 
-                icon: AssetsPath + "icons/songbar/play.svg"
-
-                states: [
-                    State {
-                        name: "playing"
-                        when: Interactions.playingStatus == 0
-                        PropertyChanges {
-                            target: playButton
-                            icon: AssetsPath + "icons/songbar/pause.svg"
-                        }
-                    },
-                    State {
-                        name: "paused"
-                        when: Interactions.playingStatus == 1
-                        PropertyChanges {
-                            target: playButton
-                            icon: AssetsPath + "icons/songbar/play.svg"
-                        }
-                    },
-                    State {
-                        name: "buffering"
-                        when: Interactions.playingStatus == 2
-                        PropertyChanges {
-                            target: playButton
-                            icon: AssetsPath + "icons/songbar/pending.svg"
-                        }
-                    },
-                    State {
-                        name: "stopped"
-                        when: Interactions.playingStatus == 3
-                        PropertyChanges {
-                            target: playButton
-                            icon: AssetsPath + "icons/songbar/close.svg"
-                        }
-                    },
-                    State {
-                        name: "error"
-                        when: Interactions.playingStatus == 4
-                        PropertyChanges {
-                            target: playButton
-                            icon: AssetsPath + "icons/songbar/close.svg"
-                        }
-                    }
-                ]
-                Connections {
-                    target: Interactions
-                }
-
-                Layout.preferredHeight: centerPanel.iconHeight
-                Layout.preferredWidth: height
-                onClicked: Interactions.togglePlayback()
-            }
-
-            Components.Button {
-                id: nextButton
-                isIcon: true
-                isTransparent: true
-                icon: AssetsPath + "icons/songbar/skip_next.svg"
-
-                Layout.preferredHeight: centerPanel.iconHeight
-                Layout.preferredWidth: height
-                onClicked: Interactions.next()
-            }
-
-            Components.Button {
-                id: downloadButton
-                isIcon: true
-                isTransparent: true
-                icon: (root.song.downloadStatus == 2) ? AssetsPath + "icons/songbar/downloaded.svg" : (root.song.downloadStatus == 0) ? AssetsPath + "icons/songbar/download.svg" : AssetsPath + "icons/songbar/downloading.svg"
-
-                Layout.preferredHeight: centerPanel.iconHeight
-                Layout.preferredWidth: height
-                onClicked: Interactions.downloadSong(Interactions.currentSongId)
-
-                Components.ProgressBar {
-                    id: downloadProgress
-                    anchors.fill: parent
-
-                    vertical: false
-                    input: false
-                    fillColor: Utils.addAlpha("50", Theme.primary)
-                    backgroundColor: "transparent"
-
-                    radius: downloadButton.radius
-                    percent: root.song.downloadProgress
-                }
-            }
+        TextVariant.Default {
+            id: currentTime
+            Layout.maximumWidth: 45
+            text: Utils.secondsToHMS(Interactions.currentSongTime)
         }
-        RowLayout {
-            id: rightPanel
 
-            Layout.fillHeight: true
-            Layout.preferredWidth: parent.width / 3
-            Layout.alignment: Qt.AlignCenter
+        Components.ProgressBar {
+            id: songProgress
 
-            Components.Button {
-                id: queueButton
-                isIcon: true
-                isTransparent: true
-                icon: AssetsPath + "icons/songbar/queue_music.svg"
-                colortype: (Backend.queueVisible) ? "secondary" : "primary"
+            Layout.preferredHeight: 10
+            Layout.preferredWidth: 100
+            Layout.fillWidth: true
 
-                Layout.preferredHeight: centerPanel.iconHeight
-                Layout.preferredWidth: height
-                onClicked: Backend.queueVisible = !Backend.queueVisible
-            }
+            vertical: false
+            fillColor: Theme.primary
+            backgroundColor: Theme.surfaceContainerLow
 
-            RowLayout {
-                id: progtime
-                Layout.fillHeight: true
-                Layout.alignment: Qt.AlignCenter
-                Layout.fillWidth: true
+            radius: 10
+            percent: Interactions.currentSongTime / Interactions.currentSongDuration * 100
 
-                TextVariant.Default {
-                    id: currentTime
-                    text: Interactions.currentSongTime    
-                }
+            onClick: (percent) => Interactions.seekPercent(percent)
 
-                Components.ProgressBar {
-                    id: songProgress
-
-                    Layout.preferredHeight: 10
-                    Layout.fillWidth: true
-
-                    vertical: false
-                    fillColor: Theme.primary
-                    backgroundColor: Theme.surfaceContainerLow
-
-                    radius: 10
-                    percent: Interactions.currentSongTime / Interactions.currentSongDuration * 100
-
-                    onClick: (percent) => Interactions.seekPercent(percent)
-
-                    Timer {
-                        id: progressTimer
-                        interval: 150
-                        running: true
-                        repeat: true
-                        onTriggered: {
-                            songProgress.percent = Interactions.currentSongTime / Interactions.currentSongDuration * 100
-                        }
-                    }
-                }
-
-                TextVariant.Default {
-                    id: durationText
-                    text: Utils.secondsToHMS(Interactions.currentSongDuration)
-                }
-            }
             Timer {
-                id: timeTimer
-                interval: 1000
+                id: progressTimer
+                interval: 150
                 running: true
                 repeat: true
-                
                 onTriggered: {
-                    if (Interactions.currentSongTime > currentTime.text) {
-                        playButton.state = "playing"
-                    }
-                    currentTime.text = Utils.secondsToHMS(Interactions.currentSongTime)
-                    durationText.text = Utils.secondsToHMS(Interactions.currentSongDuration) // TODO: sometimes the duration has to be updated here, probably a threading issue
-                                                                                            // or a bug in the backend
+                    songProgress.percent = Interactions.currentSongTime / Interactions.currentSongDuration * 100
                 }
-            }   
+            }
         }
+
+        TextVariant.Default {
+            id: durationText
+            Layout.maximumWidth: 45
+
+            text: Utils.secondsToHMS(Interactions.currentSongDuration)
+        }
+        
+        Timer {
+            id: timeTimer
+            interval: 1000
+            running: true
+            repeat: true
+            
+            onTriggered: {
+                if (Interactions.currentSongTime > currentTime.text) {
+                    playButton.state = "playing"
+                }
+                currentTime.text = Utils.secondsToHMS(Interactions.currentSongTime)
+                durationText.text = Utils.secondsToHMS(Interactions.currentSongDuration)
+            }
+        }   
     }
 }

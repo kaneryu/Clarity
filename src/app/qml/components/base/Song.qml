@@ -84,29 +84,36 @@ Item {
             width: parent.width
             color: root.textColor
             marquee: true
-        }
 
-        RowLayout {
-            id: songArtistLength
-            spacing: 0
-            TextVariant.Default {
-                id: songArtistText
-                text: root.songArtist
-                color: root.textColor
-                marquee: true
-            }
-
-            TextVariant.Default {
-                id: spacer
-                text: " • "
-                color: root.textColor
-            }
-
-            TextVariant.Default {
-                id: songLengthText
-                text: root.songLength
-                color: root.textColor
+            Rectangle {
+                id: debugt
+                color: "green"
+                anchors.fill: songTitleText
+                z: -1
             }
         }
+
+        TextVariant.Default {
+            id: artistLengthText
+            text: root.songArtist + " • " + root.songLength
+            color: root.textColor
+            width: parent.width
+            marquee: true
+
+            Rectangle {
+                id: debuga
+                color: "green"
+                anchors.fill: artistLengthText
+                z: -1
+            }
+        }
+        
+    }
+
+    Rectangle {
+        id: debugr
+        color: "red"
+        anchors.fill: parent
+        z: -2
     }
 }

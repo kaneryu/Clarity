@@ -8,6 +8,10 @@ function addAlpha(alpha, color) {
 }
 
 function secondsToHMS(seconds) {
+    if (seconds <= 0 || isNaN(seconds)) {
+        return '00:00'
+    }
+
     let hours = Math.floor(seconds / 3600);
     let minutes = Math.floor((seconds % 3600) / 60);
     let secs = Math.floor(seconds % 60);
@@ -19,6 +23,7 @@ function secondsToHMS(seconds) {
     }
     retlist.push(minutes.toString().padStart(2, '0'))
     retlist.push(secs.toString().padStart(2, '0'))
+    
 
     return retlist.join(':');
 }

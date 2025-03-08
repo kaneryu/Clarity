@@ -13,6 +13,8 @@ import src.innertube as innertube_module
 from src.innertube import search as search_module
 from src.innertube import song as song_module
 
+from src.network import NetworkManager, networkManager, is_internet_connected, connected as internet_connected
+
 from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG
 
 from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_BackgroundWorker
@@ -101,3 +103,5 @@ def createSongMainThread(songId: str) -> song_module.Song:
 
 startupQueue.extend(i for i in getAllDownloadedSongs())
 queueInstance.setQueue(startupQueue)
+
+is_internet_connected()

@@ -22,7 +22,6 @@ import vlc
 
 from src import universal as g
 from src import cacheManager
-from src import network
 # Update import to use player.py instead
 from src.innertube.player import PlayingStatus
 
@@ -401,53 +400,72 @@ class Song(QObject):
             self.downloadStatus = DownloadStatus.NOT_DOWNLOADED
             
         self.get_playback(skip_download = True)
-    
-        
+
+    # Replace the download_chunk method
     def download_chunk(self, url, headers, file, start, end):
         mhash = cacheManager.ghash(str(start + end))
         self.downloadProgresses[mhash] = 0
         
-        headers["Range"] = f"bytes={start}-{end}"
-        with requests.get(url, headers=headers, stream=True) as response:
-            for chunk in response.iter_content(chunk_size=8192):
-                file.seek(start)
-                file.write(chunk)
-                start += len(chunk)
-                self.downloadProgresses[mhash] = start
-                    
+        def progress_callback(position):
+            self.downloadProgresses[mhash] = position - start
+        
+        try:
+            g.networkManager.download_chunk(
+                url, 
+                file, 
+                start, 
+                end, 
+                headers=headers, 
+                progress_callback=progress_callback
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to download chunk {start}-{end}: {str(e)}")
+
+    # Replace the download_with_progress method
     async def download_with_progress(self, url: str, datastore: cacheManager.dataStore.DataStore, ext: str, id: str) -> None:
         file: io.FileIO = datastore.open_write_file(key=id, ext=ext, bytes=True)
         downloaded = file.tell()  # Get the current file size to determine how many bytes have been written
 
-        headers = {"Range": f"bytes={downloaded}-"} if downloaded else {}
+        self.downloadStatus = DownloadStatus.DOWNLOADING
+        self.downloadProgress = 0
         self.downloadProgresses = {}
-        async with httpx.AsyncClient() as client:
-            print("Downloading", self.title)
+        
+        # Define a progress callback
+        def progress_callback(current, total):
+            self.downloadProgress = int((current / total) * 100) if total > 0 else 0
             
-            response = await client.head(url, headers=headers)
-            total = int(response.headers.get("Content-Length", 0)) + downloaded
-
-            chunk_size = 10 * 1024 * 1024  # 10 MB
-            ranges = [(i, min(i + chunk_size - 1, total - 1)) for i in range(downloaded, total, chunk_size)]
-
-            with ThreadPoolExecutor(max_workers=4) as executor:
-                loop = asyncio.get_event_loop()
-                tasks = [
-                    loop.run_in_executor(executor, self.download_chunk, url, headers, file, start, end)
-                    for start, end in ranges
-                ]
+        try:
+            self.logger.info(f"Downloading {self.title}")
+            
+            # Use the NetworkManager's parallel download functionality
+            success = await g.networkManager.download_file_parallel(
+                url=url,
+                file_obj=file,
+                chunk_size=10 * 1024 * 1024,  # 10 MB chunks
+                max_workers=4,
+                headers={"Range": f"bytes={downloaded}-"} if downloaded else None,
+                progress_callback=progress_callback
+            )
+            
+            if success:
+                self.logger.info(f"Download complete for {self.title}")
+                datastore.close_write_file(key=self.id, ext=ext, file=file)
+                self.downloadStatus = DownloadStatus.DOWNLOADED
+                self.downloadProgress = 100
+                self.downloaded = True
+            else:
+                self.logger.error(f"Download failed for {self.title}")
+                self.downloadStatus = DownloadStatus.NOT_DOWNLOADED
+                datastore.close_write_file(key=self.id, ext=ext, file=file)
                 
-                future = asyncio.ensure_future(asyncio.gather(*tasks))
-                while not future.done():
-                    await asyncio.sleep(0.1)
-                    self.downloadProgress = sum(self.downloadProgresses.values()) / total * 100
-
-            print("Download complete")
-            datastore.close_write_file(key=self.id, ext=ext, file=file)
-            self.downloadStatus = DownloadStatus.DOWNLOADED
-            self.downloadProgress = 100
-            self.downloaded = True
-            
+        except Exception as e:
+            self.logger.error(f"Download exception for {self.title}: {str(e)}")
+            self.downloadStatus = DownloadStatus.NOT_DOWNLOADED
+            try:
+                datastore.close_write_file(key=self.id, ext=ext, file=file)
+            except:
+                pass
+    
     async def download(self, audio = True) -> None:
         """
         Downloads the song.
@@ -691,7 +709,7 @@ class SongImageProvider(QQuickImageProvider):
         # self.sendRequest.emit(request, str(builtins.id(request)))
         # reply: QNetworkReply = network.accessManager.getReply(str(builtins.id(request)))
         # reply.waitForReadyRead(10000)
-        request = requests.get(thumbUrl)
+        request = g.networkManager.get(thumbUrl)
         
         img = QImage()
         if request.status_code != 200:
@@ -956,7 +974,7 @@ class Queue(QObject):
         return time.time() + self.currentSongDuration - self.currentSongTime
         
     def checkError(self, url: str):
-        r = requests.get(url)
+        r = g.networkManager.get(url)
         return r.status_code != 200
 
     @Slot(result=dict)
