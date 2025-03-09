@@ -101,7 +101,7 @@ def createSongMainThread(songId: str) -> song_module.Song:
     song.moveToThread(mainThread)
     return song
 
-startupQueue.extend(i for i in getAllDownloadedSongs())
-queueInstance.setQueue(startupQueue)
+# startupQueue.extend(i for i in getAllDownloadedSongs())
+# queueInstance.setQueue(startupQueue)
 
-is_internet_connected()
+# is_internet_connected()

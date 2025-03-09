@@ -157,6 +157,10 @@ class Backend(QObject):
         universal.appUrl.setUrl(value)
         self.urlChanged.emit()
     
+    @Slot(str)
+    def setUrl(self, value):
+        self.url = "clarity:///" + value
+    
     @Property(dict, notify=urlChanged)
     def currentQuery(self):
         return universal.appUrl.getQuery()

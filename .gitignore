@@ -181,3 +181,4 @@ nuitka-crash-report.xml
 .vs/
 data/
 playbackinfo.json
+.VSCodeCounter/

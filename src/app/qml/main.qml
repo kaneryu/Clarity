@@ -80,6 +80,10 @@ ApplicationWindow {
             anchors.leftMargin: 10
             anchors.rightMargin: 5
             visible: true
+
+            onSettingsClick: {
+                Backend.setUrl("page/settings")
+            }
         }
 
         

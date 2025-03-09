@@ -8,11 +8,14 @@ import QtQuick.Effects
 import "../colobjs" as ColObjs
 
 Item {
-    id: searchbar
+    id: root
     width: parent.width
     height: 35
     visible: true
     property bool settingsButton: true
+
+    signal settingsClick
+
 
     ColObjs.ColRect {
         id: searchbarBackground
@@ -134,13 +137,20 @@ Item {
             anchors.fill: parent
 
             color: Theme.onPrimaryContainer
-            signal clicked
 
             opacity: (searchbarField.text.length > 15) ? 0 : 1
             Behavior on opacity {
                 NumberAnimation {
                     duration: 500 // Duration of the animation in milliseconds
                     easing.type: Easing.InOutQuad // Easing type for the animation
+                }
+            }
+            MouseArea {
+                id: settingmarea
+                anchors.fill: parent
+                
+                onClicked: {
+                    root.settingsClick()
                 }
             }
         }
