@@ -219,7 +219,7 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
 
-        width: parent.width / 5
+        width: parent.width / 4
 
         anchors.rightMargin: 10
 

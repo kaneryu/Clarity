@@ -84,7 +84,7 @@ def nprint(*args, **kwargs):
     return args
 builtins.print = nprint
 
-startupQueue = ["YPV676YeHNg", "a3mxLL7nX1E", "DimcNLjX50c", "r76AWibyDDQ", "fB8elptKFcQ"]
+startupQueue = [] # ["YPV676YeHNg", "a3mxLL7nX1E", "DimcNLjX50c", "r76AWibyDDQ", "fB8elptKFcQ"]
 def getAllDownloadedSongs() -> list:
     l = list(songDataStore.getAll().keys())
     l = [i for i in l if not i.endswith("_downloadMeta")]
@@ -101,7 +101,7 @@ def createSongMainThread(songId: str) -> song_module.Song:
     song.moveToThread(mainThread)
     return song
 
-# startupQueue.extend(i for i in getAllDownloadedSongs())
-# queueInstance.setQueue(startupQueue)
+startupQueue.extend(i for i in getAllDownloadedSongs())
+queueInstance.setQueue(startupQueue)
 
 # is_internet_connected()

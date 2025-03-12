@@ -16,10 +16,8 @@ import "components/text" as TextVariant
 ApplicationWindow {
     id: root
     visible: true
-    width: 840
-    height: 480
-    minimumWidth: 840 / 2
-    minimumHeight: 480 / 2
+    minimumWidth: 840 // The application should be comfortable to use at this size
+    minimumHeight: 480
 
     title: "Clarity"
 
