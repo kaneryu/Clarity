@@ -8,6 +8,7 @@ import logging
 import ytmusicapi
 from PySide6.QtCore import QThread, QThreadPool, QObject, Signal, QRunnable
 import src.app.pyutils as utils
+import src.misc.cleanup as cleanup
 
 mainThread: QThread = QThread.currentThread()
 
@@ -42,6 +43,7 @@ class BackgroundWorker(QThread):
         self.threadpool.setMaxThreadCount(max_threads)
         self.setObjectName("BackgroundWorker")
         self.logger = logging.getLogger("BackgroundWorker")
+        cleanup.addCleanup(self.stop)
 
     def run(self):
         self.logger.info("BackgroundWorker started, alive: %s, max threads: %s", 
@@ -59,7 +61,6 @@ class BackgroundWorker(QThread):
         self.logger.info("BackgroundWorker stopped")
         self.threadpool.waitForDone()
         self.quit()
-        self.wait()
 
     def add_job(self, func, *args, **kwargs):
         job = {"func": func, "args": args, "kwargs": kwargs}
@@ -74,6 +75,7 @@ class Async_BackgroundWorker(QThread):
         self.semaphore = asyncio.Semaphore(10)
         self.setObjectName("Async_BackgroundWorker")
         self.logger = logging.getLogger("AsyncBackgroundWorker")
+        cleanup.addCleanup(self.stop)
         
     def run(self):
         self.event_loop = asyncio.new_event_loop()
@@ -109,6 +111,7 @@ class Async_BackgroundWorker(QThread):
                         traceback.print_exc()
                     finally:
                         self.jobs.task_done()
+            print("")
         finally:
             await self.session.close()
             self.logger.info("Async_BackgroundWorker session closed")
@@ -139,9 +142,14 @@ class Async_BackgroundWorker(QThread):
     
     def stop(self):
         self.stopped = True
+        # Wait for all pending jobs to complete
+        while not self.event_loop.is_running():
+            time.sleep(1/15)
+        
         self.logger.info("Async_BackgroundWorker stopped")
-        if hasattr(self, 'event_loop'):
-            self.event_loop.call_soon_threadsafe(self.event_loop.stop)
+        self.quit()
+
+        
       
 bgworker = BackgroundWorker()
 bgworker.start()

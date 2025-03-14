@@ -23,21 +23,16 @@ from PySide6.QtWidgets import QApplication
 import src.app.materialInterface as materialInterface
 import src.universal as universal
 from . import Backend, Interactions, fonts
-
+from src.misc import cleanup
 
 def generateRandomHexColor():
     return random.randint(0, 0xFFFFFF)
 
-def cleanUp():
-    global engine
-    engine.deleteLater()
-    # engine.quit.emit()
-
     
 def appQuitOverride():
-    cleanUp()
-    time.sleep(1)
-    sys.exit()
+    global engine
+    engine.exit.emit(1)
+    cleanup.runCleanup()
     
 def main():
     global app, engine, backend, theme
@@ -91,7 +86,7 @@ def main():
     print(QDir.currentPath())
     backend.loadComplete.emit()
     
-    sys.exit(app.exec())
+    app.exec()
     
 if __name__ == "__main__":
     print("Please use run.py to run this application, but we'll try anyway:")
