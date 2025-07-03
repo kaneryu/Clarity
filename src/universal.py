@@ -6,7 +6,7 @@ import time
 import builtins
 import versions
 import os
-
+import logging
 
 from src.cacheManager import cacheManager as cacheManager_module, dataStore as dataStore_module
 import src.innertube as innertube_module
@@ -21,6 +21,7 @@ from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_Background
 
 from .AppUrl import AppUrl, appUrl
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 mainThread: QThread = QThread.currentThread()
 try:

@@ -3,6 +3,7 @@ import logging
 import traceback
 import queue
 
+from src.misc import cleanup
 from PySide6.QtCore import QThread
 from pypresence import Presence, ActivityType
 
@@ -116,10 +117,20 @@ class PresenceManagerThread(QThread):
         self._running = False
         self.logger.info("Discord presence manager stopped")
 
-
+presence_manager = None
 def initialize_discord_presence(queue_instance):
+    global presence_manager
     DISCORD_CLIENT_ID = "1221181347071000637"  # Replace with your actual Discord app client ID
     presence_manager = PresenceManagerThread(DISCORD_CLIENT_ID, queue_instance)
     presence_manager.setObjectName("DiscordPresenceManager")
     presence_manager.start()
+    cleanup.addCleanup(stop_discord_presence)
     return presence_manager
+
+def stop_discord_presence():
+    global presence_manager
+    if presence_manager and presence_manager.isRunning():
+        presence_manager.stop()
+        presence_manager.wait()
+        presence_manager = None
+        logging.getLogger("DiscordPresence").info("Discord presence stopped")
