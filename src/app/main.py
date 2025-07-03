@@ -16,6 +16,9 @@ from PySide6.QtQml import (
     QQmlApplicationEngine,
     QQmlDebuggingEnabler,
 )
+from PySide6.QtWebEngineQuick import QtWebEngineQuick, QQuickWebEngineProfile
+from PySide6.QtWebEngineCore import QWebEngineUrlRequestInterceptor, QWebEngineUrlRequestInfo
+
 from PySide6.QtCore import Property as Property
 from PySide6.QtWidgets import QApplication
 
@@ -37,10 +40,13 @@ def appQuitOverride():
 def main():
     global app, engine, backend, theme
 
-    QQmlDebuggingEnabler.enableDebugging(True)
-    # print("Starting debug server")
-    # QQmlDebuggingEnabler.startTcpDebugServer(52150, QQmlDebuggingEnabler.StartMode.DoNotWaitForClient, "localhost")
+    QQmlDebuggingEnabler.enableDebugging(False)
+    
+    QtWebEngineQuick.initialize()
+    
     app = QApplication(sys.argv)
+    webprofile = QQuickWebEngineProfile.defaultProfile()
+    profileInterfaceManager = Backend.ProfileInterfaceManager(webprofile)
 
     app.setStyle("Material")
     app.aboutToQuit.connect(appQuitOverride)

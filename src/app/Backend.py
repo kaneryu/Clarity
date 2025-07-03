@@ -1,5 +1,5 @@
 # stdlib imports
-import random
+import json
 import os
 import pathlib
 import random
@@ -26,101 +26,22 @@ from PySide6.QtQml import (
     qmlRegisterSingletonInstance,
     qmlRegisterSingletonType,
 )
+from PySide6.QtWebEngineCore import *
+from PySide6.QtNetwork import QNetworkCookie
+
 from PySide6.QtCore import Property
 
 
 from src.app.pyutils import (roundimage, downloadimage, convertTocover)
 import src.universal as universal
+import src.paths as paths
+
+import ytmusicapi
 
 QML_IMPORT_NAME = "CreateTheSun"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
 
-class Queue(QObject):
-    def __init__(self):
-        """A fake queue class that will call the real one in the other thread.
-        """
-        super().__init__()
-        pass
-
-    @Slot(str)
-    def playSong(self, id: str):
-        f = universal.queue.Queue.getInstance().playSong
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {"id": id}})
-
-    @Slot()
-    def pause(self):
-        f = universal.queue.Queue.getInstance().pause
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot()
-    def play(self):
-        f = universal.queue.Queue.getInstance().play
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot()
-    def stop(self):
-        f = universal.queue.Queue.getInstance().stop
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot()
-    def reload(self):
-        f = universal.queue.Queue.getInstance().reload
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot(int)
-    def setPointer(self, index: int):
-        f = universal.queue.Queue.getInstance().setPointer
-        universal.bgworker.jobs.append({"func": f, "args": [index], "kwargs": {}})
-
-    @Slot()
-    def next(self):
-        f = universal.queue.Queue.getInstance().next
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    @Slot()
-    def prev(self):
-        f = universal.queue.Queue.getInstance().prev
-        universal.bgworker.jobs.append({"func": f, "args": [], "kwargs": {}})
-
-    def info(self, pointer: int):
-        f = universal.queue.Queue.getInstance().info
-        universal.bgworker.jobs.append({"func": f, "args": [pointer], "kwargs": {}})
-
-    @Slot(str, int)
-    def add(self, link: str, index: int):
-        f = universal.queue.Queue.getInstance().add
-        universal.bgworker.jobs.append({"func": f, "args": [link, index], "kwargs": {}})
-    
-    @Slot(str)
-    def addEnd(self, link: str):
-        f = universal.queue.Queue.getInstance().add
-        universal.bgworker.jobs.append({"func": f, "args": [link], "kwargs": {}})
-        
-    @Slot(str, int)
-    def addId(self, id: str, index: int):
-        f = universal.queue.Queue.getInstance().add_id
-        universal.bgworker.jobs.append({"func": f, "args": [id, index], "kwargs": {}})
-
-    @Slot(str)
-    def addIdEnd(self, id: str):
-        f = universal.queue.Queue.getInstance().add_id
-        universal.bgworker.jobs.append({"func": f, "args": [id], "kwargs": {}})
-    
-    @Slot(int)
-    def seek(self, time: int):
-        f = universal.queue.Queue.getInstance().seek
-        universal.bgworker.jobs.append({"func": f, "args": [time], "kwargs": {}})
-
-    @Slot(int)
-    def aseek(self, time: int):
-        f = universal.queue.Queue.getInstance().aseek
-        universal.bgworker.jobs.append({"func": f, "args": [time], "kwargs": {}})
-
-    @Slot(int)
-    def pseek(self, percentage: int):
-        f = universal.queue.Queue.getInstance().pseek
-        universal.bgworker.jobs.append({"func": f, "args": [percentage], "kwargs": {}})
 
 @QmlElement
 class Backend(QObject):
@@ -129,19 +50,22 @@ class Backend(QObject):
     # tabModelChanged = QSignal(name="tabModelChanged")
     queueVisibleChanged = QSignal(name="queueVisibleChanged")
     urlChanged = QSignal(name="urlChanged")
+    loginRedirect = QSignal(name="loginRedirect")
+    loginComplete = QSignal(name="loginComplete")
     _instance = None
     
-    
+    def __new__(cls) -> "Backend":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
     
     def __init__(self):
-        super().__init__()
         if not hasattr(self, 'initialized'):
+            super().__init__()
             self.initialized = True
-            self._value = 0
-            
-        self._queueModel = universal.queueInstance.queueModel
-        self._queueVisible = False
-        self.fakequeue = Queue()
+            self._value = 0                
+            self._queueModel = universal.queueInstance.queueModel
+            self._queueVisible = False
         
     @Property(str, notify=urlChanged)
     def url(self):
@@ -205,10 +129,6 @@ class Backend(QObject):
     @Property(QObject, constant=True)
     def queue(self):
         return universal.queueInstance
-
-    @Property(QObject, constant=True)
-    def queueFunctions(self):
-        return self.fakequeue
     
     @Property(bool, notify=queueVisibleChanged)
     def queueVisible(self):
@@ -218,11 +138,6 @@ class Backend(QObject):
     def queueVisible(self, value):
         self._queueVisible = value
         self.queueVisibleChanged.emit()
-    
-    @Slot(str, int)
-    def queueCall(self, func, *args, **kwargs):
-        f = getattr(universal.queue.Queue.getInstance(), func)
-        universal.bgworker.jobs.append({"func": f, "args": args, "kwargs": kwargs})
     
     @Slot(str, result=str)
     def getPage(self, url: str) -> str:
@@ -242,23 +157,75 @@ class Backend(QObject):
     @Slot(result=str)
     def ping(self) -> str:
         return "pong"
+
+    @Slot(result=None)
+    def oauth(self) -> None:
+        ytmusicapi.setup_oauth()
+        
+
+class ProfileInterfaceManager:
+    def __init__(self, profile: QWebEngineProfile):
+        self.profile = profile
+        urlInterceptor = UrlInterceptor()
+        self.profile.setUrlRequestInterceptor(urlInterceptor)
     
-    @Slot(str, int, result=str)
-    def roundImage(self, path, radius = 20) -> str:
-        
-        hsh = universal.ghash(path + "rounded" + str(radius))
-        if universal.globalCache.scheckInCache(hsh): # check if the rounded image is cached
-            return "file:///" + universal.imageCache.sgetKeyPath(hsh) # return the path of the image
-        
-        # check if source image is cached
-        
-        path = asyncio.run(downloadimage.downloadimage(path))
-        hsh = asyncio.run(roundimage.roundimage(path, radius))
+        cookiestore = self.profile.cookieStore()
+        cookiestore.cookieAdded.connect(self.newCookie)
+        cookiestore.cookieRemoved.connect(self.remCookie)
     
-        return "file:///" + universal.imageCache.sgetKeyPath(hsh) # return the path of the image
-                
+    def newCookie(self, cookie: QNetworkCookie):
+        prep = f"""
+        New cookie:
+        Name: {cookie.name().data().decode("utf-8")}
+        Value: {cookie.value().data().decode("utf-8")}
+        Domain: {cookie.domain()}
+        Path: {cookie.path()}
+        """
+        print(prep)
+    
+    def remCookie(self, cookie: QNetworkCookie):
+        prep = f"""
+        Removed cookie:
+        Name: {cookie.name().data().decode("utf-8")}
+        Value: {cookie.value().data().decode("utf-8")}
+        Domain: {cookie.domain()}
+        Path: {cookie.path()}
+        """
+        print(prep)
+
+class UrlInterceptor(QWebEngineUrlRequestInterceptor):
+    def __init__(self):
+        super().__init__()
         
-    @Slot(str, int, int, result=str)
-    def convertToCover(self, link: str, radius: str, size: int) -> str:
-        return "file:///" + universal.imageCache.sgetKeyPath(asyncio.run(convertTocover.convertToCover(link=link, radius=radius, size=size)))
+    def interceptRequest(self, info: QWebEngineUrlRequestInfo):
+        url = info.requestUrl().toString()
+        headers = info.httpHeaders()
+        
+        if "Cookie" in headers.keys():
+            print("url", url)
+            print("headers", headers)
+        
+        if url == "https://music.youtube.com":
+            bend = Backend()
+            bend.loginRedirect.emit()
+
+        
+        if url.startswith("https://music.youtube.com/youtubei/v1/browse"):
+            bend = Backend()
+            print("url", url)
+            # Iterate through headers and convert QByteArray to strings
+            headers_dict = {}
+            for key, value in headers.items():
+                headers_dict[key.data().decode("utf-8")] = value.data().decode("utf-8")
+            print(headers_dict)
             
+            if not "Cookie" in headers_dict.keys() or not "X-Goog-Authuser" in headers_dict.keys():
+                print("bad request")
+                return
+            
+            with open("ytheaders.json", "w") as f:
+                json.dump(headers_dict, f)
+                
+            bend.loginComplete.emit()
+            
+        

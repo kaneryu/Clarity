@@ -8,3 +8,4 @@
 
 - make progressbar a bit larger -- kaneryu on 2025-03-12
 - add some things to cleanup -- kaneryu on 2025-03-14
+- Bump dependencies, swap out ytmusicapi for my own version (still async) -- kaneryu on 2025-07-02
