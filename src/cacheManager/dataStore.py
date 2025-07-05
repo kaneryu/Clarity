@@ -3,7 +3,7 @@
 """
 import asyncio
 import time
-from typing import Any, Optional
+from typing import Any, Optional, Union, cast as typing_cast, Literal
 import os
 from PIL import Image
 import json
@@ -14,6 +14,8 @@ from hashlib import md5
 
 import io
 import logging
+
+
 
 def ghash(thing):
     # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
@@ -29,9 +31,7 @@ class ErrorLevel(enum.StrEnum):
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
-
-dataStores = {}
-
+    
 def dataStoreExists(name: str) -> bool:
     """Check if a dataStore exists
 
@@ -44,7 +44,7 @@ def dataStoreExists(name: str) -> bool:
     return name in dataStores
 
 def getdataStore(name: str) -> "DataStore":
-    """Get a dataStore by name
+    """Get a dataStore by name, creating it if it does not exist.
 
     Args:
         name (str): The name of the dataStore
@@ -52,7 +52,7 @@ def getdataStore(name: str) -> "DataStore":
     Returns:
         DataStore: The dataStore
     """
-    return dataStores.get(name)
+    return dataStores[name] if name in dataStores else DataStore(name)
 
     
 class DataStore:
@@ -64,9 +64,9 @@ class DataStore:
             name (str): Name for the dataStore.
         """
         self.max_size = 1000000000 # 1GB
-        self.__dataStore_path_map = {}
+        self.__dataStore_path_map: dict[str, str] = {}
         self.metadata: dict[str, dict] = {}
-        self.last_used = collections.OrderedDict()
+        self.last_used: collections.OrderedDict = collections.OrderedDict()
         self.name = name or ""
         
         if directory == "":
@@ -182,7 +182,7 @@ class DataStore:
         self.statistics["saves"] += 1
         self.__metadataSave()
         
-    def write_file(self, key: str, value: str | bytes | dict | io.BytesIO, byte: bool = False, ext: Optional[str] = None) -> str:
+    def write_file(self, key: str, value: str | bytes | dict | io.BytesIO, byte: bool = False, ext: Optional[str] = None) -> str | bool:
         """write a file into the dataStore
 
         Args:
@@ -225,11 +225,11 @@ class DataStore:
         self.__wfsetup(key, "", False, ext)
         if allowappend:
             if os.path.exists(self.__dataStore_path_map[key]):
-                return open(self.__dataStore_path_map[key], 'ab' if bytes else 'a')
+                return typing_cast(io.FileIO, open(self.__dataStore_path_map[key], 'ab' if bytes else 'a'))
             else:
-                return open(self.__dataStore_path_map[key], 'wb' if bytes else 'w')
+                return typing_cast(io.FileIO, open(self.__dataStore_path_map[key], 'wb' if bytes else 'w'))
         else:
-            return open(self.__dataStore_path_map[key], 'wb' if bytes else 'w')
+            return typing_cast(io.FileIO, open(self.__dataStore_path_map[key], 'wb' if bytes else 'w'))
 
     def close_write_file(self, key: str, ext: str, file: io.FileIO):
         """Close a file opened with open_write_file
@@ -243,7 +243,7 @@ class DataStore:
         
         self.__wfexit(key, True if 'b' in file.mode else False, ext, False)
     
-    def get_file(self, key: str) -> str | dict | bool:
+    def get_file(self, key: str) -> Any:
         """Get a file from the dataStore
 
         Args:
@@ -267,7 +267,7 @@ class DataStore:
         dictmode = self.metadata[key].get("dict", False)
         
         self.last_used.move_to_end(key)
-        value = self.__dataStore_path_map.get(key)
+        value = self.__dataStore_path_map[key]
         self.statistics["hits"] += 1
         self.metadata[key]["accessCount"] += 1
         with open(value, 'r' if not b else 'rb') as file:
@@ -312,42 +312,11 @@ class DataStore:
         
     def integrityCheck(self, restore: bool = False):
         """Runs collect and checks for dataStore integrity.
+            NOT IMPLEMENTED
         """
-        self.logging.info("running cleanup")
-       
-        # use os.listdir to check which keys are actually on disk
-        for i in os.listdir(self.absdir):
-            if not os.path.isfile(os.path.join(self.absdir, i)):
-                continue
-            
-            if i == "(27399499ad89dce2b478e6d140b3a9d0)dataStore_metadata.json":
-                continue
-            
-            i = i.split(os.path.extsep)[0]
-            
-            if not i in self.__dataStore_path_map:
-                self.logging.warning(f"key {i} is orphaned (data is on disk but reference is missing)")
-                if restore:
-                    self.logging.info(f"key {i} will be restored")
-                    data = open(os.path.join(self.absdir, i), 'r').read()
-                    os.remove(os.path.join(self.absdir, i))
-                    self.put(i, data, Btypes.AUTO, expiration=None)
-                else:
-                    self.logging.info(f"key {i} will be not be restored")
-        
-        for i in self.__dataStore_path_map:
-            if not os.path.exists(self.__dataStore_path_map[i]):
-                self.logging.warning(f"key {i} is orphaned (data was deleted but reference still exists)")
-                self.delete(i)
-                continue
-                
-            data = self.getMetadata(i)
-            if data.get("expiration", -1) == None: # this happens sometimes :/
-                del self.metadata[i]["expiration"]
-                
-        self.__metadataSave()
+        ...
     
-    def getMetadata(self, key: str) -> dict:
+    def getMetadata(self, key: str) -> dict | None:
         """Get the metadata of an item from the dataStore
 
         Args:
@@ -358,7 +327,7 @@ class DataStore:
         """
         return self.metadata.get(key)
 
-    def getFilePath(self, key: str) -> str | bool:
+    def getFilePath(self, key: str) -> str | Literal[False]:
         """Get the path of an file from the dataStore
 
         Args:
@@ -385,7 +354,7 @@ class DataStore:
         self.last_used[key] = time.time()
         self.__metadataSave()
         
-        return self.__dataStore_path_map.get(key)
+        return self.__dataStore_path_map[key]
 
     def getStatistics(self) -> dict:
         """Get the statistics of the dataStore
@@ -416,3 +385,6 @@ class DataStore:
             dict: All items in the dataStore
         """
         return self.__dataStore_path_map
+    
+
+dataStores: dict[str, DataStore] = {}

@@ -3,7 +3,7 @@
 """
 import asyncio
 import time
-from typing import Any, Optional
+from typing import Any, Optional, Union
 import os
 from PIL import Image
 import json
@@ -32,8 +32,6 @@ class ErrorLevel(enum.IntEnum):
     WARNING = 1
     ERROR = 2
 
-caches = {}
-
 def cacheExists(name: str) -> bool:
     """Check if a cache exists
 
@@ -46,7 +44,7 @@ def cacheExists(name: str) -> bool:
     return name in caches
 
 def getCache(name: str) -> "CacheManager":
-    """Get a cache by name
+    """Get a cache by name, creating it if it doesn't exist.
 
     Args:
         name (str): The name of the cache
@@ -54,7 +52,7 @@ def getCache(name: str) -> "CacheManager":
     Returns:
         CacheManager: The cache
     """
-    return caches.get(name)
+    return caches[name] if name in caches else CacheManager(name)
 
 def run_sync(coro):
     def run_in_thread(loop, coro):
@@ -97,9 +95,9 @@ class CacheManager:
             name (str): Name for the cache.
         """
         self.max_size = 1000000000 # 1GB
-        self.__cache_path_map = {}
+        self.__cache_path_map: dict[str, str] = {}
         self.metadata: dict[str, dict] = {}
-        self.last_used = collections.OrderedDict()
+        self.last_used: collections.OrderedDict = collections.OrderedDict()
         self.name = name or ""
         self.event_loop = asyncio.get_event_loop()
         if directory == "":
@@ -112,7 +110,7 @@ class CacheManager:
         
         self.log = logging.getLogger(f"cache-{name}")
         
-        self.statistics = {
+        self.statistics: dict[str, int] = {
             "hits": 0,
             "misses": 0,
             "saves": 0,
@@ -188,7 +186,7 @@ class CacheManager:
         
         self.__cache_path_map = json.loads(metadata["cache_path_map"])
         self.metadata = json.loads(metadata["metadata"])
-        self.last_used = json.loads(metadata["last_used"], object_pairs_hook=collections.OrderedDict)
+        self.last_used  = json.loads(metadata["last_used"], object_pairs_hook=collections.OrderedDict)
         self.statistics = json.loads(metadata["statistics"])
     
     def __get_abspath(self, fname: str) -> str:
@@ -199,7 +197,7 @@ class CacheManager:
 
         Args:
             key (str): They key used to refer to the item. The key *should not* contain a file extension. It will break things.
-            Invalid chars: /, \, :, *, ?, ", <, >, |, ., and whitespace
+            Invalid chars: /, \\, :, *, ?, ", <, >, |, ., and whitespace
             value (Any): The value stored. When passing in an item of type 'bytes', it will be written to disk using wb
             byte (bool): Override whether or not it's written with wb
             filext (Optional[str]): The file extension. Not including it will cause the file to have no ext.
@@ -251,7 +249,7 @@ class CacheManager:
         return key
         
     
-    def get(self, key: str) -> str | dict | bool:
+    def get(self, key: str) -> Any:
         """Get a value from the cache
 
         Args:
@@ -281,7 +279,7 @@ class CacheManager:
                 return False
         
         self.last_used.move_to_end(key)
-        filepath = self.__get_abspath(self.__cache_path_map.get(key))
+        filepath = self.__get_abspath(self.__cache_path_map[key])
         self.statistics["hits"] += 1
         self.metadata[key]["accessCount"] += 1
         with open(filepath, 'r' if not b else 'rb') as file:
@@ -359,6 +357,11 @@ class CacheManager:
                 continue
                 
             data = self.getMetadata(i)
+            if not data:
+                self.log.warning(f"key {i} is orphaned (metadata is missing)")
+                self.delete(i)
+                continue
+            
             if data.get("expiration", -1) == None: # this happens sometimes :/
                 del self.metadata[i]["expiration"]
         
@@ -406,14 +409,15 @@ class CacheManager:
         
         self.__metadataSave()
     
-    def getMetadata(self, key: str) -> dict:
-        """Get the metadata of an item from the cache
+    def getMetadata(self, key: str) -> dict | None:
+        """Get the metadata of an item from the cache, returns None if the item does not exist.
 
         Args:
             key (str): The key used to refer to the item. The key *should not* contain a file extension. It will break things.
 
         Returns:
             dict: The metadata of the item
+            None: If the item does not exist
         """
         return self.metadata.get(key)
 
@@ -450,7 +454,7 @@ class CacheManager:
         self.statistics["hits"] += 1
         self.last_used[key] = time.time()
         self.__metadataSave()
-        return self.__get_abspath(self.__cache_path_map.get(key))
+        return self.__get_abspath(self.__cache_path_map[key])
 
     def getStatistics(self) -> dict:
         """Get the statistics of the cache
@@ -473,3 +477,4 @@ class CacheManager:
         """
         return key in self.__cache_path_map
 
+caches: dict[str, CacheManager] = {}

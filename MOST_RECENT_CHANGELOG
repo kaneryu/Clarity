@@ -10,3 +10,4 @@
 - add some things to cleanup -- kaneryu on 2025-03-14
 - Bump dependencies, swap out ytmusicapi for my own version (still async) -- kaneryu on 2025-07-02
 - Make sure presence is stopped and the thread is properly deleted when the app is closed -- kaneryu on 2025-07-03
+- codebase now passes mypy check (not in strict mode, with some changes made in mypy.ini) -- kaneryu on 2025-07-05

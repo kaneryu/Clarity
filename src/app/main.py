@@ -28,18 +28,18 @@ import src.universal as universal
 from . import Backend, Interactions, fonts
 from src.misc import cleanup
 
+
+
 def generateRandomHexColor():
     return random.randint(0, 0xFFFFFF)
 
     
-def appQuitOverride():
-    global engine
-    engine.exit.emit(1)
-    cleanup.runCleanup()
-    
-def main():
-    global app, engine, backend, theme
 
+def main():
+    def appQuitOverride():
+        engine.exit.emit(1)
+        cleanup.runCleanup()
+    
     QQmlDebuggingEnabler.enableDebugging(False)
     
     QtWebEngineQuick.initialize()

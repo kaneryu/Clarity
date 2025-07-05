@@ -4,21 +4,19 @@ import json
 import asyncio
 import io
 import enum
-import requests
-from concurrent.futures import ThreadPoolExecutor
 import os
 import logging
+from typing import Union
 
-from PySide6.QtCore import Property as QProperty
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtNetwork import *
+from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QBuffer, QRect, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QMetaObject, QTimer, QThread
+from PySide6.QtGui import QPixmap, QPainter, QImage
+from PySide6.QtNetwork import QNetworkRequest
 from PySide6.QtQuick import QQuickImageProvider
 
 import ytmusicapi as ytm
-import yt_dlp as yt_dlp_module
+import yt_dlp as yt_dlp_module # type: ignore[import-untyped]
 import httpx
-import vlc
+import vlc # type: ignore[import-untyped]
 
 from src import universal as g
 from src import cacheManager
@@ -29,7 +27,7 @@ import src.discotube.presence as presence
 
 from functools import lru_cache
 
-ydlOpts = {
+ydlOpts: dict[str, Union[list, bool]] = {
     "external_downloader_args": ['-loglevel', 'panic'],
     "quiet": False,
     "concurrent-fragments": True
@@ -85,6 +83,17 @@ FMT_DATA = {
 }
 
 
+class DataStoreNotFoundException(Exception):
+    """Exception raised when a data store is not found."""
+    
+    def __init__(self, message: str = "Data store not found. Please ensure the data store is initialized."):
+        super().__init__(message)
+
+class CacheNotFoundException(Exception):
+    """Exception raised when a cache is not found."""
+    def __init__(self, message: str = "Cache not found. Please ensure the cache is initialized."):
+        super().__init__(message)
+
 def convert_to_timestamp(date_str: str) -> float:
     # Split the date and the timezone
     date_str, tz_str = date_str.split('T')
@@ -128,20 +137,20 @@ class Song(QObject):
     
     songInfoFetched = Signal()
     
-    _instances = {}
+    _instances: dict[str, "Song"] = {}
     
     def __new__(cls, id: str = "", givenInfo: dict = {"None": None}, fs: bool = False) -> "Song":
         # fs refers to the fakesong override
         if not fs:
             if id in cls._instances:
                 return cls._instances[id]
-            instance = super(Song, cls).__new__(cls, id, givenInfo)
+            instance = super(Song, cls).__new__(cls, id, givenInfo) # type: ignore[call-arg]
             cls._instances[id] = instance
             return instance
         else:
             return super(Song, cls).__new__(cls)
     
-    def __init__(self, id: str = "", givenInfo: dict = {"None": None}, fs: bool = False) -> "Song":
+    def __init__(self, id: str = "", givenInfo: dict = {"None": None}, fs: bool = False):
         """
         A class that represents a youtube music song.
         To actually get the info of the song, use the get_info_short or get_info_full method after initializing the class, or set auto_get_info to True.
@@ -155,7 +164,10 @@ class Song(QObject):
         get_info_full: Gets the full info of the song.
         get_lyrics: Gets the lyrics of the song.
         """
+        
+
         self._downloaded = cacheManager.getdataStore("song_datastore").checkFileExists(id)
+            
         if self._downloaded:
             self._dowloadStatus = DownloadStatus.DOWNLOADED
         else:
@@ -170,9 +182,9 @@ class Song(QObject):
         self._source = None
 
         self._downloadProgress = 0
-        self.rawPlaybackInfo = None
-        self.playbackInfo = None
-        self._initialized = True
+        self.rawPlaybackInfo: dict = {}
+        self.playbackInfo: dict = {}
+        self._initialized: bool = True
         
         # self.moveToThread(g.mainThread)
         self.logger = logging.getLogger("Song")
@@ -184,7 +196,7 @@ class Song(QObject):
         return self._id
     
     @id.setter
-    def id(self, value: str) -> None:
+    def id(self, value: str) -> None: 
         self._id = value
         self.idChanged.emit(self._id)
     
@@ -223,14 +235,9 @@ class Song(QObject):
     def downloadProgress(self, value: int) -> None:
         self._downloadProgress = value
         self.downloadProgressChanged.emit(self._downloadProgress)
-        
-    @QProperty(str, constant=True)
-    def cover(self) -> object:
-        return self._cover
 
     def from_search_result(self, search_result: dict) -> None:
         self.source = "search"
-        
         self.title = search_result["title"]
         self.id = search_result["videoId"]
     
@@ -244,15 +251,19 @@ class Song(QObject):
         """
         api: ytm.YTMusic = api
         c = cacheManager.getCache("songs_cache")
+
         if not self.id or self.id == "":
             return
+        
         identifier = self.id + "_info"
-        self.rawData = c.get(identifier)
-        if not self.rawData:
-            self.rawData: dict = await api.get_song(self.id)
+        cachedData: str
+        self.rawData: dict
+        
+        if not (cachedData := c.get(identifier)): # type: ignore[assignment]
+            self.rawData = await api.get_song(self.id)
             c.put(identifier, json.dumps(self.rawData), byte = False)
         else:
-            self.rawData = json.loads(self.rawData)
+            self.rawData = json.loads(cachedData)
             
             if self.rawData.get("playabilityStatus", {}).get("status") == "ERROR":
                 raise Exception(f"Song cannot be retrieved due to playability issues. id: {self.id} " + self.rawData.get("playabilityStatus", {}).get("reason"))
@@ -307,24 +318,31 @@ class Song(QObject):
     def download_playbackInfo(self) -> None:
         """Because ytdlp isn't async, input this function into the BackgroundWorker to do the slow part in a different thread.
         """
-        c = cacheManager.getCache("songs_cache")
+        if not (c := cacheManager.getCache("songs_cache")):
+            self.logger.error("No cache found for songs, cannot get playback info.")
+            return
+        
         identifier = self.id + "_playbackinfo"
-        self.rawPlaybackInfo = c.get(identifier)
-        if not self.rawPlaybackInfo: # if not cached
+        self.rawPlaybackInfo: dict
+        cachedData: str
+        if not (cachedData := c.get(identifier)): # type: ignore[assignment]
             self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
-            c.put(identifier, json.dumps(self.rawPlaybackInfo), byte = False, expiration = time.time() + 3600) # 1 hour
+            c.put(identifier, json.dumps(self.rawPlaybackInfo), byte = False, expiration = int(time.time() + 3600)) # 1 hour
         else:
-            self.rawPlaybackInfo = json.loads(self.rawPlaybackInfo)
+            self.rawPlaybackInfo = json.loads(cachedData)
         
         
         # open("playbackinfo.json", "w").write(json.dumps(self.rawPlaybackInfo))
         
-    def get_playback(self, skip_download = False) -> None:
-        
+    def get_playback(self, skip_download: bool = False) -> None:
+        datastore = cacheManager.getdataStore("song_datastore")
+        if not datastore:
+            self.logger.critical("No data store found for songs, cannot get download info.")
+            return
         if self.downloaded and not skip_download:
             try:
                 fp = cacheManager.getdataStore("song_datastore").getFilePath(self.id)
-                meta = json.loads(cacheManager.getdataStore("song_datastore").get_file(self.id + "_downloadMeta"))
+                meta: dict = json.loads(cacheManager.getdataStore("song_datastore").get_file(self.id + "_downloadMeta"))
                 meta["url"] = fp
                 self.playbackInfo = {"audio": [meta], "fromdownload": True}
                 return
@@ -391,7 +409,7 @@ class Song(QObject):
         c = cacheManager.getCache("songs_cache")
         identifier = self.id + "_playbackinfo"
         c.delete(identifier)
-        self.rawPlaybackInfo = None
+        self.rawPlaybackInfo = {}
         
         if self.downloaded:
             cacheManager.getdataStore("song_datastore").delete(self.id)
@@ -401,26 +419,6 @@ class Song(QObject):
             
         self.get_playback(skip_download = True)
 
-    # Replace the download_chunk method
-    def download_chunk(self, url, headers, file, start, end):
-        mhash = cacheManager.ghash(str(start + end))
-        self.downloadProgresses[mhash] = 0
-        
-        def progress_callback(position):
-            self.downloadProgresses[mhash] = position - start
-        
-        try:
-            g.networkManager.download_chunk(
-                url, 
-                file, 
-                start, 
-                end, 
-                headers=headers, 
-                progress_callback=progress_callback
-            )
-        except Exception as e:
-            self.logger.error(f"Failed to download chunk {start}-{end}: {str(e)}")
-
     # Replace the download_with_progress method
     async def download_with_progress(self, url: str, datastore: cacheManager.dataStore.DataStore, ext: str, id: str) -> None:
         file: io.FileIO = datastore.open_write_file(key=id, ext=ext, bytes=True)
@@ -428,7 +426,6 @@ class Song(QObject):
 
         self.downloadStatus = DownloadStatus.DOWNLOADING
         self.downloadProgress = 0
-        self.downloadProgresses = {}
         
         # Define a progress callback
         def progress_callback(current, total):
@@ -502,7 +499,7 @@ class Song(QObject):
         await self.download_with_progress(url, datastore, ext, self.id)
     
     
-    def get_best_playback_MRL(self) -> str:
+    def get_best_playback_MRL(self) -> str | None:
         """Will return either the path of the file on disk or best possbile quality playback URL.
 
         Returns:
@@ -510,7 +507,11 @@ class Song(QObject):
         """
         if self.downloaded or self.downloadStatus == DownloadStatus.DOWNLOADED:
             # print("Asked for MRL; returning path")
-            return cacheManager.getdataStore("song_datastore").getFilePath(self.id)
+            if result := cacheManager.getdataStore("song_datastore").getFilePath(self.id):
+                return result
+            else:
+                self.logger.error(f"File for song {self.id} not found in datastore, returning empty None.")
+                return None
         else:
             if not self.playbackInfo:
                 return None
@@ -523,7 +524,7 @@ class Song(QObject):
         Gets the lyrics of the song.
         """
         api: ytm.YTMusic = api
-        self.lyrics = await self.api.get_lyrics(self.id)
+        self.lyrics = await api.get_lyrics(self.id)
         return self.lyrics
 
 class SongProxy(QObject):
@@ -625,7 +626,7 @@ class SongProxy(QObject):
     def playingStatus(self) -> int:
         q = Queue()
         if q.currentSongId == self.id:
-            return q.playingStatus
+            return q.playingStatus # type: ignore[return-value]
         else:
             return PlayingStatus.NOT_PLAYING
     
@@ -777,15 +778,15 @@ class QueueModel(QAbstractListModel):
         }
     
     def headerData(self, section, orientation, role = ...):
-        if role == Qt.DisplayRole:
-            if orientation == Qt.Horizontal:
+        if role == Qt.ItemDataRole.DisplayRole:
+            if orientation == Qt.Orientation.Horizontal:
                 return "Song"
             else:
                 return f"Song {section}"
         return None
     
-    def setData(self, index, value, role=Qt.EditRole):
-        if role == Qt.EditRole and index.isValid():
+    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
+        if role == Qt.ItemDataRole.EditRole and index.isValid():
             self._queue[index.row()] = value
             self.dataChanged.emit(index, index)
             return True
@@ -808,9 +809,9 @@ class QueueModel(QAbstractListModel):
             self._queue.insert(to_index, self._queue.pop(from_index))
             self.endMoveRows()
     
-    def insertRows(self, row, count):
+    def insertRows(self, row: int, count: int = 1, parent: QModelIndex | QPersistentModelIndex = QModelIndex()):
         self.beginInsertRows(QModelIndex(), row, row + count - 1)
-        self._queue.insert(row, [[] for _ in range(count)])
+        self._queue.insert(row, [[] for _ in range(count)]) # type: ignore[arg-type] 
         self.endInsertRows()
             
 class Queue(QObject):
@@ -822,12 +823,12 @@ class Queue(QObject):
     playingStatusChanged = Signal(int)
     durationChanged = Signal()
     
-    instance = None
+    singleton: Union["Queue", None] = None
     
     def __new__(cls, *args, **kwargs) -> "Queue":
-        if cls.instance is None:
-            cls.instance = super(Queue, cls).__new__(cls, *args, **kwargs)
-        return cls.instance
+        if cls.singleton is None:
+            cls.singleton = super(Queue, cls).__new__(cls, *args, **kwargs)
+        return cls.singleton
         
     def __init__(self):
         if hasattr(self, 'initialized'):
@@ -860,7 +861,8 @@ class Queue(QObject):
         self.eventManager.event_attach(vlc.EventType.MediaPlayerPaused, self.onPauseEvent)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerPlaying, self.onPlayEvent)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerBuffering, self.onBufferingEvent)
-        self.__bufflastTime = 0
+        
+        self.__bufflastTime: float = 0
         
         self._playingStatus = PlayingStatus.STOPPED
         
@@ -871,6 +873,8 @@ class Queue(QObject):
         
         self.purgetries = {}
         self.presence = presence.initialize_discord_presence(self)
+        
+        self.queueIds: list[str]
     
     def onPlayEvent(self, event):
         self.logger.info("Play Event")
@@ -888,6 +892,7 @@ class Queue(QObject):
         self.__bufflastTime = time.time()
         self._playingStatus = PlayingStatus.BUFFERING
         self.playingStatusChanged.emit(self._playingStatus)
+        self.logger.info("Buffering Event")
 
     @QProperty(bool, notify=playingStatusChanged)
     def isPlaying(self):
@@ -913,7 +918,7 @@ class Queue(QObject):
             self.setQueue(value, skipSetData=True)
             
     @QProperty(list, notify=queueChanged)
-    def queueIds(self):
+    def queueIds(self) -> list:
         with QMutexLocker(self._queueAccessMutex):
             return self.queueModel._queueIds
 
@@ -934,7 +939,7 @@ class Queue(QObject):
 
     @QProperty(str, notify=songChanged)
     def currentSongId(self):
-        return self.queueIds[self.pointer]
+        return self.queueIds[self.pointer] # type: ignore[index]
 
     @QProperty(QObject, notify=songChanged)
     def currentSongObject(self):
@@ -971,7 +976,7 @@ class Queue(QObject):
     
     @QProperty(int, notify=songChanged)
     def songFinishesAt(self):
-        return time.time() + self.currentSongDuration - self.currentSongTime
+        return time.time() + self.currentSongDuration - self.currentSongTime # type: ignore[operator]
         
     def checkError(self, url: str):
         r = g.networkManager.get(url)
@@ -981,7 +986,7 @@ class Queue(QObject):
     def getCurrentInfo(self) -> dict:
         return self.info(self.pointer)
     
-    @Slot(str, bool)
+    @Slot(list, bool)
     def setQueue(self, queue: list, skipSetData: bool = False):
         for i in queue:
             self.add(i)
@@ -998,8 +1003,8 @@ class Queue(QObject):
         g.bgworker.add_job(self.refetch)
     
     def refetch(self):
-        self.purgetries[self.queueIds[self.pointer]] = self.purgetries.get(self.queueIds[self.pointer], 0) + 1
-        if self.purgetries[self.queueIds[self.pointer]] > 1:
+        self.purgetries[self.queueIds[self.pointer]] = self.purgetries.get(self.queueIds[self.pointer], 0) + 1 # type: ignore[index]
+        if self.purgetries[self.queueIds[self.pointer]] > 1: # type: ignore[index]
             self.logger.error("Purge Failed")
             self.stop()
             return
@@ -1011,7 +1016,7 @@ class Queue(QObject):
     def goToSong(self, id: str):
         if not id in self.queue:
             self.add(id)
-        self.pointer = self.queueIds.index(id)
+        self.pointer = self.queueIds.index(id) # type: ignore[attr-defined]
         self.play()
     
     @Slot()
@@ -1127,12 +1132,12 @@ class Queue(QObject):
         song.get_playback()
         if index == -1:
             self.queueModel.insertRows(len(self.queue), 1)
-            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.EditRole)
-            self.queueIds.append(song.id)
+            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.ItemDataRole.EditRole)
+            self.queueIds.append(song.id) # type: ignore[attr-defined]
         else:
             self.queueModel.insertRows(index, 1)
-            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.EditRole)
-            self.queueIds.insert(index, song.id)
+            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.ItemDataRole.EditRole)
+            self.queueIds.insert(index, song.id) # type: ignore[attr-defined]
         if goto:
             self.pointer = len(self.queue) - 1 if index == -1 else index
             self.play()

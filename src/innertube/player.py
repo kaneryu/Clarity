@@ -3,7 +3,7 @@ import logging
 from enum import IntEnum
 import vlc
 
-from PySide6.QtCore import QObject, Signal, QMutex, QMutexLocker, Property as QProperty, Qt
+from PySide6.QtCore import QObject, Signal, QMutex, QMutexLocker, Property as QProperty, Qt, Q_ARG
 from PySide6.QtCore import QMetaObject
 
 class PlayingStatus(IntEnum):
@@ -36,7 +36,7 @@ class MediaPlayer(QObject):
         
         self._mutex = QMutex()
         self._playingStatus = PlayingStatus.STOPPED
-        self.__bufflastTime = 0
+        self.__bufflastTime: float = 0
         
         # Setup event handlers
         self.eventManager.event_attach(vlc.EventType.MediaPlayerEndReached, self._on_song_finished)
@@ -102,13 +102,13 @@ class MediaPlayer(QObject):
     
     @QProperty(int, notify=durationChanged)
     def finishesAt(self):
-        return time.time() + self.duration - self.position
+        return time.time() + self.duration - self.position # type: ignore[operator]
     
     def play_media(self, mrl):
         """Plays media from the given MRL (Media Resource Locator)"""
         if self.player.get_state() in [vlc.State.Error, vlc.State.Opening, vlc.State.Buffering]:
             self.logger.warning(f"Player in unstable state {self.player.get_state()}, delaying operation")
-            QMetaObject.invokeMethod(self, "play_media", Qt.ConnectionType.QueuedConnection, Qt.Q_ARG(str, mrl))
+            QMetaObject.invokeMethod(self, "play_media", Qt.ConnectionType.QueuedConnection, Q_ARG(str, mrl))
             return
         
         # Stop previous media with a small delay

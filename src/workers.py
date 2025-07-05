@@ -7,7 +7,6 @@ import logging
 
 import ytmusicapi
 from PySide6.QtCore import QThread, QThreadPool, QObject, Signal, QRunnable
-import src.app.pyutils as utils
 import src.misc.cleanup as cleanup
 
 mainThread: QThread = QThread.currentThread()
@@ -71,7 +70,7 @@ class Async_BackgroundWorker(QThread):
         QThread.__init__(self)
         self.daemon = True
         self.stopped = False
-        self.jobs = asyncio.Queue()  # Use asyncio.Queue to manage jobs
+        self.jobs: asyncio.Queue = asyncio.Queue()  # Use asyncio.Queue to manage jobs
         self.semaphore = asyncio.Semaphore(10)
         self.setObjectName("Async_BackgroundWorker")
         self.logger = logging.getLogger("AsyncBackgroundWorker")
@@ -133,12 +132,6 @@ class Async_BackgroundWorker(QThread):
             if callback:
                 job["cb"] = callback
             self.jobs.put_nowait(job)
-    
-    async def putCoverConvert(self, callback, path: str, radius: int, size: int = 50, identify: str = ""):
-        await self.add_job(func = utils.convertTocover.convertToCover_path, callback=callback, path=path, radius=radius, size=size, identify=identify)
-    
-    def putCoverConvert_sync(self, callback, path: str, radius: int, size: int = 50, identify: str = ""):
-        self.add_job_sync(func = utils.convertTocover.convertToCover_path, callback=callback, usestar=False, a=[path, radius, size, identify])
     
     def stop(self):
         self.stopped = True

@@ -51,8 +51,6 @@ globalCache.integrityCheck()
 songCache.integrityCheck()
 imageCache.integrityCheck()
 
-song_module.DATASTORE_MODULE = dataStore_module
-song_module.CACHEMANAGER_MODULE = cacheManager_module
 
 queueInstance: innertube_module.Queue = innertube_module.Queue()
 search = search_module.search
@@ -85,7 +83,7 @@ def nprint(*args, **kwargs):
     return args
 builtins.print = nprint
 
-startupQueue = [] # ["YPV676YeHNg", "a3mxLL7nX1E", "DimcNLjX50c", "r76AWibyDDQ", "fB8elptKFcQ"]
+startupQueue: list[str] = [] # ["YPV676YeHNg", "a3mxLL7nX1E", "DimcNLjX50c", "r76AWibyDDQ", "fB8elptKFcQ"]
 def getAllDownloadedSongs() -> list:
     l = list(songDataStore.getAll().keys())
     l = [i for i in l if not i.endswith("_downloadMeta")]
@@ -103,6 +101,6 @@ def createSongMainThread(songId: str) -> song_module.Song:
     return song
 
 startupQueue.extend(i for i in getAllDownloadedSongs())
-queueInstance.setQueue(startupQueue)
+queueInstance.setQueue(startupQueue, False)
 
 # is_internet_connected()

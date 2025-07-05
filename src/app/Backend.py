@@ -26,13 +26,13 @@ from PySide6.QtQml import (
     qmlRegisterSingletonInstance,
     qmlRegisterSingletonType,
 )
-from PySide6.QtWebEngineCore import *
+from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineUrlRequestInterceptor, QWebEngineUrlRequestInfo
+from PySide6.QtWebEngineQuick import QQuickWebEngineProfile
 from PySide6.QtNetwork import QNetworkCookie
 
 from PySide6.QtCore import Property
 
 
-from src.app.pyutils import (roundimage, downloadimage, convertTocover)
 import src.universal as universal
 import src.paths as paths
 
@@ -41,7 +41,6 @@ import ytmusicapi
 QML_IMPORT_NAME = "CreateTheSun"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
-
 
 @QmlElement
 class Backend(QObject):
@@ -52,10 +51,10 @@ class Backend(QObject):
     urlChanged = QSignal(name="urlChanged")
     loginRedirect = QSignal(name="loginRedirect")
     loginComplete = QSignal(name="loginComplete")
-    _instance = None
+    _instance: "Backend"
     
     def __new__(cls) -> "Backend":
-        if cls._instance is None:
+        if (hasattr(cls, "_instance") and cls._instance is not None) or not hasattr(cls, "_instance"): # if instance var exists and is not None, or if it does not exist
             cls._instance = super().__new__(cls)
         return cls._instance
     
@@ -72,7 +71,7 @@ class Backend(QObject):
         return universal.appUrl.getUrl()
     
     @url.setter
-    def url(self, value):
+    def url(self, value: str):
         try:
             urllib.parse.urlparse(value)
         except:
@@ -149,7 +148,7 @@ class Backend(QObject):
         
         # pages are stored locally in the html folder (src/app/html)
         
-        url = url.split("/")
+        url: list[str] = url.split("/")
         print(url)
         print("file:///" + os.path.join(os.path.dirname(__file__), "html", url[0], url[1], "index.html").replace("\\","/"))
         return "file:///" + os.path.join(os.path.dirname(__file__), "html", url[0], url[1], "index.html").replace("\\","/")
@@ -158,13 +157,16 @@ class Backend(QObject):
     def ping(self) -> str:
         return "pong"
 
-    @Slot(result=None)
-    def oauth(self) -> None:
-        ytmusicapi.setup_oauth()
-        
+    # @Slot()
+    # def oauth(self) -> None:
+    #     ytmusicapi.setup_oauth()
+
+def castUb(input: typing.Any) -> typing.Union[bytes, bytearray]:
+    return typing.cast(typing.Union[bytes, bytearray], input)
+    
 
 class ProfileInterfaceManager:
-    def __init__(self, profile: QWebEngineProfile):
+    def __init__(self, profile: QWebEngineProfile | QQuickWebEngineProfile):
         self.profile = profile
         urlInterceptor = UrlInterceptor()
         self.profile.setUrlRequestInterceptor(urlInterceptor)
@@ -174,10 +176,11 @@ class ProfileInterfaceManager:
         cookiestore.cookieRemoved.connect(self.remCookie)
     
     def newCookie(self, cookie: QNetworkCookie):
+        
         prep = f"""
         New cookie:
-        Name: {cookie.name().data().decode("utf-8")}
-        Value: {cookie.value().data().decode("utf-8")}
+        Name: {castUb(cookie.name().data()).decode("utf-8")}
+        Value: {castUb(cookie.value().data()).decode("utf-8")}
         Domain: {cookie.domain()}
         Path: {cookie.path()}
         """
@@ -186,8 +189,8 @@ class ProfileInterfaceManager:
     def remCookie(self, cookie: QNetworkCookie):
         prep = f"""
         Removed cookie:
-        Name: {cookie.name().data().decode("utf-8")}
-        Value: {cookie.value().data().decode("utf-8")}
+        Name: {castUb(cookie.name().data()).decode("utf-8")}
+        Value: {castUb(cookie.value().data()).decode("utf-8")}
         Domain: {cookie.domain()}
         Path: {cookie.path()}
         """
@@ -216,7 +219,7 @@ class UrlInterceptor(QWebEngineUrlRequestInterceptor):
             # Iterate through headers and convert QByteArray to strings
             headers_dict = {}
             for key, value in headers.items():
-                headers_dict[key.data().decode("utf-8")] = value.data().decode("utf-8")
+                headers_dict[castUb(key.data()).decode("utf-8")] = castUb(value.data()).decode("utf-8")
             print(headers_dict)
             
             if not "Cookie" in headers_dict.keys() or not "X-Goog-Authuser" in headers_dict.keys():

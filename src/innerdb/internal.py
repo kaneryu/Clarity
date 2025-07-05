@@ -29,7 +29,7 @@ class Schema:
             DB.execute(f"SELECT {', '.join(columns)} FROM {self.name} WHERE {where}")
         else:
             DB.execute(f"SELECT {', '.join(columns)} FROM {self.name}")
-        return DB.fetchall()
+        return DB.cursor().fetchall()
 
     def update(self, where, **kwargs):
         DB.execute(f"UPDATE {self.name} SET {', '.join([f'{k}="{v}"' for k, v in kwargs.items()])} WHERE {where}")

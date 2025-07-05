@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 class NetworkManager:
     """Centralized network request manager for Clarity"""
     
-    _instance = None  # Singleton instance
+    _instance: "NetworkManager" = None  # type: ignore
     
     @classmethod
     def get_instance(cls) -> 'NetworkManager':

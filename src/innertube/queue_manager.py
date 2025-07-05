@@ -6,7 +6,7 @@ import time
 from typing import List, Dict, Optional, Any
 
 from PySide6.QtCore import QObject, Signal, QMutex, QMutexLocker, Property as QProperty
-from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
+from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, QPersistentModelIndex
 
 from src import cacheManager
 from src import universal as g
@@ -58,16 +58,16 @@ class QueueModel(QAbstractListModel):
             Qt.ItemDataRole.EditRole: b"qobject",    
         }
     
-    def headerData(self, section, orientation, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole:
-            if orientation == Qt.Horizontal:
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
+        if role == Qt.ItemDataRole.DisplayRole:
+            if orientation == Qt.Orientation.Horizontal:
                 return "Song"
             else:
                 return f"Song {section}"
         return None
     
-    def setData(self, index, value, role=Qt.EditRole):
-        if role == Qt.EditRole and index.isValid():
+    def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
+        if role == Qt.ItemDataRole.EditRole and index.isValid():
             self._queue[index.row()] = value
             self.dataChanged.emit(index, index)
             return True
@@ -90,9 +90,9 @@ class QueueModel(QAbstractListModel):
             self._queue.insert(to_index, self._queue.pop(from_index))
             self.endMoveRows()
     
-    def insertRows(self, row, count):
+    def insertRows(self, row: int, count: int, parent: QModelIndex | QPersistentModelIndex = QModelIndex()):
         self.beginInsertRows(QModelIndex(), row, row + count - 1)
-        self._queue.insert(row, [[] for _ in range(count)])
+        self._queue.insert(row, [[] for _ in range(count)]) # type: ignore
         self.endInsertRows()
 
 class QueueManager(QObject):
@@ -116,6 +116,8 @@ class QueueManager(QObject):
             self.cache = cacheManager.CacheManager(name="queueCache")
         else:
             self.cache = cacheManager.getCache("queueCache")
+            
+        self.queueIds: list[str]
     
     @QProperty(list, notify=queueChanged)
     def queue(self):
@@ -156,8 +158,8 @@ class QueueManager(QObject):
     
     @QProperty(str, notify=currentSongChanged)
     def currentSongId(self):
-        if len(self.queueIds) > 0 and 0 <= self._pointer < len(self.queueIds):
-            return self.queueIds[self._pointer]
+        if len(self.queueIds) > 0 and 0 <= self._pointer < len(self.queueIds): # type: ignore
+            return self.queueIds[self._pointer] # type: ignore
         return ""
     
     def info(self, pointer: int) -> Dict[str, str]:
@@ -194,12 +196,12 @@ class QueueManager(QObject):
         song.get_playback()
         if index == -1:
             self.queueModel.insertRows(len(self.queue), 1)
-            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.EditRole)
-            self.queueIds.append(song.id)
+            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.ItemDataRole.EditRole)
+            self.queueIds.append(song.id) # type: ignore
         else:
             self.queueModel.insertRows(index, 1)
-            self.queueModel.setData(self.queueModel.index(index), song, Qt.EditRole)
-            self.queueIds.insert(index, song.id)
+            self.queueModel.setData(self.queueModel.index(index), song, Qt.ItemDataRole.EditRole)
+            self.queueIds.insert(index, song.id) # type: ignore
             
         if goto:
             self.pointer = len(self.queue) - 1 if index == -1 else index
@@ -236,6 +238,6 @@ class QueueManager(QObject):
     def clearQueue(self):
         """Clear the queue"""
         self.queueModel.setQueue([])
-        self.queueIds = []
+        self.queueIds = [] # type: ignore
         self._pointer = 0
         self.queueChanged.emit()

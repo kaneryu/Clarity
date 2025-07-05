@@ -1,9 +1,8 @@
 import urllib.parse
-
-import urllib.parse
+import typing
 
 class AppUrl:
-    _instance = None
+    _instance: typing.Union["AppUrl", None] = None 
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:

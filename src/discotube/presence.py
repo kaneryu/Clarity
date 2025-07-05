@@ -13,7 +13,7 @@ class PresenceManagerThread(QThread):
         self.client_id = client_id
         self.queue_instance = queue_instance
         self._running = True
-        self.jobs = queue.Queue()
+        self.jobs: queue.Queue = queue.Queue()
         
         self.queue_instance.songChanged.connect(self.putnewsong)
         self.queue_instance.playingStatusChanged.connect(self.playingStatusChanged)
@@ -117,7 +117,7 @@ class PresenceManagerThread(QThread):
         self._running = False
         self.logger.info("Discord presence manager stopped")
 
-presence_manager = None
+presence_manager: PresenceManagerThread | None = None
 def initialize_discord_presence(queue_instance):
     global presence_manager
     DISCORD_CLIENT_ID = "1221181347071000637"  # Replace with your actual Discord app client ID

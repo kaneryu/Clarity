@@ -9,7 +9,7 @@ from typing import Union
 import asyncio
 import src.universal as universal
 
-from PySide6.QtCore import QObject, Signal, QAbstractListModel, QModelIndex, Qt, Property, QMetaObject, QMetaMethod
+from PySide6.QtCore import QObject, Signal, QAbstractListModel, QModelIndex, QPersistentModelIndex, Qt, Property, QMetaObject, QMetaMethod
 
 
 
@@ -18,7 +18,7 @@ class BasicSearchResultsModel(QAbstractListModel):
         super().__init__()
         # data structure
         # dictionary
-        # type: song, video, album, artist, playlist, podcast, episode
+        # types: song, video, album, artist, playlist, podcast, episode
         # title: title
         # creator: creator
         # id: id
@@ -28,17 +28,17 @@ class BasicSearchResultsModel(QAbstractListModel):
         self._data = [{"type": "", "title": "", "creator": "", "id": "", "parentId": "", "duration": "", "object": None}]
         # self.dataChanged.connect(self.log)
     
-    def rowCount(self, parent: QModelIndex = QModelIndex()):
+    def rowCount(self, parent = QModelIndex()):
         return len(self._data)
     
-    def columnCount(self, parent: QModelIndex = QModelIndex()):
+    def columnCount(self, parent = QModelIndex()):
         return 6
     
-    def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()):
+    def index(self, row: int, column: int = 0, parent = QModelIndex()) -> QModelIndex:
         return self.createIndex(row, column)
     
-    def parent(self, index: QModelIndex):
-        return QModelIndex()
+    # def parent(self, index: QModelIndex) -> QModelIndex:
+    #     return QModelIndex()
     
     def roleNames(self):
         return {
@@ -51,7 +51,7 @@ class BasicSearchResultsModel(QAbstractListModel):
             Qt.ItemDataRole.UserRole + 7: b"object"
         }
 
-    def data(self, index: QModelIndex, role: int):
+    def data(self, index: (QModelIndex | QPersistentModelIndex), role: int = Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
         if index.row() >= len(self._data):
@@ -74,7 +74,7 @@ class BasicSearchResultsModel(QAbstractListModel):
             return data["object"]
         return None
     
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int):
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole):
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
             if section == 0:
                 return "Type"
@@ -90,7 +90,7 @@ class BasicSearchResultsModel(QAbstractListModel):
                 return "parentID"
         return None
 
-    def setData(self, index: QModelIndex, value: object, role: int):
+    def setData(self, index: (QModelIndex | QPersistentModelIndex), value, role: int = Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return False
         if index.row() >= len(self._data):
@@ -112,7 +112,7 @@ class BasicSearchResultsModel(QAbstractListModel):
         self.dataChanged.emit(index, index)
         return True
 
-    def insertRow(self, row: int, parent: QModelIndex):
+    def insertRow(self, row: int, parent: (QModelIndex | QPersistentModelIndex) = QModelIndex()):
         self.beginInsertRows(parent, row, row)
         self._data.insert(row, {"type": "", "title": "", "creator": "", "id": "", "parentId": "", "duration": "", "object": None})
         self.endInsertRows()

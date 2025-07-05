@@ -99,7 +99,7 @@ class Interactions(QObject):
     
     @Property(QObject, notify=songChanged)
     def currentSong(self) -> universal.song_module.Song:
-        f: universal.song_module.Song = universal.song_module.SongProxy(universal.queueInstance.currentSongObject, self)
+        f: universal.song_module.Song = universal.song_module.SongProxy(universal.queueInstance.currentSongObject, self) # type: ignore[assignment, arg-type]
         return f
     
     @Property(bool, notify=playingStatusChanged)
@@ -108,7 +108,7 @@ class Interactions(QObject):
 
     @Property(int, notify=playingStatusChanged)
     def playingStatus(self):
-        return int(universal.queueInstance.playingStatus)
+        return int(universal.queueInstance.playingStatus) # type: ignore[call-overload]
     
     
     @Slot(str)
@@ -157,10 +157,6 @@ class Interactions(QObject):
         smodule = universal.song_module
         song = smodule.SongProxy(smodule.Song(id), self)
         return song
-
-    @Slot(QObject, result=QObject)
-    def getSongCover(self, song: universal.song_module.Song) -> QObject:
-        return song.cover
     
     
     # convenience functions for interacting with the song class

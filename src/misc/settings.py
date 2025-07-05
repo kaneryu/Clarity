@@ -70,9 +70,9 @@ class Settings:
                 self.logger.error(f"Setting {name}'s type is supposed to be {type_}, but it is {type(value_)}, skipping...")
                 continue
             
-            description = value.get("description")
+            description = value.get("description", "")
             group = value.get("group")
-            hidden = value.get("hidden")
+            hidden = value.get("hidden", False)
             
             
             new = Setting(key=key, value=value_, type=type_, description=description, group=group, hidden=hidden, name=name)
@@ -87,7 +87,7 @@ class Settings:
     def save(self):
         settings_to_save = {"for": version, "settings": {}}
         for key, setting in self.settingObjects.items():
-            settings_to_save["settings"][key] = {
+            settings_to_save["settings"][key] = { # type: ignore
             "value": setting.value,
             "type": setting.type.__name__,
             "description": setting.description,
