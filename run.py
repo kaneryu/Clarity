@@ -15,8 +15,8 @@
 # nuitka-project: --copyright="This is free and open-source software -- GNU GPL v3"
 # nuitka-project: --windows-product-name="Clarity"
 
-# nuitka-project: --product-version=0.29.5
-# nuitka-project: --file-version=0.29.5
+# nuitka-project: --product-version=0.29.6
+# nuitka-project: --file-version=0.29.6
 
 # nuitka-project: --output-filename=Clarity
 # disabled: --disable-console

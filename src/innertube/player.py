@@ -8,6 +8,7 @@ from PySide6.QtCore import QMetaObject
 
 class PlayingStatus(IntEnum):
     """Playing Status"""
+    NOT_READY = -1  # Media is not ready to play
     PLAYING = 0  # Playing
     PAUSED = 1  # Paused
     BUFFERING = 2  # Media is buffering

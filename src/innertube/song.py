@@ -6,7 +6,7 @@ import io
 import enum
 import os
 import logging
-from typing import Union
+from typing import Union, cast as type_cast
 
 from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QBuffer, QRect, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QMetaObject, QTimer, QThread
 from PySide6.QtGui import QPixmap, QPainter, QImage
@@ -134,6 +134,7 @@ class Song(QObject):
     downloadedChanged = Signal(bool)
     downloadStatusChanged = Signal(enum.Enum)
     downloadProgressChanged = Signal(int)
+    playbackReadyChanged = Signal(bool)
     
     songInfoFetched = Signal()
     
@@ -164,8 +165,7 @@ class Song(QObject):
         get_info_full: Gets the full info of the song.
         get_lyrics: Gets the lyrics of the song.
         """
-        
-
+        self.logger = logging.getLogger(f"Song.{id}")
         self._downloaded = cacheManager.getdataStore("song_datastore").checkFileExists(id)
             
         if self._downloaded:
@@ -185,9 +185,15 @@ class Song(QObject):
         self.rawPlaybackInfo: dict = {}
         self.playbackInfo: dict = {}
         self._initialized: bool = True
+        self.gettingPlaybackReady = False
         
+        self.downloadedChanged.connect(self.playbackReadyChanged)
+        
+        self.playbackReadyChanged.connect(lambda: self.logger.debug(f"Playback ready changed for song {self.id} ({self.title}): {self.playbackReady}"))
+
+        self.get_info_cache_only() # immediately check if song data is in cache already
         # self.moveToThread(g.mainThread)
-        self.logger = logging.getLogger("Song")
+
         return None
     
     
@@ -235,7 +241,18 @@ class Song(QObject):
     def downloadProgress(self, value: int) -> None:
         self._downloadProgress = value
         self.downloadProgressChanged.emit(self._downloadProgress)
-
+    
+    @QProperty(bool, notify = playbackReadyChanged)
+    def playbackReady(self) -> bool:
+        """Returns whether the song is ready for playback or not."""
+        return self._downloaded or (self.playbackInfo != {})
+    
+    def checkPlaybackReady(self, noEmit: bool = False) -> bool:
+        """Checks if the song is ready for playback."""
+        new_playbackReady = self._downloaded or (self.playbackInfo is not {})
+        self.playbackReadyChanged.emit(new_playbackReady)
+        return new_playbackReady
+    
     def from_search_result(self, search_result: dict) -> None:
         self.source = "search"
         self.title = search_result["title"]
@@ -244,51 +261,26 @@ class Song(QObject):
     async def ensure_info(self) -> None:
         if not self.source:
             await self.get_info(g.asyncBgworker.API)
-        
-    async def get_info(self, api) -> None:
-        """
-        Gets the info of the song.
-        """
-        api: ytm.YTMusic = api
-        c = cacheManager.getCache("songs_cache")
-
-        if not self.id or self.id == "":
-            return
-        
-        identifier = self.id + "_info"
-        cachedData: str
-        self.rawData: dict
-        
-        if not (cachedData := c.get(identifier)): # type: ignore[assignment]
-            self.rawData = await api.get_song(self.id)
-            c.put(identifier, json.dumps(self.rawData), byte = False)
-        else:
-            self.rawData = json.loads(cachedData)
-            
-            if self.rawData.get("playabilityStatus", {}).get("status") == "ERROR":
-                raise Exception(f"Song cannot be retrieved due to playability issues. id: {self.id} " + self.rawData.get("playabilityStatus", {}).get("reason"))
-
+    
+    def _set_info(self, rawVideoDetails: dict) -> None:
         self.source = "full"
+        self.title: str = rawVideoDetails["title"]
+        self.id = rawVideoDetails["videoId"]
+        self.duration: int = int(rawVideoDetails["lengthSeconds"]) 
         
-        self.rawVideoDetails: dict = self.rawData["videoDetails"]
+        self.author: str = rawVideoDetails["author"]
+        self.artist: str = rawVideoDetails["author"]
+        self.channel: str = rawVideoDetails["author"]
+        self.channelId: str = rawVideoDetails["channelId"]
+        self.artistId: str = rawVideoDetails["channelId"]
         
-        self.title: str = self.rawVideoDetails["title"]
-        self.id = self.rawVideoDetails["videoId"]
-        self.duration: int = int(self.rawVideoDetails["lengthSeconds"]) 
-        
-        self.author: str = self.rawVideoDetails["author"]
-        self.artist: str = self.rawVideoDetails["author"]
-        self.channel: str = self.rawVideoDetails["author"]
-        self.channelId: str = self.rawVideoDetails["channelId"]
-        self.artistId: str = self.rawVideoDetails["channelId"]
-        
-        self.thumbails: dict = self.rawVideoDetails["thumbnail"]["thumbnails"]
+        self.thumbails: dict = rawVideoDetails["thumbnail"]["thumbnails"]
         self.smallestThumbail: dict = self.thumbails[0]
         self.largestThumbail: dict = self.thumbails[-1]
         self.smallestThumbailUrl: str = self.smallestThumbail["url"]
         self.largestThumbnailUrl: str = self.largestThumbail["url"]
         
-        self.views: int = int(self.rawVideoDetails["viewCount"])
+        self.views: int = int(rawVideoDetails["viewCount"])
         
         self.rawMicroformatData = self.rawData["microformat"]
         self.rectangleThumbnail: dict = self.rawMicroformatData["microformatDataRenderer"]["thumbnail"]["thumbnails"][-1]
@@ -313,7 +305,56 @@ class Song(QObject):
         
         self.isFamilySafe: bool = self.rawMicroformatData["microformatDataRenderer"]["familySafe"]
         
+                
         self.songInfoFetched.emit()
+        self.logger = logging.getLogger(f"Song.{self._id}-{self.title}")
+        
+    def get_info_cache_only(self) -> None:
+        c = cacheManager.getCache("songs_cache")
+        identifier = self.id + "_info"
+        cachedData: str
+        self.rawData: dict
+        
+        if cachedData := c.get(identifier): # type: ignore[assignment]
+            self.rawData = json.loads(cachedData)
+            if self.rawData.get("playabilityStatus", {}).get("status") == "ERROR":
+                raise Exception(f"Song cannot be retrieved due to playability issues. id: {self.id} " + self.rawData.get("playabilityStatus", {}).get("reason"))
+        else:
+            return
+        
+        self.rawVideoDetails: dict = self.rawData["videoDetails"]
+        
+        self._set_info(self.rawVideoDetails)
+
+        
+    async def get_info(self, api, cache_only: bool = False) -> None:
+        """
+        Gets the info of the song.
+        """
+        api: ytm.YTMusic = api
+        c = cacheManager.getCache("songs_cache")
+
+        if not self.id or self.id == "":
+            return
+        
+        identifier = self.id + "_info"
+        cachedData: str
+        self.rawData: dict
+        
+        if not (cachedData := c.get(identifier)): # type: ignore[assignment]
+            if cache_only:
+                return
+        
+            self.rawData = await api.get_song(self.id)
+            c.put(identifier, json.dumps(self.rawData), byte = False)
+        else:
+            self.rawData = json.loads(cachedData)
+            if self.rawData.get("playabilityStatus", {}).get("status") == "ERROR":
+                raise Exception(f"Song cannot be retrieved due to playability issues. id: {self.id} " + self.rawData.get("playabilityStatus", {}).get("reason"))
+
+
+        self.rawVideoDetails: dict = self.rawData["videoDetails"]
+        self._set_info(self.rawVideoDetails)
 
     def download_playbackInfo(self) -> None:
         """Because ytdlp isn't async, input this function into the BackgroundWorker to do the slow part in a different thread.
@@ -335,6 +376,7 @@ class Song(QObject):
         # open("playbackinfo.json", "w").write(json.dumps(self.rawPlaybackInfo))
         
     def get_playback(self, skip_download: bool = False) -> None:
+        self.gettingPlaybackReady = True
         datastore = cacheManager.getdataStore("song_datastore")
         if not datastore:
             self.logger.critical("No data store found for songs, cannot get download info.")
@@ -404,6 +446,8 @@ class Song(QObject):
         video.sort(key=lambda x: x["quality"])
         
         self.playbackInfo = {"audio": audio, "video": video}
+        self.checkPlaybackReady()
+        self.gettingPlaybackReady = False
     
     def purge_playback(self):
         c = cacheManager.getCache("songs_cache")
@@ -467,6 +511,7 @@ class Song(QObject):
         """
         Downloads the song.
         """
+        self.gettingPlaybackReady = True
         datastore = cacheManager.getdataStore("song_datastore")
         if not self.playbackInfo:
             self.get_playback()
@@ -496,8 +541,10 @@ class Song(QObject):
             datastore.delete(self.id)
 
         datastore.write_file(key=self.id + "_downloadMeta", value=json.dumps(using), ext="json", byte=False)
+
         await self.download_with_progress(url, datastore, ext, self.id)
-    
+        self.checkPlaybackReady()
+        self.gettingPlaybackReady = False
     
     def get_best_playback_MRL(self) -> str | None:
         """Will return either the path of the file on disk or best possbile quality playback URL.
@@ -533,7 +580,7 @@ class SongProxy(QObject):
     downloadedChanged = Signal(bool)
     downloadStatusChanged = Signal(enum.Enum)
     downloadProgressChanged = Signal(int)
-    playingStatusChanged = Signal(int)
+    playingStatusChanged = Signal(bool)
     
     infoChanged = Signal()
     
@@ -560,6 +607,7 @@ class SongProxy(QObject):
         self._downloaded = self.target.downloaded
         self._downloadStatus = self.target.downloadStatus
         self._downloadProgress = self.target.downloadProgress
+        self._playbackReady = self.target.playbackReady
         
         self.setParent(parent)
         self.moveToThread(parent.thread())
@@ -629,6 +677,10 @@ class SongProxy(QObject):
             return q.playingStatus # type: ignore[return-value]
         else:
             return PlayingStatus.NOT_PLAYING
+        
+    @QProperty(bool, notify=infoChanged)
+    def playbackReady(self) -> bool:
+        return getattr(self, "_playbackReady")
     
     @Slot()
     def test(self):
@@ -637,7 +689,6 @@ class SongProxy(QObject):
     def update(self, name):
         setattr(self, "_"+name, getattr(self.target, name))
         exec("self."+name+"Changed.emit(getattr(self, '_"+name+"'))")
-
 
 class SongImageProvider(QQuickImageProvider):
     sendRequest = Signal(QNetworkRequest, str, name = "sendRequest")
@@ -729,7 +780,6 @@ class SongImageProvider(QQuickImageProvider):
         return img
         
         
-
 
 class LoopType(enum.Enum):
     """Loop Types"""
@@ -851,10 +901,7 @@ class Queue(QObject):
         self.loop: LoopType = LoopType.NONE
         self.queueModel = QueueModel()
         
-        if not cacheManager.cacheExists("queueCache"):
-            cache = cacheManager.CacheManager(name="queueCache")
-        else:
-            cache = cacheManager.getCache("queueCache")
+        self.cache = cacheManager.getCache("queue_cache")
         
         self.eventManager.event_attach(vlc.EventType.MediaPlayerEndReached, self.songFinished)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerEncounteredError, self.on_vlc_error)
@@ -866,16 +913,33 @@ class Queue(QObject):
         
         self._playingStatus = PlayingStatus.STOPPED
         
-        self.cache = cache
         self.queue: list[Song]
         self.pointer: int
         self.currentSongObject: Song
+        
+        self.noMrl = False
         
         self.purgetries = {}
         self.presence = presence.initialize_discord_presence(self)
         
         self.queueIds: list[str]
-    
+        
+        self.playingStatusChanged.connect(lambda: self.currentSongObject.checkPlaybackReady()) # type: ignore[attr-defined]
+        
+    @Slot(Song)
+    def songMrlChanged(self, song: Song):
+        if song == self.currentSongObject:
+            self.logger.info("Current Song MRL Changed")
+            if song.playbackReady and self.noMrl: # if the song is now pb ready, we can set the MRL
+                self.play()
+            else:
+                if song.playbackReady:
+                    self.logger.debug("Current Song is playback ready, and the MRL was already set, so we don't need to do anything.")
+                else:
+                    self.logger.debug("Current Song is not playback ready, so we don't set the MRL.")
+                
+        
+            
     def onPlayEvent(self, event):
         self.logger.info("Play Event")
         self._playingStatus = PlayingStatus.PLAYING
@@ -903,9 +967,16 @@ class Queue(QObject):
     def playingStatus(self):
         with QMutexLocker(self._mutex):
             if self.player.get_media() is None:
-                return PlayingStatus.STOPPED
+                return PlayingStatus.NOT_READY
             return self._playingStatus
     
+    @playingStatus.setter
+    def playingStatus(self, value: PlayingStatus):
+        if value not in PlayingStatus:
+            raise ValueError("Invalid PlayingStatus value")
+        self._playingStatus = value
+        self.playingStatusChanged.emit(self._playingStatus)
+
     @QProperty(list, notify=queueChanged)
     def queue(self):
         with QMutexLocker(self._queueAccessMutex):
@@ -1036,7 +1107,8 @@ class Queue(QObject):
         
         # If stopping previous media, add a small delay
         if self.player.get_media() is not None:
-            self.player.stop()
+            self.player.stop()  # Stop the current media
+            self.player.set_media(None)  # Reset the media to avoid issues when adding a song that doesn't have a MRL
             # Add a brief delay to allow VLC to clean up
             QTimer.singleShot(10, self._do_play)
         else:
@@ -1051,6 +1123,17 @@ class Queue(QObject):
             return media
 
         url = self.queue[self.pointer].get_best_playback_MRL()
+        if url is None:
+            self.logger.info(f"No MRL found for song ({self.queue[self.pointer].id} - {self.queue[self.pointer].title}), fetching now...")
+            self.playingStatus = PlayingStatus.NOT_READY # type: ignore[assignment]
+            self.noMrl = True
+            self.songChanged.emit()
+            self.durationChanged.emit()
+            g.bgworker.add_job(func=self.queue[self.pointer].get_playback)
+            return
+        
+        self.noMrl = False
+        
         self.player.set_media(Media(url))
         self.player.play()
         self.songChanged.emit()
@@ -1121,26 +1204,48 @@ class Queue(QObject):
             "description": song_.description
         }
     
-    def add(self, id: str, index: int = -1, goto: bool = False):
-        s: Song = Song(id=id)
-        coro = s.get_info(g.asyncBgworker.API)
-        future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
-        future.result()  # wait for the result
-        g.bgworker.add_job(self.finishAdd, s, index, goto)
+    # def add(self, id: str, index: int = -1, goto: bool = False):
+    #     s: Song = Song(id=id)
+    #     coro = s.get_info(g.asyncBgworker.API)
+    #     future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
+    #     future.result()  # wait for the result
+    #     g.bgworker.add_job(self.finishAdd, s, index, goto)
 
-    def finishAdd(self, song: Song, index: int = -1, goto: bool = False):
-        song.get_playback()
+    # def finishAdd(self, song: Song, index: int = -1, goto: bool = False):
+    #     song.get_playback()
+    #     if index == -1:
+    #         self.queueModel.insertRows(len(self.queue), 1)
+    #         self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.ItemDataRole.EditRole)
+    #         self.queueIds.append(song.id) # type: ignore[attr-defined]
+    #     else:
+    #         self.queueModel.insertRows(index, 1)
+    #         self.queueModel.setData(self.queueModel.index(index, song, Qt.ItemDataRole.EditRole)
+    #         self.queueIds.insert(index, song.id) # type: ignore[attr-defined]
+    #     if goto:
+    #         self.pointer = len(self.queue) - 1 if index == -1 else index
+    #         self.play()
+    
+    def add(self, id: str, index: int = -1, goto: bool = False):
+        s: Song = Song(id = id)
+        if s.source == None: # if we need to get the songinfo
+            coro = s.get_info(g.asyncBgworker.API)
+            future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
+            future.result()
+        
         if index == -1:
             self.queueModel.insertRows(len(self.queue), 1)
-            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.ItemDataRole.EditRole)
-            self.queueIds.append(song.id) # type: ignore[attr-defined]
+            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), s, Qt.ItemDataRole.EditRole)
+            self.queueIds.append(s.id) # type: ignore
         else:
             self.queueModel.insertRows(index, 1)
-            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), song, Qt.ItemDataRole.EditRole)
-            self.queueIds.insert(index, song.id) # type: ignore[attr-defined]
+            self.queueModel.setData(self.queueModel.index(index), s, Qt.ItemDataRole.EditRole)
+            self.queueIds.insert(index, s.id) # type: ignore
+        
         if goto:
-            self.pointer = len(self.queue) - 1 if index == -1 else index
+            self.pointer = len(self.queue) -1 if index == -1 else index
             self.play()
+        
+        s.playbackReadyChanged.connect(lambda: self.songMrlChanged(s))
     
     def _seek(self, seek_time: int):
         if seek_time < 0 or seek_time > self.player.get_length():

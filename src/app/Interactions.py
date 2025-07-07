@@ -16,7 +16,6 @@ from PySide6.QtQml import (
 from PySide6.QtCore import Property
 
 import src.universal as universal
-from . import Interfaces
 
 QML_IMPORT_NAME = "CreateTheSun"
 QML_IMPORT_MAJOR_VERSION = 1

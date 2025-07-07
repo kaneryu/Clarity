@@ -1,10 +1,21 @@
+import versions
+try:
+    with open("version.txt") as f:
+        version = versions.Version(f.read().strip())
+except FileNotFoundError:
+    print("version.txt not found, using 0.0.0")
+    version = versions.Version("0.0.0")
+    
+print("Clarity version", version)
+
+
 import threading
 import concurrent.futures
 import types
 from hashlib import md5
 import time
 import builtins
-import versions
+
 import os
 import logging
 
@@ -21,17 +32,10 @@ from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_Background
 
 from .AppUrl import AppUrl, appUrl
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 mainThread: QThread = QThread.currentThread()
-try:
-    with open("version.txt") as f:
-        version = versions.Version(f.read().strip())
-except FileNotFoundError:
-    print("version.txt not found, using 0.0.0")
-    version = versions.Version("0.0.0")
-    
-print("Clarity version", version)
+
 # input()
 
 def ghash(thing):
@@ -43,7 +47,7 @@ datapath = os.path.abspath("data")
 globalCache = cacheManager_module.CacheManager(name="cache", directory=os.path.join(datapath, "cache"))
 songCache = cacheManager_module.CacheManager(name="songs_cache", directory=os.path.join(datapath, "songs_cache"))
 imageCache = cacheManager_module.CacheManager(name="images_cache", directory=os.path.join(datapath, "images_cache"))
-
+queueCache = cacheManager_module.CacheManager(name="queue_cache", directory=os.path.join(datapath, "queue_cache"))
 songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(datapath, "song_datastore"))
 
 songDataStore.integrityCheck()

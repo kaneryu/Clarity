@@ -68,6 +68,13 @@ ApplicationWindow {
             fillMode: Image.PreserveAspectFit
             width: 35
             height: 35
+            
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    Backend.setUrl("page/home")
+                }
+            }
         }
 
         Components.SearchBar {

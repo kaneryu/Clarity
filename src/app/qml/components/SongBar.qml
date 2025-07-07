@@ -126,6 +126,14 @@ Item {
 
             states: [
                 State {
+                    name: "notReady"
+                    when: Interactions.playingStatus == -1
+                    PropertyChanges {
+                        target: playButton
+                        icon: AssetsPath + "icons/songbar/close.svg"
+                    }
+                },
+                State {
                     name: "playing"
                     when: Interactions.playingStatus == 0
                     PropertyChanges {

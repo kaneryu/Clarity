@@ -45,9 +45,14 @@ Item {
     // Base.Song {
     //     id: r76AWibyDDQ
     // }
+    
     TextVariant.Default {
         id: _title
         text: "awaawawawwawawawawawaawawawawawwa"
-
+    }
+    TextVariant.Default {
+        id: _subtitle
+        text: Interactions.currentSong.playbackReady ? "Playback is ready" : "Playback is not ready"
+        anchors.top: _title.bottom
     }
 }
