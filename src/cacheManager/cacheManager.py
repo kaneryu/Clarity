@@ -272,8 +272,9 @@ class CacheManager:
         b = self.metadata[key].get("bytes", False)
         dictmode = self.metadata[key].get("dict", False)
         
-        if self.metadata[key].get("expiration", -1):
-            if time.time() > self.metadata[key].get("expiration", -1):
+        
+        if self.metadata[key].get("expiration", None):
+            if time.time() > self.metadata[key]["expiration"]:
                 self.log.info("cache miss: " + key + " expired")
                 self.delete(key)
                 return False
