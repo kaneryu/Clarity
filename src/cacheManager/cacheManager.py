@@ -259,13 +259,13 @@ class CacheManager:
             Any: The value stored. When passing in an item of type 'bytes', it will be written to disk using wb
         """
         if not key in self.__cache_path_map:
-            self.log.info("cache miss: " + key)
+            self.log.debug("cache miss: " + key)
             self.statistics["misses"] += 1
             return False
         elif not os.path.exists(self.__get_abspath(self.__cache_path_map[key])): # if the key is in the cache, but it's not actually on disk
                 self.delete(key)
                 self.log.warning(f"key {key} was orphaned (data was deleted but reference still exists)")
-                self.log.info("cache miss: " + key)
+                self.log.debug("cache miss: " + key)
                 self.statistics["misses"] += 1
                 return False
     
@@ -275,7 +275,7 @@ class CacheManager:
         
         if self.metadata[key].get("expiration", None):
             if time.time() > self.metadata[key]["expiration"]:
-                self.log.info("cache miss: " + key + " expired")
+                self.log.debug("cache miss: " + key + " expired")
                 self.delete(key)
                 return False
         
@@ -373,13 +373,12 @@ class CacheManager:
         """Collect expired values from the cache
         """
         self.log.info("collecting expired items")
-        self.log.info("collecting expired items")
         now = time.time()
         
         keys_to_delete = [key for key in list(self.metadata.keys()) if (-1 if self.metadata[key].get("expiration", 1.79e309) == None else self.metadata[key].get("expiration", 1.79e309)) < now]
     
         for key in keys_to_delete:
-            self.log.info(f"deleting key {key} because it expired")
+            self.log.debug(f"deleting key {key} because it expired")
             self.delete(key)
     
         self.__metadataSave()
@@ -432,13 +431,13 @@ class CacheManager:
             str: The path of the item on disk
         """
         if not key in self.__cache_path_map:
-            self.log.info("cache miss: " + key)
+            self.log.debug("cache miss: " + key)
             self.statistics["misses"] += 1
             return False
         elif not os.path.exists(self.__get_abspath(self.__cache_path_map[key])): # if the key is in the cache, but it's not actually on disk
                 self.delete(key)
                 self.log.warning(f"key {key} was orphaned (data was deleted but reference still exists)")
-                self.log.info("cache miss: " + key)
+                self.log.debug("cache miss: " + key)
                 self.statistics["misses"] += 1
                 return False
     
@@ -447,7 +446,7 @@ class CacheManager:
         
         if self.metadata[key].get("expiration", -1):
             if time.time() > self.metadata[key].get("expiration", -1):
-                self.log.info("cache miss: " + key + " expired")
+                self.log.debug("cache miss: " + key + " expired")
                 self.delete(key)
                 return False
         

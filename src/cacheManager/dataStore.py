@@ -253,13 +253,13 @@ class DataStore:
             Any: The value stored. When passing in an item of type 'bytes', it will be written to disk using wb
         """
         if not key in self.__dataStore_path_map:
-            self.logging.info("dataStore miss: " + key)
+            self.logging.debug("dataStore miss: " + key)
             self.statistics["misses"] += 1
             return False
         elif not os.path.exists(self.__dataStore_path_map[key]): # if the key is in the dataStore, but it's not actually on disk
                 self.delete(key)
                 self.logging.warning(f"key {key} was orphaned (data was deleted but reference still exists)")
-                self.logging.info("dataStore miss: " + key)
+                self.logging.debug("dataStore miss: " + key)
                 self.statistics["misses"] += 1
                 return False
     
@@ -339,13 +339,13 @@ class DataStore:
 
         
         if not key in self.__dataStore_path_map:
-            self.logging.info("dataStore miss: " + key)
+            self.logging.debug("dataStore miss: " + key)
             self.statistics["misses"] += 1
             return False
         elif not os.path.exists(self.__dataStore_path_map[key]): # if the key is in the dataStore, but it's not actually on disk
                 self.delete(key)
                 self.logging.warning(f"key {key} was orphaned (data was deleted but reference still exists)")
-                self.logging.info("dataStore miss: " + key)
+                self.logging.debug("dataStore miss: " + key)
                 self.statistics["misses"] += 1
                 return False
         

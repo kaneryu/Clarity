@@ -53,6 +53,7 @@ class NetworkManager:
         Set proxy for all requests
         Example: http://username:password@proxyserver:port
         """
+        
         if proxy_url:
             self.proxy_config = {
                 "http": proxy_url,
@@ -144,9 +145,10 @@ class NetworkManager:
             self.logger.error(f"POST request failed: {url} - {str(e)}")
             raise
     
-    def download_file(self, url: str, destination_path: str, 
+    def download_file(self, url: str, file_obj, 
                      headers: Optional[Dict] = None, 
-                     progress_callback=None) -> bool:
+                     progress_callback=None,
+                     start: int = -1) -> bool:
         """
         Download a file with optional progress tracking
         
@@ -160,22 +162,33 @@ class NetworkManager:
             True if successful, False if failed
         """
         request_headers = {**self.default_headers, **(headers or {})}
-        
+        if start >= 0:
+            request_headers["Range"] = f"bytes={start}-"
         try:
             with self.session.get(url, headers=request_headers, stream=True) as response:
                 response.raise_for_status()
+                if response.status_code == 416:  # Requested range not satisfiable
+                    self.logger.warning(f"Range not satisfiable for {url}, starting from beginning")
+                    start = 0
+                    request_headers["Range"] = "bytes=0-"
+                    response = self.session.get(url, headers=request_headers, stream=True)
+                if response.status_code == 200 and start >= 0:
+                    file_obj.seek(0)  # Ensure we start writing at the beginning
+                    
+                file_obj.seek(start)  # Ensure we start writing at the correct position
+                    
                 total_size = int(response.headers.get('content-length', 0))
                 
-                with open(destination_path, 'wb') as f:
-                    downloaded = 0
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:  # filter out keep-alive chunks
-                            f.write(chunk)
-                            downloaded += len(chunk)
-                            if progress_callback:
-                                progress_callback(downloaded, total_size)
                 
-                self.logger.debug(f"Downloaded {url} to {destination_path}")
+                downloaded = 0
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:  # filter out keep-alive chunks
+                        file_obj.write(chunk)
+                        downloaded += len(chunk)
+                        if progress_callback:
+                            progress_callback(downloaded, total_size)
+                
+                self.logger.debug(f"Downloaded {url} to {file_obj.name} ({downloaded}/{total_size} bytes)")
                 return True
                 
         except Exception as e:

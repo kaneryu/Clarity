@@ -4,6 +4,10 @@
 
 - add new discord RPC feature -- kaneryu on 2025-07-27
 
+## Bugfixes
+
+- add ability for downloader to retry downloading song if chunking doesn't work -- kaneryu on 2025-07-27
+
 
 
 # Version 0.29

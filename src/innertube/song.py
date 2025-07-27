@@ -488,6 +488,15 @@ class Song(QObject):
                 progress_callback=progress_callback
             )
             
+            if not success:
+                self.logger.warning(f"Download failed for {self.title}, retrying with single-threaded download.")
+                success = g.networkManager.download_file(
+                    url=url,
+                    file_obj=file,
+                    progress_callback=progress_callback,
+                    start=downloaded
+                )
+            
             if success:
                 self.logger.info(f"Download complete for {self.title}")
                 datastore.close_write_file(key=self.id, ext=ext, file=file)
@@ -943,12 +952,12 @@ class Queue(QObject):
         
             
     def onPlayEvent(self, event):
-        self.logger.info("Play Event")
+        self.logger.debug("Play Event")
         self._playingStatus = PlayingStatus.PLAYING
         self.playingStatusChanged.emit(self._playingStatus)
     
     def onPauseEvent(self, event):
-        self.logger.info("Pause Event")
+        self.logger.debug("Pause Event")
         self._playingStatus = PlayingStatus.PAUSED
         self.playingStatusChanged.emit(self._playingStatus)
     
@@ -958,7 +967,7 @@ class Queue(QObject):
         self.__bufflastTime = time.time()
         self._playingStatus = PlayingStatus.BUFFERING
         self.playingStatusChanged.emit(self._playingStatus)
-        self.logger.info("Buffering Event")
+        self.logger.debug("Buffering Event")
     
     def onTimeChangedEvent(self, event):
         if time.time() - self.__playlastTime < 0.5:
@@ -967,7 +976,7 @@ class Queue(QObject):
         if not self.playingStatus == PlayingStatus.PLAYING:
             self._playingStatus = PlayingStatus.PLAYING
             self.playingStatusChanged.emit(self._playingStatus)
-            self.logger.info("Time Changed Event")
+            self.logger.debug("Time Changed Event")
         
         self.timeChanged.emit(self.currentSongTime) # type: ignore[union-attr]
 
@@ -1191,7 +1200,7 @@ class Queue(QObject):
                 self.play()
                 return
             else:
-                self.logger.error("Queue Exhausted")
+                self.logger.info("Queue Exhausted")
                 self.stop()
                 return
         self.pointer += 1

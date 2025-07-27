@@ -32,7 +32,7 @@ from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_Background
 
 from .AppUrl import AppUrl, appUrl
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 mainThread: QThread = QThread.currentThread()
 
