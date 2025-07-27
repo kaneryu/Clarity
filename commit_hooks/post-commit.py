@@ -25,6 +25,17 @@ def main():
     
     with open("run.py", "w") as f:
         f.writelines(lines)
+        
+    
+    with open("pyproject.toml", "r") as f:
+        lines = f.readlines()
+    
+    for i, line in enumerate(lines):
+        if line.startswith("version = "):
+            lines[i] = f'version = "{version}"\n'
+
+    with open("pyproject.toml", "w") as f:
+        f.writelines(lines)
     
     autochangelog.write_changelog()
     
@@ -34,6 +45,7 @@ def main():
     subprocess.run(["git", "add", "CHANGELOG"], check=True)
     subprocess.run(["git", "add", "MOST_RECENT_CHANGELOG"], check=True)
     subprocess.run(["git", "add", "run.py"], check=True)
+    subprocess.run(["git", "add", "pyproject.toml"], check=True)
     subprocess.run(["git", "commit", "--amend", "--no-edit"], check=True)
     
     os.environ["POST_COMMIT_RUNNING"] = "0"
