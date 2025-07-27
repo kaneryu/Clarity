@@ -13,3 +13,4 @@
 - codebase now passes mypy check (not in strict mode, with some changes made in mypy.ini) -- kaneryu on 2025-07-05
 - songs can now be in the queue without a MRL ready -- kaneryu on 2025-07-07
 - If expiration isn't set, ignore it -- kaneryu on 2025-07-07
+- Add active song playing check -- kaneryu on 2025-07-27

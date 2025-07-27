@@ -872,6 +872,7 @@ class Queue(QObject):
     pointerMoved = Signal()
     playingStatusChanged = Signal(int)
     durationChanged = Signal()
+    timeChanged = Signal(int)
     
     singleton: Union["Queue", None] = None
     
@@ -908,9 +909,10 @@ class Queue(QObject):
         self.eventManager.event_attach(vlc.EventType.MediaPlayerPaused, self.onPauseEvent)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerPlaying, self.onPlayEvent)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerBuffering, self.onBufferingEvent)
+        self.eventManager.event_attach(vlc.EventType.MediaPlayerTimeChanged, self.onTimeChangedEvent)
         
         self.__bufflastTime: float = 0
-        
+        self.__playlastTime: float = 0
         self._playingStatus = PlayingStatus.STOPPED
         
         self.queue: list[Song]
@@ -957,6 +959,17 @@ class Queue(QObject):
         self._playingStatus = PlayingStatus.BUFFERING
         self.playingStatusChanged.emit(self._playingStatus)
         self.logger.info("Buffering Event")
+    
+    def onTimeChangedEvent(self, event):
+        if time.time() - self.__playlastTime < 0.5:
+            return
+        self.__playlastTime = time.time()
+        if not self.playingStatus == PlayingStatus.PLAYING:
+            self._playingStatus = PlayingStatus.PLAYING
+            self.playingStatusChanged.emit(self._playingStatus)
+            self.logger.info("Time Changed Event")
+        
+        self.timeChanged.emit(self.currentSongTime) # type: ignore[union-attr]
 
     @QProperty(bool, notify=playingStatusChanged)
     def isPlaying(self):
