@@ -1,16 +1,5 @@
-# Version 0.29
+# Version 0.30
 
 ## New Features
 
-- begin work on login -- kaneryu on 2025-03-09
-
-## Bugfixes
-
-- make progressbar a bit larger -- kaneryu on 2025-03-12
-- add some things to cleanup -- kaneryu on 2025-03-14
-- Bump dependencies, swap out ytmusicapi for my own version (still async) -- kaneryu on 2025-07-02
-- Make sure presence is stopped and the thread is properly deleted when the app is closed -- kaneryu on 2025-07-03
-- codebase now passes mypy check (not in strict mode, with some changes made in mypy.ini) -- kaneryu on 2025-07-05
-- songs can now be in the queue without a MRL ready -- kaneryu on 2025-07-07
-- If expiration isn't set, ignore it -- kaneryu on 2025-07-07
-- Add active song playing check -- kaneryu on 2025-07-27
+- add new discord RPC feature -- kaneryu on 2025-07-27

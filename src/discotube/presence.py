@@ -5,7 +5,7 @@ import queue
 
 from src.misc import cleanup
 from PySide6.QtCore import QThread
-from pypresence import Presence, ActivityType
+from pypresence import Presence, ActivityType, StatusDisplayType
 
 class PresenceManagerThread(QThread):
     def __init__(self, client_id, queue_instance, parent=None):
@@ -82,6 +82,7 @@ class PresenceManagerThread(QThread):
             
             self.rpc.update(
                 activity_type=ActivityType.LISTENING,
+                status_display_type=StatusDisplayType.DETAILS,
                 details=title[:128] if title else "Unknown Title",
                 state=channel[:128] if channel else "Unknown Artist",
                 start=start,
