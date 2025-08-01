@@ -286,7 +286,7 @@ Item {
         
         Timer {
             id: timeTimer
-            interval: 1000
+            interval: 200
             running: true
             repeat: true
             

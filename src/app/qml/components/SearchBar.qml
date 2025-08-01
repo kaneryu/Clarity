@@ -64,7 +64,10 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         property string pholder: "Search for your favorite song"
         placeholderText: "Search for your favorite song"
+        
+        placeholderTextColor: Theme.onPrimaryContainer
         color: Theme.onPrimaryContainer
+
         font.pixelSize: 15
         focus: true
         background: Rectangle {

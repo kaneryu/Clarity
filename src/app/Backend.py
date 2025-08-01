@@ -35,10 +35,10 @@ from PySide6.QtCore import Property
 
 import src.universal as universal
 import src.paths as paths
-
+import src.misc.settings as settings
 import ytmusicapi
 
-QML_IMPORT_NAME = "CreateTheSun"
+QML_IMPORT_NAME = "Backend"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
 
@@ -51,6 +51,10 @@ class Backend(QObject):
     urlChanged = QSignal(name="urlChanged")
     loginRedirect = QSignal(name="loginRedirect")
     loginComplete = QSignal(name="loginComplete")
+    
+    settingChanged = QSignal(name="settingChanged")
+    
+    qmlReload = QSignal(name="qmlReload")
     _instance: "Backend"
     
     def __new__(cls) -> "Backend":
@@ -65,6 +69,10 @@ class Backend(QObject):
             self._value = 0                
             self._queueModel = universal.queueInstance.queueModel
             self._queueVisible = False
+            
+            self.settingChanged.connect(universal.settings.settingChanged)
+        
+        
         
     @Property(str, notify=urlChanged)
     def url(self):
@@ -120,6 +128,18 @@ class Backend(QObject):
     def searchModel(self):
         return universal.searchModel
     
+    @Property(QObject, constant=True)
+    def settingsModel(self):
+        return universal.settings.settingsModel
+
+    @Property(QObject, constant=True)
+    def settingsInterface(self):
+        return settings.QmlSettingsInterface.instance()
+    
+    @Slot(str, result=QObject)
+    def getSettingsObjectByName(self, name: str) -> QObject:
+        return settings.QmlSettingsInterface.instance().getSettingsObjectByName(name)
+    
     @Slot(str, result=bool)
     def search(self, query: str) -> bool:
         universal.asyncBgworker.add_job_sync(func = universal.search_shorthand, usestar = False, a = [], kw = {"query": query})
@@ -156,7 +176,7 @@ class Backend(QObject):
     @Slot(result=str)
     def ping(self) -> str:
         return "pong"
-
+    
     # @Slot()
     # def oauth(self) -> None:
     #     ytmusicapi.setup_oauth()

@@ -21,6 +21,14 @@ ApplicationWindow {
 
     title: "Clarity"
 
+    Shortcut {
+        sequence: "Ctrl+Shift+R"
+        onActivated: {
+            console.log("Reloading QML page...")
+            Backend.qmlReload()
+        }
+    }
+
     Connections {
         target: Backend
         function onLoadComplete() {

@@ -809,19 +809,21 @@ class QueueModel(QAbstractListModel):
         return len(self._queue)
     
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
-        if role == Qt.ItemDataRole.DisplayRole and index.isValid():
+        if not index.isValid():
+            return None
+        if role == Qt.ItemDataRole.DisplayRole:
             return self._queue[index.row()].title
-        if role == Qt.ItemDataRole.EditRole and index.isValid():
+        if role == Qt.ItemDataRole.EditRole:
             return self._queue[index.row()]
-        if role == Qt.ItemDataRole.UserRole + 1 and index.isValid():
+        if role == Qt.ItemDataRole.UserRole + 1:
             return self._queue[index.row()].artist
-        if role == Qt.ItemDataRole.UserRole + 2 and index.isValid():
+        if role == Qt.ItemDataRole.UserRole + 2:
             return self._queue[index.row()].duration
-        if role == Qt.ItemDataRole.UserRole + 3 and index.isValid():
+        if role == Qt.ItemDataRole.UserRole + 3:
             return "placeholder"
-        if role == Qt.ItemDataRole.UserRole + 4 and index.isValid():
+        if role == Qt.ItemDataRole.UserRole + 4:
             return self._queue[index.row()].id
-        if role == Qt.ItemDataRole.UserRole + 5 and index.isValid():
+        if role == Qt.ItemDataRole.UserRole + 5:
             return index.row()
         return None
 

@@ -15,6 +15,7 @@ from PySide6.QtGui import QIcon, QFont, QFontDatabase
 from PySide6.QtQml import (
     QQmlApplicationEngine,
     QQmlDebuggingEnabler,
+    qmlRegisterSingletonInstance
 )
 from PySide6.QtWebEngineQuick import QtWebEngineQuick, QQuickWebEngineProfile
 from PySide6.QtWebEngineCore import QWebEngineUrlRequestInterceptor, QWebEngineUrlRequestInfo
@@ -66,6 +67,14 @@ def main():
     theme = materialInterface.Theme()
     theme.get_dynamicColors(0x1A1D1D, True, 0.0)
     
+    def reloadQML():
+        print("Reloading QML...")
+        engine.clearComponentCache()
+        engine.rootObjects()[0].deleteLater()
+        engine.load(qml)
+    
+    backend.qmlReload.connect(reloadQML)
+    
     engine.rootContext().setContextProperty("Theme", theme)
     engine.rootContext().setContextProperty("Backend", backend)
     engine.rootContext().setContextProperty("Interactions", interactions)
@@ -80,6 +89,7 @@ def main():
     icon = QIcon(os.path.join(universal.Paths.assetsPath, "clarityLogo.png"))
     app.setWindowIcon(icon)
     app.setApplicationName("Clarity")
+    
     engine.load(qml)
     if not engine.rootObjects():
         sys.exit(-1)

@@ -32,11 +32,13 @@ from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_Background
 
 from .AppUrl import AppUrl, appUrl
 
+from .misc import settings as settings_module
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 mainThread: QThread = QThread.currentThread()
 
-# input()
+settings = settings_module.Settings()
 
 def ghash(thing):
     # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
@@ -106,5 +108,6 @@ def createSongMainThread(songId: str) -> song_module.Song:
 
 startupQueue.extend(i for i in getAllDownloadedSongs())
 queueInstance.setQueue(startupQueue, False)
+
 
 # is_internet_connected()

@@ -1,11 +1,12 @@
 from materialyoucolor.dynamiccolor.material_dynamic_colors import MaterialDynamicColors
+from materialyoucolor.dynamiccolor.dynamic_color import DynamicColor
+from materialyoucolor.utils import color_utils
 from materialyoucolor.hct import Hct
 from materialyoucolor.scheme.scheme_tonal_spot import SchemeTonalSpot
 from PySide6.QtCore import QObject, Qt, Slot, Property, Signal
 
 import json
 import dataclasses
-
 class Theme(QObject):
     themeChanged = Signal(name="themeChanged")
     
@@ -771,7 +772,10 @@ class Theme(QObject):
     #                   """)
                 
                 if firstTime:
-                    self.__setattr__(color, self.list_rgb_to_hex(color_name.get_hct(scheme).to_rgba())) # set attribute of color name to its value in rgba format
+                    color_name: DynamicColor
+                    c = color_name.get_hct(scheme).to_rgba() # get color in rgba format
+                    c[2] + 1 # for some reason every blue value is 1 less than it should be, so we add 1 to it
+                    self.__setattr__(color, self.list_rgb_to_hex(c)) # set attribute of color name to its value in rgba format
                 else:
                     exec(f"self.{color} = self.list_rgb_to_hex(color_name.get_hct(scheme).to_rgba())")
 
