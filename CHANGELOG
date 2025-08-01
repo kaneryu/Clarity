@@ -4,6 +4,10 @@
 
 - add settings page -- kaneryu on 2025-08-01
 
+## Bugfixes
+
+- fix bug where settings would not save to disk -- kaneryu on 2025-08-01
+
 
 
 # Version 0.30

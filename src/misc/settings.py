@@ -16,7 +16,7 @@ f.close()
 default_settings = {
     "for": version,
     "settings": {
-        "discordPresenceEnabled": {"value": False, "type": bool, 
+        "discordPresenceEnabled": {"value": True, "type": bool, 
                                    "description": "Enable Discord Rich Presence", "group": "Discord",
                                    "name": "Enable Discord Presence", "secure": False, "hidden": False},
         "discordClientId": {"value": "1221181347071000637", "type": str,
@@ -314,7 +314,26 @@ class SettingsModel(QAbstractItemModel):
 class Settings(QObject):
     _instance: typing.Union["Settings", None] = None
     
-    settingChanged = Signal()  # Signal to notify that a setting has changed
+    settingChanged = Signal()  # Signal to notify that a setting has changed'
+    
+    
+    @staticmethod
+    def cleanSettingsForSaving(settings: dict) -> dict:
+        # for now, resolve all types to their string names
+        
+        cleaned_settings = settings.copy()
+        for setting in cleaned_settings:
+            setting[type] = get_type(setting["type"]).__name__
+        
+        return cleaned_settings
+        
+    @staticmethod
+    def unpackSettingsForLoading(settings: dict) -> dict:
+        # for now, resolve string types to their actual types
+        unpacked_settings = settings.copy()
+        for setting in unpacked_settings:
+            setting["type"] = get_type(setting["type"])
+        return unpacked_settings
     
     @classmethod
     def instance(cls) -> "Settings":
@@ -356,6 +375,7 @@ class Settings(QObject):
             self.logger.error(f"Failed to load settings file: {e}")
             self.settings = default_settings
         
+        
         if not self.settings.get("for") or self.settings.get("for") != version:
             self.logger.warning("Settings file outdated")
             
@@ -390,6 +410,7 @@ class Settings(QObject):
         newroot = self.createModel()
         self.settingsModel.resetModel(newroot)
         self.logger.info("Settings loaded successfully")
+        self.save()
     
     def createModel(self) -> TreeItem:
         rootItem = TreeItem(Setting(data=default_rootItem))
@@ -424,7 +445,7 @@ class Settings(QObject):
         for key, setting in self.settingObjects.items():
             settings_to_save["settings"][key] = { # type: ignore
             "value": setting.value,
-            "type": setting.type.__name__,
+            "type": get_type(setting.type).__name__,
             "description": setting.description,
             "group": setting.group,
             "hidden": setting.hidden,
@@ -565,6 +586,8 @@ class Setting(QObject):
         self.dataChanged.emit(key, value)
         if key == "value":
             self.valueChanged.emit()
+        
+        Settings.instance().save()
     
     def setValue(self, value):
         """Set the value of the setting."""
