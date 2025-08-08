@@ -36,6 +36,7 @@ from PySide6.QtCore import Property
 import src.universal as universal
 import src.paths as paths
 import src.misc.settings as settings
+import src.misc.logHistoryManager as logHistoryManager
 import ytmusicapi
 
 QML_IMPORT_NAME = "Backend"
@@ -116,6 +117,7 @@ class Backend(QObject):
     def setSearchURL(self, query):
         self.url = "clarity:///page/search?query=" + query
         
+        
     @Slot(result=QObject)
     def getqueueModel(self):
         return universal.queueInstance.queueModel
@@ -135,6 +137,16 @@ class Backend(QObject):
     @Property(QObject, constant=True)
     def settingsInterface(self):
         return settings.QmlSettingsInterface.instance()
+    
+    @Property(QObject, constant=True)
+    def logHistoryModel(self):
+        return logHistoryManager.bridge.historyModel
+    @Property(QObject, constant=True)
+    def notifyingLogHistoryModel(self):
+        return logHistoryManager.bridge.notifyingModel
+    @Property(QObject, constant=True)
+    def logHistoryBridge(self):
+        return logHistoryManager.bridge
     
     @Slot(str, result=QObject)
     def getSettingsObjectByName(self, name: str) -> QObject:

@@ -1,9 +1,5 @@
-# Version 0.31
+# Version 0.32
 
 ## New Features
 
-- add settings page -- kaneryu on 2025-08-01
-
-## Bugfixes
-
-- fix bug where settings would not save to disk -- kaneryu on 2025-08-01
+- implement logging system with notification support and structured log history -- kaneryu on 2025-08-08

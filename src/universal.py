@@ -15,9 +15,72 @@ import types
 from hashlib import md5
 import time
 import builtins
+from datetime import datetime, timezone
 
 import os
 import logging
+import json
+
+class JSONFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        dt = datetime.fromtimestamp(record.created, timezone.utc)
+        if datefmt:
+            return dt.strftime(datefmt)
+        return dt.isoformat(timespec="milliseconds") + "Z"
+
+    def format(self, record: logging.LogRecord) -> str:
+        base = {
+            "ts": self.formatTime(record, datefmt="%H:%M:%S.%fZ"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+            "module": record.module,
+            "func": record.funcName,
+            "line": record.lineno,
+            "thread": record.threadName,
+        }
+        skip = {"msg","levelname","levelno","pathname","filename","module","exc_info","exc_text","stack_info","lineno","funcName","created","msecs","relativeCreated","thread","threadName","processName","process"}
+        for k, v in record.__dict__.items():
+            if k not in base and k not in skip:
+                try:
+                    json.dumps(v)
+                    base[k] = v
+                except TypeError:
+                    base[k] = repr(v)
+        return json.dumps(base, ensure_ascii=False)
+
+class HumanReadableConsoleFormatter(logging.Formatter):
+    base_keys = {"ts","level","logger","msg","module","func","line","thread"}
+    def __init__(self):
+        super().__init__()
+        self._json_formatter = JSONFormatter()
+    def format(self, record: logging.LogRecord) -> str:
+        try:
+            data = json.loads(self._json_formatter.format(record))
+        except Exception:
+            return self._json_formatter.format(record)
+        ts = data.get("ts","?")
+        level = data.get("level","?")
+        logger_name = data.get("logger","?")
+        func = data.get("func","?")
+        line = data.get("line","?")
+        msg = data.get("msg","")
+        extras = [f"{k}={data[k]!r}" for k in data.keys() if k not in self.base_keys]
+        extras_str = (" " + " ".join(extras)) if extras else ""
+        return f"[{ts}] {level:<8} {logger_name}.{func}:{line} | {msg}"
+
+def install_json_logging(level=logging.INFO):
+    root = logging.getLogger()
+    # Always replace existing stream handlers with our human readable one
+    for h in list(root.handlers):
+        if isinstance(h, logging.StreamHandler):
+            root.removeHandler(h)
+    handler = logging.StreamHandler()
+    handler.setFormatter(HumanReadableConsoleFormatter())
+    root.addHandler(handler)
+    root.setLevel(level)
+
+install_json_logging()
 
 from src.cacheManager import cacheManager as cacheManager_module, dataStore as dataStore_module
 import src.innertube as innertube_module
@@ -34,7 +97,9 @@ from .AppUrl import AppUrl, appUrl
 
 from .misc import settings as settings_module
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+from io import StringIO
+
+from .misc import logHistoryManager
 
 mainThread: QThread = QThread.currentThread()
 
@@ -89,7 +154,7 @@ def nprint(*args, **kwargs):
     return args
 builtins.print = nprint
 
-startupQueue: list[str] = [] # ["YPV676YeHNg", "a3mxLL7nX1E", "DimcNLjX50c", "r76AWibyDDQ", "fB8elptKFcQ"]
+startupQueue: list[str] = ["YPV676YeHNg", "a3mxLL7nX1E", "DimcNLjX50c", "r76AWibyDDQ", "fB8elptKFcQ"]
 def getAllDownloadedSongs() -> list:
     l = list(songDataStore.getAll().keys())
     l = [i for i in l if not i.endswith("_downloadMeta")]

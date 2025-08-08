@@ -286,13 +286,16 @@ class DataStore:
             key (str): The key used to refer to the item. The key *should not* contain a file extension. It will break things.
         """
         if key in self.__dataStore_path_map:
-            self.statistics["size"] -= self.metadata[key]["size"]
-            self.statistics["deletions"] += 1
-            if os.path.exists(self.__dataStore_path_map[key]):
-                    os.remove(self.__dataStore_path_map[key])
-            del self.__dataStore_path_map[key]
-            del self.metadata[key]
-            del self.last_used[key]
+            try:
+                self.statistics["size"] -= self.metadata[key]["size"]
+                self.statistics["deletions"] += 1
+                if os.path.exists(self.__dataStore_path_map[key]):
+                        os.remove(self.__dataStore_path_map[key])
+                del self.__dataStore_path_map[key]
+                del self.metadata[key]
+                del self.last_used[key]
+            except KeyError:
+                pass
         else:
             self.logging.warning(f"key {key} not found")
         
@@ -348,8 +351,11 @@ class DataStore:
                 self.logging.debug("dataStore miss: " + key)
                 self.statistics["misses"] += 1
                 return False
-        
-        self.last_used.move_to_end(key)
+        try:
+            self.last_used.move_to_end(key)
+        except KeyError:
+            self.last_used[key] = time.time()
+            
         self.statistics["hits"] += 1
         self.last_used[key] = time.time()
         self.__metadataSave()

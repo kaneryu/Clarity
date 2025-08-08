@@ -7,6 +7,8 @@ import enum
 import os
 import logging
 from typing import Union, cast as type_cast
+import platform
+import ctypes
 
 from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QBuffer, QRect, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QMetaObject, QTimer, QThread
 from PySide6.QtGui import QPixmap, QPainter, QImage
@@ -475,8 +477,8 @@ class Song(QObject):
         def progress_callback(current, total):
             self.downloadProgress = int((current / total) * 100) if total > 0 else 0
             
+        self.logger.info(f"Downloading {self.title}", {"notifying": True, "customMessage": f"Downloading {self.title}"})
         try:
-            self.logger.info(f"Downloading {self.title}")
             
             # Use the NetworkManager's parallel download functionality
             success = await g.networkManager.download_file_parallel(
@@ -498,7 +500,7 @@ class Song(QObject):
                 )
             
             if success:
-                self.logger.info(f"Download complete for {self.title}")
+                self.logger.info(f"Download complete for {self.title}", {"notifying": True, "customMessage": f"Download complete for {self.title}"})
                 datastore.close_write_file(key=self.id, ext=ext, file=file)
                 self.downloadStatus = DownloadStatus.DOWNLOADED
                 self.downloadProgress = 100
@@ -572,6 +574,10 @@ class Song(QObject):
             if not self.playbackInfo:
                 return None
             # print("Asked for MRL; returning URL")
+            if not self.playbackInfo.get("audio", None):
+                self.logger.error(f"No audio playback info found for song {self.id}, returning None.")
+                g.asyncBgworker.add_job_sync(self.get_playback, self.id, skip_download=True)
+                return None
             return self.playbackInfo["audio"][-1]["url"]
         
             
@@ -903,6 +909,12 @@ class Queue(QObject):
         
         vlc_args = ["h254-fps=15", "network-caching", "file-caching", "verbose=1", "vv", "log-verbose=3"]
         self.instance: vlc.Instance = vlc.Instance(vlc_args)
+        
+        def strToCtypes(s: str) -> ctypes.c_char_p:
+            return ctypes.c_char_p(s.encode('utf-8'))
+        
+        vlc.libvlc_set_user_agent(self.instance, strToCtypes(f"Clarity {str(g.version)}"), strToCtypes(f"Clarity/{str(g.version)} Python/{platform.python_version()}"))
+        
         self.player: vlc.MediaPlayer = self.instance.media_player_new()
         self.eventManager: vlc.EventManager = self.player.event_manager()
         
@@ -921,6 +933,8 @@ class Queue(QObject):
         self.eventManager.event_attach(vlc.EventType.MediaPlayerPlaying, self.onPlayEvent)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerBuffering, self.onBufferingEvent)
         self.eventManager.event_attach(vlc.EventType.MediaPlayerTimeChanged, self.onTimeChangedEvent)
+        
+        # Just found out vlc.State exists, implement it later
         
         self.__bufflastTime: float = 0
         self.__playlastTime: float = 0

@@ -279,7 +279,11 @@ class CacheManager:
                 self.delete(key)
                 return False
         
-        self.last_used.move_to_end(key)
+        try:
+            self.last_used.move_to_end(key)
+        except KeyError:
+            self.last_used[key] = time.time()
+            
         filepath = self.__get_abspath(self.__cache_path_map[key])
         self.statistics["hits"] += 1
         self.metadata[key]["accessCount"] += 1
@@ -449,8 +453,11 @@ class CacheManager:
                 self.log.debug("cache miss: " + key + " expired")
                 self.delete(key)
                 return False
-        
-        self.last_used.move_to_end(key)
+        try:
+            self.last_used.move_to_end(key)
+        except KeyError:
+            self.last_used[key] = time.time()
+            
         self.statistics["hits"] += 1
         self.last_used[key] = time.time()
         self.__metadataSave()

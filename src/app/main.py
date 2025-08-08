@@ -4,13 +4,15 @@ import os
 import random
 import sys
 import time
+import logging
+import ctypes
 
 # library imports
 from PySide6.QtCore import (
     QTimer,
 )
 
-from PySide6.QtCore import Slot as Slot, QDir, QCoreApplication, Qt
+from PySide6.QtCore import Slot as Slot, QDir, QCoreApplication, Qt, QTimer, QThread
 from PySide6.QtGui import QIcon, QFont, QFontDatabase
 from PySide6.QtQml import (
     QQmlApplicationEngine,
@@ -34,9 +36,9 @@ from src.misc import cleanup
 def generateRandomHexColor():
     return random.randint(0, 0xFFFFFF)
 
-    
-
 def main():
+
+    
     def appQuitOverride():
         engine.exit.emit(1)
         cleanup.runCleanup()
@@ -69,8 +71,8 @@ def main():
     
     def reloadQML():
         print("Reloading QML...")
-        engine.clearComponentCache()
         engine.rootObjects()[0].deleteLater()
+        engine.clearComponentCache()
         engine.load(qml)
     
     backend.qmlReload.connect(reloadQML)
@@ -89,7 +91,10 @@ def main():
     icon = QIcon(os.path.join(universal.Paths.assetsPath, "clarityLogo.png"))
     app.setWindowIcon(icon)
     app.setApplicationName("Clarity")
-    
+
+    myappid = f'oss.clarity.music_player.{str(universal.version)}'
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
     engine.load(qml)
     if not engine.rootObjects():
         sys.exit(-1)
