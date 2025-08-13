@@ -576,8 +576,11 @@ class Song(QObject):
             # print("Asked for MRL; returning URL")
             if not self.playbackInfo.get("audio", None):
                 self.logger.error(f"No audio playback info found for song {self.id}, returning None.")
-                g.asyncBgworker.add_job_sync(self.get_playback, self.id, skip_download=True)
-                return None
+                # g.asyncBgworker.add_job_sync(self.get_playback, skip_download=True) # to be honest, no point in trying to refetch it again if it already didn't get audio
+                if not self.playbackInfo.get("video", None):
+                    return None
+                else:
+                    return self.playbackInfo["video"][-1]["url"]
             return self.playbackInfo["audio"][-1]["url"]
         
             
@@ -920,8 +923,7 @@ class Queue(QObject):
         
         self._mutex = QMutex()
         self._queueAccessMutex = QMutex()
-        
-        self.player.set_hwnd(0)
+
         self.loop: LoopType = LoopType.NONE
         self.queueModel = QueueModel()
         
@@ -1153,7 +1155,6 @@ class Queue(QObject):
             self._do_play()
         
     def _do_play(self):
-        # Move media creation and playback here
         def Media(mrl):
             media: vlc.Media = self.instance.media_new(mrl)
             media.add_option("http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Herring/97.1.8280.8")
