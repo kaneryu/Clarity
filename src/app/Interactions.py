@@ -41,11 +41,13 @@ class Interactions(QObject):
     songChanged = Signal()
     playingStatusChanged = Signal()
     durationChanged = Signal()
+    lyricsChanged = Signal()
     def __init__(self):
         super().__init__()
         if not hasattr(self, 'initialized'):
             self.initialized = True
             self._value = 0
+            self._currentLyrics = ""
             
         self.queueModel_ = universal.queueInstance.queueModel
         
@@ -181,3 +183,35 @@ class Interactions(QObject):
         smodule = universal.song_module
         song = smodule.Song(id)
         return song.downloadProgress
+    
+    @Property(str, notify=lyricsChanged)
+    def currentLyrics(self):
+        return self._currentLyrics
+    
+    @Slot(str)
+    def loadLyrics(self, id: str):
+        """Load lyrics for the given song ID"""
+        try:
+            smodule = universal.song_module
+            song = smodule.Song(id)
+            # Use async background worker to get lyrics
+            def get_lyrics_async():
+                import asyncio
+                try:
+                    # Get the lyrics asynchronously 
+                    api = universal.api  # Assuming this exists
+                    lyrics = asyncio.run(song.get_lyrics(api))
+                    if lyrics and 'lyrics' in lyrics:
+                        self._currentLyrics = lyrics['lyrics']
+                    else:
+                        self._currentLyrics = "No lyrics available for this song."
+                except Exception as e:
+                    print(f"Error loading lyrics: {e}")
+                    self._currentLyrics = "Unable to load lyrics."
+                self.lyricsChanged.emit()
+            
+            universal.asyncBgworker.add_job_sync(get_lyrics_async)
+        except Exception as e:
+            print(f"Error setting up lyrics loading: {e}")
+            self._currentLyrics = "Error loading lyrics."
+            self.lyricsChanged.emit()

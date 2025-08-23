@@ -71,6 +71,16 @@ Item {
             Layout.fillHeight: true
             Layout.preferredWidth: parent.width / 3
             Layout.alignment: Qt.AlignCenter
+            
+            MouseArea {
+                id: leftPanelClickArea
+                anchors.fill: parent
+                onClicked: {
+                    Backend.navigateToPage("nowplaying")
+                }
+                cursorShape: Qt.PointingHandCursor
+            }
+            
             Image {
                 id: songImage
                 source: Interactions.currentSongCover.image

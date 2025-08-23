@@ -180,6 +180,13 @@ class Backend(QObject):
     @Slot(str)
     def setSearchURL(self, query):
         self.url = "innertune:///page/search?query=" + query
+    
+    @Slot(str)
+    def navigateToPage(self, page: str):
+        """Navigate to a specific page"""
+        if page.startswith('/'):
+            page = page[1:]  # Remove leading slash
+        self.url = f"innertune:///page/{page}"
         
     @Slot(result=QObject)
     def getqueueModel(self):
