@@ -7,3 +7,4 @@
 ## Bugfixes
 
 - allow for use of video as a playback MRL -- kaneryu on 2025-08-13
+- make presence use artist instead of song title -- kaneryu on 2025-08-23

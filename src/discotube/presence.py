@@ -134,7 +134,7 @@ class PresenceManagerThread(QThread):
             
             self.rpc.update(
                 activity_type=ActivityType.LISTENING,
-                status_display_type=StatusDisplayType.DETAILS,
+                status_display_type=StatusDisplayType.STATE,
                 details=title[:128] if title else "Unknown Title",
                 state=channel[:128] if channel else "Unknown Artist",
                 start=start,
