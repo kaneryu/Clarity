@@ -1,5 +1,5 @@
-# Version 0.33
+# Version 0.34
 
 ## New Features
 
-- add basic integration with windows SMTC -- kaneryu on 2025-08-23
+- implement dataStore integrity restoration in integrityCheck method -- kaneryu on 2025-08-23

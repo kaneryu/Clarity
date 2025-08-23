@@ -315,9 +315,82 @@ class DataStore:
         
     def integrityCheck(self, restore: bool = False):
         """Runs collect and checks for dataStore integrity.
-            NOT IMPLEMENTED
         """
-        ...
+        if not restore:
+            return
+
+        meta_filename = "(27399499ad89dce2b478e6d140b3a9d0)dataStore_metadata.json"
+        restored_any = False
+
+        try:
+            for entry in os.listdir(self.directory):
+                path = os.path.join(self.directory, entry)
+                if not os.path.isfile(path):
+                    continue
+                if entry == meta_filename:
+                    continue
+
+                root, ext = os.path.splitext(entry)
+                key = root
+                abs_path = os.path.abspath(path)
+                size_on_disk = os.path.getsize(path)
+
+                # Ensure path map
+                if key not in self.__dataStore_path_map:
+                    self.__dataStore_path_map[key] = abs_path
+                    # Minimal, safe defaults for restored files
+                    self.metadata[key] = {
+                        "ext": ext,
+                        "accessCount": 0,
+                        "bytes": True,   # default to binary for safety
+                        "dict": False,
+                        "size": size_on_disk,
+                    }
+                    # Update aggregate size
+                    self.statistics["size"] += size_on_disk
+                    restored_any = True
+                else:
+                    # Sync path and metadata details
+                    self.__dataStore_path_map[key] = abs_path
+                    md = self.metadata.get(key, {})
+
+                    prev_size = md.get("size", 0)
+                    if prev_size != size_on_disk:
+                        self.statistics["size"] += (size_on_disk - prev_size)
+                        md["size"] = size_on_disk
+                        restored_any = True
+
+                    if md.get("ext") != ext:
+                        md["ext"] = ext
+                        restored_any = True
+
+                    if "bytes" not in md:
+                        md["bytes"] = True
+                        restored_any = True
+
+                    if "dict" not in md:
+                        md["dict"] = False
+                        restored_any = True
+
+                    if "accessCount" not in md:
+                        md["accessCount"] = 0
+                        restored_any = True
+
+                    self.metadata[key] = md
+
+                # Ensure last_used entry exists
+                if key not in self.last_used:
+                    try:
+                        ts = os.path.getmtime(path)
+                    except Exception:
+                        ts = time.time()
+                    self.last_used[key] = ts
+                    restored_any = True
+        except Exception:
+            self.logging.exception("integrityCheck restore failed")
+        finally:
+            if restored_any:
+                self.__metadataSave()
     
     def getMetadata(self, key: str) -> dict | None:
         """Get the metadata of an item from the dataStore

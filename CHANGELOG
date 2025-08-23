@@ -1,3 +1,11 @@
+# Version 0.34
+
+## New Features
+
+- implement dataStore integrity restoration in integrityCheck method -- kaneryu on 2025-08-23
+
+
+
 # Version 0.33
 
 ## New Features

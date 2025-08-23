@@ -117,7 +117,7 @@ imageCache = cacheManager_module.CacheManager(name="images_cache", directory=os.
 queueCache = cacheManager_module.CacheManager(name="queue_cache", directory=os.path.join(datapath, "queue_cache"))
 songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(datapath, "song_datastore"))
 
-songDataStore.integrityCheck()
+songDataStore.integrityCheck(True)
 globalCache.integrityCheck()
 songCache.integrityCheck()
 imageCache.integrityCheck()
