@@ -26,7 +26,7 @@ from src import cacheManager
 from src.innertube.player import PlayingStatus
 
 import src.discotube.presence as presence
-
+import src.wintube.winSMTC as winSMTC
 from functools import lru_cache
 
 ydlOpts: dict[str, Union[list, bool]] = {
@@ -938,6 +938,9 @@ class Queue(QObject):
         
         # Just found out vlc.State exists, implement it later
         
+        self.winPlayer = winSMTC._get_player()
+        self.songChanged.connect(self.updateWinPlayer)
+        
         self.__bufflastTime: float = 0
         self.__playlastTime: float = 0
         self._playingStatus = PlayingStatus.STOPPED
@@ -966,19 +969,27 @@ class Queue(QObject):
                     self.logger.debug("Current Song is playback ready, and the MRL was already set, so we don't need to do anything.")
                 else:
                     self.logger.debug("Current Song is not playback ready, so we don't set the MRL.")
-                
-        
-            
+
+    def updateWinPlayer(self):
+        winSMTC.set_now_playing(
+            title=self.currentSongTitle, # type: ignore
+            artist=self.currentSongChannel, # type: ignore
+            album_title="",
+            art_uri=self.currentSongObject.largestThumbnailUrl # type: ignore
+        )
+
     def onPlayEvent(self, event):
         self.logger.debug("Play Event")
         self._playingStatus = PlayingStatus.PLAYING
         self.playingStatusChanged.emit(self._playingStatus)
+        winSMTC.playback_play()
     
     def onPauseEvent(self, event):
         self.logger.debug("Pause Event")
         self._playingStatus = PlayingStatus.PAUSED
         self.playingStatusChanged.emit(self._playingStatus)
-    
+        winSMTC.playback_pause()
+
     def onBufferingEvent(self, event):
         if time.time() - self.__bufflastTime < 1:
             return
@@ -995,8 +1006,13 @@ class Queue(QObject):
             self._playingStatus = PlayingStatus.PLAYING
             self.playingStatusChanged.emit(self._playingStatus)
             self.logger.debug("Time Changed Event")
-        
+
+        winSMTC.update_timeline(
+            duration_s=self.currentSongDuration,
+            position_s=self.currentSongTime
+        )
         self.timeChanged.emit(self.currentSongTime) # type: ignore[union-attr]
+        
 
     @QProperty(bool, notify=playingStatusChanged)
     def isPlaying(self):
@@ -1105,6 +1121,7 @@ class Queue(QObject):
     def songFinished(self, event):
         self.logger.info("Song Finished")
         self.logger.info("Player state: %s", self.player.get_state())
+        winSMTC.playback_stop()
         # Queue the method call to happen on the object's thread
         QMetaObject.invokeMethod(self, "next", Qt.ConnectionType.QueuedConnection)
     

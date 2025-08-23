@@ -1,10 +1,5 @@
-# Version 0.32
+# Version 0.33
 
 ## New Features
 
-- implement logging system with notification support and structured log history -- kaneryu on 2025-08-08
-
-## Bugfixes
-
-- allow for use of video as a playback MRL -- kaneryu on 2025-08-13
-- make presence use artist instead of song title -- kaneryu on 2025-08-23
+- add basic integration with windows SMTC -- kaneryu on 2025-08-23
