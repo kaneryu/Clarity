@@ -7,6 +7,7 @@ from src.misc import cleanup, settings
 from PySide6.QtCore import QThread, Slot
 from pypresence import Presence, ActivityType, StatusDisplayType
 
+
 class PresenceManagerThread(QThread):
     def __init__(self, queue_instance, parent=None):
         super().__init__(parent)
@@ -15,27 +16,30 @@ class PresenceManagerThread(QThread):
         self.jobs: queue.Queue = queue.Queue()
         self.queue_instance.songChanged.connect(self.putnewsong)
         self.queue_instance.playingStatusChanged.connect(self.playingStatusChanged)
-        
-        
+
         self.logger = logging.getLogger("DiscordPresence")
         self.PresenceEnabledSetting = settings.getSetting("discordPresenceEnabled")
         self.PresenceEnabledSetting.valueChanged.connect(self.enabledChanged)
         self.enabled = self.PresenceEnabledSetting.value
-        
+
         self.clientIdSetting = settings.getSetting("discordClientId")
         self.clientIdSetting.valueChanged.connect(self.clientIdChanged)
         self.client_id = self.clientIdSetting.value
-        
+
         self.newPresence: Presence | None = None
-    
-    
+
+        self._rate_limit_seconds = 3
+        self._last_rpc_ts = 0.0
+        self._pending_update = False
+        self._pending_clear = False
+
     def clientIdChanged(self):
         if self.clientIdSetting.value == self.client_id:
             self.logger.info("Discord client ID has not changed, skipping update.")
             return
         try:
             self.newPresence = Presence(self.clientIdSetting.value)
-            self.newPresence.connect() # Test if the client ID is valid
+            self.newPresence.connect()  # Test if the client ID is valid
         except Exception as e:
             self.logger.error(f"Invalid Discord client ID: {self.clientIdSetting.value}. Error: {e}")
             self.clientIdSetting.setValue(self.client_id)
@@ -45,22 +49,21 @@ class PresenceManagerThread(QThread):
 
         self.jobs.put(self.reloadRPC)
 
-        
     def restart(self):
         self.stop()
         self.wait()
         self.start()
-        
+
     @Slot()
     def enabledChanged(self):
         self.enabled = self.PresenceEnabledSetting.value
         self.logger.info(f"Discord presence enabled changed: {self.enabled}")
-        
+
         if self.enabled:
             self.enable()
         else:
             self.disable()
-    
+
     def reloadRPC(self):
         if not self.newPresence:
             self.logger.info("Reload RPC called without newPresence set, creating new one.")
@@ -69,14 +72,15 @@ class PresenceManagerThread(QThread):
         self.rpc = self.newPresence
         self.playingStatusChanged()
         self.logger.info("Discord RPC reloaded with new client ID")
-    
+        # After reconnect, allow immediate update
+        self._last_rpc_ts = 0.0
+
     def putnewsong(self):
         self.jobs.put(self.onNewSong)
-    
-    
+
     def playingStatusChanged(self):
         self.jobs.put(self.onPlayingStatusChanged)
-    
+
     def run(self):
         self.rpc = Presence(self.client_id)
         try:
@@ -85,11 +89,11 @@ class PresenceManagerThread(QThread):
         except Exception as e:
             self.logger.error(f"Failed to connect to Discord: {e}")
             return
-        
+
         # Run an update once if a song is playing
         if self.queue_instance.isPlaying and self.queue_instance.currentSongObject:
             self.onNewSong()
-        
+
         while self._running:
             time.sleep(1/60)  # Run at ~60Hz
             try:
@@ -103,35 +107,51 @@ class PresenceManagerThread(QThread):
                     self.jobs.task_done()
             except queue.Empty:
                 pass
-        
+
+            # If something was throttled, perform it once window opens
+            now = time.time()
+            if (now - self._last_rpc_ts) >= self._rate_limit_seconds:
+                if self._pending_update and self.queue_instance.isPlaying:
+                    self.onNewSong()
+                elif self._pending_clear and not self.queue_instance.isPlaying:
+                    self.clearPresence()
+
         # Shutdown RPC connection when stopping
         try:
             self.rpc.close()
             self.logger.info("Discord RPC connection closed")
         except Exception as e:
             self.logger.error(f"Error closing Discord RPC: {e}")
-    
+
     def onNewSong(self):
         if not self.enabled:
             return
-        if not hasattr(self, 'rpc') or not self.queue_instance.currentSongObject:
+        if not hasattr(self, "rpc") or not self.queue_instance.currentSongObject:
             return
         try:
+            now = time.time()
+            if (now - self._last_rpc_ts) < self._rate_limit_seconds:
+                self._pending_update = True
+                self.logger.debug(
+                    "Presence update throttled; will retry when window opens"
+                )
+                return
+
             title = self.queue_instance.currentSongTitle
             channel = self.queue_instance.currentSongChannel
             song_time = self.queue_instance.currentSongTime
             duration = self.queue_instance.currentSongDuration
             song_id = self.queue_instance.currentSongId
             cover = self.queue_instance.currentSongObject.largestThumbnailUrl
-            
+
             buttons = [
                 {"label": "Listen on YouTube", "url": f"https://www.youtube.com/watch?v={song_id}"}
             ]
-            
+
             current_time = int(time.time())
             start = current_time - song_time if song_time else current_time
             end = start + duration if duration else None
-            
+
             self.rpc.update(
                 activity_type=ActivityType.LISTENING,
                 status_display_type=StatusDisplayType.STATE,
@@ -143,42 +163,57 @@ class PresenceManagerThread(QThread):
                 large_text="Clarity",
                 buttons=buttons
             )
+            self._last_rpc_ts = now
+            self._pending_update = False
             self.logger.info(f"Updated presence: {title} - {channel}")
         except Exception as e:
             self.logger.error(f"Failed to update presence: {e}")
             traceback.print_exc()
-    
+
     def onPlayingStatusChanged(self):
-        if not hasattr(self, 'rpc'):
+        if not hasattr(self, "rpc"):
             return
         if self.queue_instance.isPlaying:
             self.onNewSong()
         else:
             self.clearPresence()
-    
+
     def clearPresence(self):
-        if not hasattr(self, 'rpc'):
+        if not hasattr(self, "rpc"):
             return
         try:
+            now = time.time()
+            if (now - self._last_rpc_ts) < self._rate_limit_seconds:
+                self._pending_clear = True
+                self.logger.debug(
+                    "Presence clear throttled; will retry when window opens"
+                )
+                return
+
             self.rpc.clear()
+            self._last_rpc_ts = now
+            self._pending_clear = False
             self.logger.info("Cleared Discord presence")
         except Exception as e:
             self.logger.error(f"Failed to clear presence: {e}")
             traceback.print_exc()
-    
+
     def disable(self):
         self.clearPresence()
         self.logger.info("Discord presence disabled")
-    
+
     def enable(self):
         self.logger.info("Discord presence enabled")
         self.onPlayingStatusChanged()
-    
+
     def stop(self):
         self._running = False
         self.logger.info("Discord presence manager stopped")
 
+
 presence_manager: PresenceManagerThread | None = None
+
+
 def initialize_discord_presence(queue_instance):
     global presence_manager
     presence_manager = PresenceManagerThread(queue_instance)
@@ -186,6 +221,7 @@ def initialize_discord_presence(queue_instance):
     presence_manager.start()
     cleanup.addCleanup(stop_discord_presence)
     return presence_manager
+
 
 def stop_discord_presence():
     global presence_manager

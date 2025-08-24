@@ -7,3 +7,4 @@
 ## Bugfixes
 
 - update search function to allow None as a filter, add copilot Instructions -- kaneryu on 2025-08-24
+- add ratelimit to discord presence -- kaneryu on 2025-08-24
