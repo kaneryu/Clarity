@@ -1,0 +1,48 @@
+# Clarity – AI agent quickstart
+
+Purpose: help AI agents work productively in this repo. Follow these concrete patterns and APIs.
+
+## Big picture
+- Desktop music player built with PySide6 + QML (YouTube Music focused).
+- Entry: `run.py` (also hosts Nuitka build flags). Startup: setup workers/cache/universal → init queue → load QML UI → run.
+- Core modules:
+  - `src/universal.py`: global runtime (logging, Paths, caches/datastore, workers, `networkManager`, `queueInstance`, shared search model, version, main Qt thread).
+  - `src/innertube/`: `song.py` (Song/Queue, VLC, yt-dlp), `search.py` (YT Music → `BasicSearchResultsModel`), `player.py` (playing status).
+  - `src/app/`: `main.py` wires Qt/QML; exposes `Backend`, `Interactions`, `Theme`; adds `SongImageProvider` (QML: `image://SongCover/<id>/<radius>`).
+  - `src/cacheManager/`: semi-persistent `CacheManager` (LRU/LFU/largest evict), `dataStore` for durable files.
+  - `src/network.py`: centralized HTTP (headers, proxy, retries, parallel downloads).
+
+## Workflows
+- Run (dev): `python run.py` (uses QML at `src/app/qml`, assets at `src/app/assets`).
+- QML hot reload: emit `Backend.qmlReload` (handled in `app/main.py`).
+- Profiling: VS Code task “Profile main.py” (Austin) is available.
+- Build: Nuitka packaged; flags are in `run.py`; assets in `nuitkaAssets/`; outputs under `run.dist/`.
+
+## Conventions and singletons
+- Use `src/universal.py` as the gateway:
+  - Paths: `universal.Paths.assetsPath/qmlPath/rootpath`.
+  - Workers: `bgworker` (Qt QThread + QThreadPool) for blocking/CPU; `asyncBgworker` (aiohttp + ytmusicapi) for async I/O. Prefer these over ad‑hoc threads.
+  - Network: `universal.networkManager` for all HTTP (set proxy/headers/timeouts; supports parallel downloads).
+  - Storage: `cacheManager.getCache(name)` for caches (`songs_cache`, `images_cache`, `queue_cache`); `dataStore.getdataStore("song_datastore")` for downloads and `<id>_downloadMeta`.
+  - Playback: `innertube.song.Queue()` is a singleton; integrates VLC + Windows SMTC + Discord presence.
+  - Qt objects: create QObjects bound to the main thread via `universal.createSongMainThread(id)` when needed.
+- Cache/datastore keys: `<id>_info`, `<id>_playbackinfo`, `<id>_downloadMeta`.
+- Logging: `logging.getLogger(...)`; console output uses a humanized JSON formatter from `universal`.
+
+## Data flow (typical)
+Search → create/resolve `Song` → fetch info via `ytmusicapi` on `asyncBgworker` → compute playback via yt‑dlp (cached) → Queue selects best MRL → VLC plays; downloads saved in `song_datastore`, metadata and info cached in `songs_cache`.
+
+## Snippets
+- Search (shared model): `model = universal.searchModel; await universal.search("artist track", model=model)`
+- Song usage: `s = universal.createSongMainThread("VIDEO_ID"); await s.get_info(universal.asyncBgworker.API); universal.bgworker.add_job(s.get_playback); await s.download()`
+- HTTP: `r = universal.networkManager.get(url); ok = await universal.networkManager.download_file_parallel(url, file_obj)`
+- Cache: `c = cacheManager.getCache("images_cache"); c.put("abc123", b"...", byte=True, filext="png")`
+- Datastore: `ds = dataStore.getdataStore("song_datastore"); path = ds.getFilePath(song_id)`
+- QML image: `Image { source: "image://SongCover/VIDEO_ID/20" }`
+
+## Adding code
+- Off-UI work via `bgworker`/`asyncBgworker`; signal back to UI.
+- Always use `universal.networkManager` and the cache/datastore with existing key patterns.
+- Keep QObjects on Qt main thread; wire new QML context/providers in `src/app/main.py`.
+
+Questions or gaps? Ask to expand specific areas (Backend/Interactions APIs, QML bindings, packaging) and we’ll update this guide.

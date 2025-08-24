@@ -4,6 +4,10 @@
 
 - implement dataStore integrity restoration in integrityCheck method -- kaneryu on 2025-08-23
 
+## Bugfixes
+
+- update search function to allow None as a filter, add copilot Instructions -- kaneryu on 2025-08-24
+
 
 
 # Version 0.33

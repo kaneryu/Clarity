@@ -210,7 +210,7 @@ async def search_suggestions(query: str, detailed = True) -> list | dict:
     
     return await universal.asyncBgworker.API.get_search_suggestions(query, detailed_runs = detailed)
 
-async def search(query: str, filter: searchFilters = searchFilters.SONGS, limit: int = 20, ignore_spelling: bool = False, model: BasicSearchResultsModel = BasicSearchResultsModel()) -> BasicSearchResultsModel:
+async def search(query: str, filter: searchFilters | None = None, limit: int = 20, ignore_spelling: bool = False, model: BasicSearchResultsModel = BasicSearchResultsModel()) -> BasicSearchResultsModel:
     """Searches youtube music
 
     Args:
