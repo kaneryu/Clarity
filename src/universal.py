@@ -142,7 +142,7 @@ print("qml path:", Paths.qmlPath)
 print("root path:", Paths.rootpath)
 
 async def search_shorthand(query: str, ignore_spelling: bool = False) -> search_module.BasicSearchResultsModel:
-    return await search_module.search(query, ignore_spelling = ignore_spelling, model = searchModel)
+    return await search_module.search(query, filter = search_module.searchFilters.SONGS, ignore_spelling = ignore_spelling, model = searchModel)
 
 
 

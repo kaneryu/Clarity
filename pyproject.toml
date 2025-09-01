@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-version = "0.34.2"
+version = "0.34.3"
 name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -75,12 +75,11 @@ dependencies = [
   "windows-curses",
   "yarl",
   "yt-dlp",
-  "ytmusicapi @ https://github.com/kaneryu/ytmusicapi/archive/main.zip#sha256=adb29ecbc951c912e62b195a2023d4ddb90106c80601c43c7d9932c7a0b5eae1",
+  "ytmusicapi @ https://github.com/kaneryu/ytmusicapi/archive/async-new.zip",
   "zstandard",
 ]
 
 [project.optional-dependencies]
-# Austin family moved to test extra
 test = [
   "austin-dist",
   "austin-python",

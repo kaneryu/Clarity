@@ -8,6 +8,7 @@ import json
 from typing import Union
 import asyncio
 import src.universal as universal
+import logging
 
 from PySide6.QtCore import QObject, Signal, QAbstractListModel, QModelIndex, QPersistentModelIndex, Qt, Property, QMetaObject, QMetaMethod
 
@@ -119,6 +120,9 @@ class BasicSearchResultsModel(QAbstractListModel):
         return True
 
     def _newResult(self, data: dict):
+        if not list(data.keys()).sort() == ["title", "type", "creator", "id", "duration", "parentId", "object"].sort():
+            logging.getLogger("SearchModel").error(f"Invalid data passed to search model: {data}")
+            return
         self.insertRow(len(self._data), QModelIndex())
         self.setData(self.index(len(self._data) - 1, 0), data["title"], Qt.ItemDataRole.DisplayRole)
         self.setData(self.index(len(self._data) - 1, 0), data["type"], Qt.ItemDataRole.UserRole + 1)
