@@ -85,6 +85,7 @@ Item {
             duration: 100
         }
     }
+
     Rectangle {
         id: background
         anchors.fill: parent
@@ -113,10 +114,14 @@ Item {
         anchors.fill: parent
         enabled: root.input
         onClicked: {
+            console.log("ProgressBar clicked at", mouseX, mouseY)
+            console.log("Parent size:", parent.width, parent.height)
             if (root.vertical) {
                 root.click((mouseY / parent.height) * 100)
+                console.log("Calculated vertical percent:", (mouseY / parent.height) * 100)
             } else {
                 root.click((mouseX / parent.width) * 100)
+                console.log("Calculated horizontal percent:", (mouseX / parent.width) * 100)
             }
         }
     }

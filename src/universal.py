@@ -6,7 +6,7 @@ except FileNotFoundError:
     print("version.txt not found, using 0.0.0")
     version = versions.Version("0.0.0")
     
-print("Clarity version", version)
+print("Clarity", repr(version))
 
 
 import threading

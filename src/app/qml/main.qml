@@ -48,6 +48,7 @@ ApplicationWindow {
     Components.NotificationPopups {
         id: notificationPopups
         anchors.top: parent.top
+        anchors.bottom: footer.top
         anchors.right: parent.right
         anchors.topMargin: 10
         anchors.rightMargin: 10

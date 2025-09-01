@@ -26,6 +26,14 @@ Item {
                 radius: 8
             }
 
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    // Backend.dismissNotification(id)
+                    console.log("Notification clicked:", id)
+                }
+            }
+
             Text {
                 id: label
                 width: parent.width

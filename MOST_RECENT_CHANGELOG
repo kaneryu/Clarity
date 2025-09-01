@@ -9,3 +9,4 @@
 - update search function to allow None as a filter, add copilot Instructions -- kaneryu on 2025-08-24
 - add ratelimit to discord presence -- kaneryu on 2025-08-24
 - add some extra resiliency to search -- kaneryu on 2025-09-01
+- Skipping forwards in progressbar not functioning -- kaneryu on 2025-09-01

@@ -22,8 +22,18 @@ import vlc # type: ignore[import-untyped]
 
 from src import universal as g
 from src import cacheManager
-# Update import to use player.py instead
-from src.innertube.player import PlayingStatus
+
+from enum import IntEnum
+class PlayingStatus(IntEnum):
+    """Playing Status"""
+    NOT_READY = -1  # Media is not ready to play
+    PLAYING = 0  # Playing
+    PAUSED = 1  # Paused
+    BUFFERING = 2  # Media is buffering
+    STOPPED = 3  # No media is loaded
+    ERROR = 4  # Unrecoverable error
+    
+    NOT_PLAYING = 5  # Only for songproxy class; Returned when the current song is not currently playing
 
 import src.discotube.presence as presence
 import src.wintube.winSMTC as winSMTC
