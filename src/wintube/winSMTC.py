@@ -6,6 +6,9 @@ import winrt.windows.storage.streams as wss
 import winrt.windows.foundation as wf
 from datetime import datetime, timezone, timedelta
 
+import enum
+import typing
+
 async def main():
     mgr = await wmctrl.GlobalSystemMediaTransportControlsSessionManager.request_async()
     session = mgr.get_current_session()
@@ -88,7 +91,7 @@ def clear_now_playing() -> None:
 
 # --- Extra SMTC publisher helpers (your own session) ---
 
-def set_transport_capabilities(*, play=True, pause=True, stop=True, next=False, previous=False, seek=True, fast_forward=False, rewind=False) -> None:
+def set_transport_capabilities(*, play=True, pause=True, stop=True, next=True, previous=True, seek=True, fast_forward=False, rewind=False) -> None:
     smtc = _get_player().system_media_transport_controls
     smtc.is_enabled = True
     smtc.is_play_enabled = bool(play)
@@ -100,6 +103,13 @@ def set_transport_capabilities(*, play=True, pause=True, stop=True, next=False, 
     smtc.is_fast_forward_enabled = bool(fast_forward)
     smtc.is_fast_rewind_enabled = bool(rewind)
 
+def set_next_enabled(enabled: bool) -> None:
+    smtc = _get_player().system_media_transport_controls
+    smtc.is_next_enabled = enabled
+
+def set_previous_enabled(enabled: bool) -> None:
+    smtc = _get_player().system_media_transport_controls
+    smtc.is_previous_enabled = enabled
 
 def update_timeline(duration_s: float | None = None, position_s: float | None = None, *, min_seek_s: float = 0.0, max_seek_s: float | None = None) -> None:
     """Report timeline to SMTC so the OS shows duration/position. Call whenever things change."""
@@ -134,6 +144,76 @@ def set_button_handler(handler) -> None:
             pass
         _button_token = None
     _button_token = smtc.add_button_pressed(handler)
+
+class HandlerType(enum.Enum):
+    PLAY = "play"
+    PAUSE = "pause"
+    STOP = "stop"
+    NEXT = "next"
+    PREVIOUS = "previous"
+    SEEK = "seek"
+    FAST_FORWARD = "fast_forward"
+    REWIND = "rewind"
+
+class Handlers:
+    play: typing.Callable | None = None
+    pause: typing.Callable | None = None
+    stop: typing.Callable | None = None
+    next: typing.Callable | None = None
+    previous: typing.Callable | None = None
+    seek: typing.Callable | None = None
+    rewind: typing.Callable | None = None
+    fast_forward: typing.Callable | None = None
+
+    @staticmethod
+    def setHandler(type: HandlerType, function: typing.Callable):
+        if not function.__code__.co_argcount in (1, 2):
+            raise ValueError("Handler function must accept 1 or 2 arguments.")
+        if type == HandlerType.PLAY:
+            Handlers.play = function
+        elif type == HandlerType.PAUSE:
+            Handlers.pause = function
+        elif type == HandlerType.STOP:
+            Handlers.stop = function
+        elif type == HandlerType.NEXT:
+            Handlers.next = function
+        elif type == HandlerType.PREVIOUS:
+            Handlers.previous = function
+        elif type == HandlerType.SEEK:
+            Handlers.seek = function
+        elif type == HandlerType.FAST_FORWARD:
+            Handlers.fast_forward = function
+        elif type == HandlerType.REWIND:
+            Handlers.rewind = function
+
+def default_button_handler(sender, args: wmedia.SystemMediaTransportControlsButtonPressedEventArgs) -> None:
+    """Default handler for SMTC button presses."""
+    print("Button pressed:", sender, args)
+    match args.button:
+        case wmedia.SystemMediaTransportControlsButton.PLAY:
+            if Handlers.play:
+                Handlers.play(sender, args)
+        case wmedia.SystemMediaTransportControlsButton.PAUSE:
+            if Handlers.pause:
+                Handlers.pause(sender, args)
+        case wmedia.SystemMediaTransportControlsButton.STOP:
+            if Handlers.stop:
+                Handlers.stop(sender, args)
+        case wmedia.SystemMediaTransportControlsButton.NEXT:
+            if Handlers.next:
+                Handlers.next(sender, args)
+        case wmedia.SystemMediaTransportControlsButton.PREVIOUS:
+            if Handlers.previous:
+                Handlers.previous(sender, args)
+        case wmedia.SystemMediaTransportControlsButton.FAST_FORWARD:
+            if Handlers.fast_forward:
+                Handlers.fast_forward(sender, args)
+        case wmedia.SystemMediaTransportControlsButton.REWIND:
+            if Handlers.rewind:
+                Handlers.rewind(sender, args)
+
+set_button_handler(default_button_handler)
+
 
 
 # # --- Control other apps' system media sessions ---

@@ -22,6 +22,9 @@ import vlc # type: ignore[import-untyped]
 
 from src import universal as g
 from src import cacheManager
+import src.discotube.presence as presence
+import src.wintube.winSMTC as winSMTC
+from functools import lru_cache
 
 from enum import IntEnum
 class PlayingStatus(IntEnum):
@@ -35,9 +38,7 @@ class PlayingStatus(IntEnum):
     
     NOT_PLAYING = 5  # Only for songproxy class; Returned when the current song is not currently playing
 
-import src.discotube.presence as presence
-import src.wintube.winSMTC as winSMTC
-from functools import lru_cache
+
 
 ydlOpts: dict[str, Union[list, bool]] = {
     "external_downloader_args": ['-loglevel', 'panic'],
@@ -903,6 +904,9 @@ class Queue(QObject):
     playingStatusChanged = Signal(int)
     durationChanged = Signal()
     timeChanged = Signal(int)
+
+    nextSongSignal = Signal()
+    prevSongSignal = Signal()
     
     singleton: Union["Queue", None] = None
     
@@ -950,7 +954,13 @@ class Queue(QObject):
         
         self.winPlayer = winSMTC._get_player()
         self.songChanged.connect(self.updateWinPlayer)
-        
+
+        winSMTC.Handlers.setHandler(winSMTC.HandlerType.PLAY, lambda x,y: self.resume())
+        winSMTC.Handlers.setHandler(winSMTC.HandlerType.PAUSE, lambda x,y: self.pause())
+        winSMTC.Handlers.setHandler(winSMTC.HandlerType.STOP, lambda x,y: self.stop())
+        winSMTC.Handlers.setHandler(winSMTC.HandlerType.NEXT, lambda x,y: self.nextSongSignal.emit())
+        winSMTC.Handlers.setHandler(winSMTC.HandlerType.PREVIOUS, lambda x,y: self.prevSongSignal.emit())
+
         self.__bufflastTime: float = 0
         self.__playlastTime: float = 0
         self._playingStatus = PlayingStatus.STOPPED
@@ -967,7 +977,9 @@ class Queue(QObject):
         self.queueIds: list[str]
         
         self.playingStatusChanged.connect(lambda: self.currentSongObject.checkPlaybackReady()) # type: ignore[attr-defined]
-        
+        self.nextSongSignal.connect(lambda: self.next())
+        self.prevSongSignal.connect(lambda: self.prev())
+
     @Slot(Song)
     def songMrlChanged(self, song: Song):
         if song == self.currentSongObject:
@@ -987,6 +999,15 @@ class Queue(QObject):
             album_title="",
             art_uri=self.currentSongObject.largestThumbnailUrl # type: ignore
         )
+        if self.queue and self.pointer < len(self.queue) - 1:
+            winSMTC.set_next_enabled(True)
+        else:
+            winSMTC.set_next_enabled(False)
+        
+        if self.queue and self.pointer > 0:
+            winSMTC.set_previous_enabled(True)
+        else:
+            winSMTC.set_previous_enabled(False)
 
     def onPlayEvent(self, event):
         self.logger.debug("Play Event")
@@ -1132,6 +1153,7 @@ class Queue(QObject):
         self.logger.info("Song Finished")
         self.logger.info("Player state: %s", self.player.get_state())
         winSMTC.playback_stop()
+            
         # Queue the method call to happen on the object's thread
         QMetaObject.invokeMethod(self, "next", Qt.ConnectionType.QueuedConnection)
     
@@ -1164,7 +1186,7 @@ class Queue(QObject):
     @Slot()
     def resume(self):
         self.player.play()
-    
+
     @Slot()
     def play(self):
         if self.player.get_state() in [vlc.State.Error, vlc.State.Opening, vlc.State.Buffering]:
@@ -1220,6 +1242,7 @@ class Queue(QObject):
     @Slot()
     def stop(self):
         self.player.stop()
+        winSMTC.playback_stop()
     
     @Slot()
     def reload(self):
