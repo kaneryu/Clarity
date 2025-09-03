@@ -1,0 +1,52 @@
+{
+    "for": "",
+    "settings": {
+        "discordPresenceEnabled": {
+            "value": true,
+            "type": "bool",
+            "description": "Enable Discord Rich Presence",
+            "group": "Discord",
+            "hidden": false,
+            "name": "Enable Discord Presence",
+            "secure": false
+        },
+        "discordClientId": {
+            "value": "1221181347071000637",
+            "type": "str",
+            "description": "Discord Client ID",
+            "group": "Discord",
+            "hidden": true,
+            "name": "Discord Client ID",
+            "secure": false
+        },
+
+        "youtubeHeaders": {
+            "value": "",
+            "type": "str",
+            "description": "Input your YouTube headers here to login to YouTube. ",
+            "group": "Login",
+            "hidden": false,
+            "name": "YouTube Headers",
+            "secure": true
+        },
+        "youtubeLoginEnabled": {
+            "value": false,
+            "type": "bool",
+            "description": "Enable YouTube Login",
+            "group": "Login",
+            "hidden": false,
+            "name": "Enable YouTube Login",
+            "secure": false
+        },
+        
+        "maxNetworkCacheSize": {
+            "value": 1000,
+            "type": "int",
+            "description": "Maximum size for the general Network Cache",
+            "group": "Cache",
+            "hidden": false,
+            "name": "Max Netowork Cache Size",
+            "secure": false
+        }
+    }
+}

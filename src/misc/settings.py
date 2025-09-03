@@ -1,6 +1,7 @@
 import json
 import logging
 from src.paths import Paths
+import os
 
 import typing
 
@@ -13,31 +14,11 @@ f = open(Paths.VERSIONPATH, "r")
 version = f.read().strip()
 f.close()
 
-default_settings = {
-    "for": version,
-    "settings": {
-        "discordPresenceEnabled": {"value": True, "type": bool, 
-                                   "description": "Enable Discord Rich Presence", "group": "Discord",
-                                   "name": "Enable Discord Presence", "secure": False, "hidden": False},
-        "discordClientId": {"value": "1221181347071000637", "type": str,
-                            "description": "Discord Client ID", "group": "Discord", "hidden": True,
-                            "name": "Discord Client ID", "secure": False},
-        
-        "youtubeHeaders": {"value": "", "type": str,
-                           "description": "Input your YouTube headers here to login to YouTube. ", "group": "Login",
-                            "name": "YouTube Headers", "secure": True, "hidden": False},
-        "youtubeLoginEnabled": {"value": False, "type": bool,
-                                "description": "Enable YouTube Login", "group": "Login",
-                                "name": "Enable YouTube Login", "secure": False, "hidden": False},
-        
-        "lastFMEnabled": {"value": False, "type": bool,
-                           "description": "Enable Last.fm Scrobbling", "group": "Last.fm",
-                           "name": "Enable Last.fm Scrobbling", "secure": False, "hidden": False},
-        "lastFMLogin": {"value": "$$SPECIAL_ACTION:lastFmOauthButton", "type": str,
-                            "description": "Last.fm Login Button", "group": "Last.fm",
-                            "name": "Last.fm Login Button", "secure": False, "hidden": False},
-    }
-}
+default_settings_file = open(os.path.join(Paths.ASSETSPATH, "DEFAULTSETTINGS.json"))
+defaultSettings: dict[str, str | dict] = json.loads(default_settings_file.read())
+default_settings_file.close()
+
+defaultSettings["for"] = version
 
 default_rootItem = {
     "key": "root",
@@ -358,7 +339,7 @@ class Settings(QObject):
         
         self.logger = logging.getLogger("Settings")
         self.settings_file = settings_file
-        self.settings: dict[str, typing.Any] = {}
+        self.settingsDict: dict[str, typing.Any] = {}
         self.settingObjects: dict[str, Setting] = {}
         self.groupKeyMap: dict[str, list[str]] = {}
         
@@ -370,17 +351,30 @@ class Settings(QObject):
     def load(self) -> None:
         try:
             with open(self.settings_file, "r") as f:
-                self.settings = json.load(f)
+                self.settingsDict = json.load(f)
         except Exception as e:
             self.logger.error(f"Failed to load settings file: {e}")
-            self.settings = default_settings
+            self.settingsDict = defaultSettings
         
+        settingsDictSettings: dict = self.settingsDict.get("settings") # type: ignore[assignment, union-attr]
+        defaultSettingsDictSettings: dict = defaultSettings.get("settings") # type: ignore[assignment, union-attr]
+        if not settingsDictSettings.keys() == defaultSettingsDictSettings.keys():
+            missingKeys = [i for i in defaultSettingsDictSettings.keys() if not i in settingsDictSettings.keys()]
+            missing = []
+            for key in missingKeys:
+                missing.append((key, defaultSettingsDictSettings[key]))
+            settingsDictSettings.update(missing)
         
-        if not self.settings.get("for") or self.settings.get("for") != version:
+        if not settingsDictSettings.keys() == defaultSettingsDictSettings.keys():
+            extraKeys = [i for i in settingsDictSettings.keys() if not i in defaultSettingsDictSettings.keys()]
+            for key in extraKeys:
+                settingsDictSettings.pop(key)
+        
+        if not self.settingsDict.get("for") or self.settingsDict.get("for") != version:
             self.logger.warning("Settings file outdated")
             
         value: dict
-        for key, value in self.settings.get("settings", {}).items(): # type: ignore
+        for key, value in self.settingsDict.get("settings", {}).items(): # type: ignore
             name = value.get("name")
             value_ = value.get("value")
             type_ = value.get("type", "")
@@ -459,12 +453,19 @@ class Settings(QObject):
         except Exception as e:
             self.logger.error(f"Failed to save settings file: {e}")
     
-    def get(self, key: str, default=None):
-        setting = self.settingObjects.get(key)
+    def get(self, key: str, default=None) -> typing.Any:
+        setting = self.getSettingObject(key)
         if not setting:
             return default
         
         return setting.value
+    
+    def getSettingObject(self, key: str) -> typing.Union["Setting", None]:
+        setting = self.settingObjects.get(key)
+        if not setting:
+            return None
+        
+        return setting
     
     def set(self, key: str, value):
         setting = self.settingObjects.get(key)
