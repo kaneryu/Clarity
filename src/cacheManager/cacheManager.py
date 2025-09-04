@@ -342,33 +342,35 @@ class CacheManager:
         self.log.info("running cleanup")
        
         # use os.walk to check which keys are actually on disk
-        for i in os.listdir(self.absdir):
-            if not os.path.isfile(os.path.join(self.absdir, i)):
+        for filename in os.listdir(self.absdir):
+            if not os.path.isfile(os.path.join(self.absdir, filename)):
                 continue
             
-            if i == "(27399499ad89dce2b478e6d140b3a9d0)cache_metadata.json":
+            if filename == "(27399499ad89dce2b478e6d140b3a9d0)cache_metadata.json":
                 continue
             
-            i = i.split(os.path.extsep)[0]
+            file = filename.split(os.path.extsep)
+            filename = file[0]
+            ext = file[1] if len(file) > 1 else ""
             
-            if not i in self.__cache_path_map:
-                self.log.warning(f"key {i} is orphaned (data is on disk but reference is missing)")
-                self.delete(i)
+            if not filename in self.__cache_path_map:
+                self.log.warning(f"key {filename} is orphaned (data is on disk but reference is missing)")
+                os.remove(os.path.join(self.absdir, "".join(file)))
         
-        for i in list(self.__cache_path_map.keys()):
-            if not os.path.exists(self.__get_abspath(self.__cache_path_map[i])):
-                self.log.warning(f"key {i} is orphaned (data was deleted but reference still exists)")
-                self.delete(i)
+        for filename in list(self.__cache_path_map.keys()):
+            if not os.path.exists(self.__get_abspath(self.__cache_path_map[filename])):
+                self.log.warning(f"key {filename} is orphaned (data was deleted but reference still exists)")
+                self.delete(filename)
                 continue
                 
-            data = self.getMetadata(i)
+            data = self.getMetadata(filename)
             if not data:
-                self.log.warning(f"key {i} is orphaned (metadata is missing)")
-                self.delete(i)
+                self.log.warning(f"key {filename} is orphaned (metadata is missing)")
+                self.delete(filename)
                 continue
             
             if data.get("expiration", -1) == None: # this happens sometimes :/
-                del self.metadata[i]["expiration"]
+                del self.metadata[filename]["expiration"]
         
         self.collect()
         # self.__metadataSave() collect calls metadatasave for us!
