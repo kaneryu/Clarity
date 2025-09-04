@@ -1,14 +1,10 @@
 import time
 import logging
-import platform
-import ctypes
 import enum
 
 from typing import Union
 
-from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QMetaObject, QTimer
-
-import vlc  # type: ignore[import-untyped]
+from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker
 
 from src import universal as g
 from src import cacheManager
@@ -18,6 +14,7 @@ import src.wintube.winSMTC as winSMTC
 # Import Song and PlayingStatus without creating circular imports.
 # song.py must not import Queue; it should use g.queueInstance when needed.
 from src.innertube.song import Song, PlayingStatus
+from src.innertube.player import MediaPlayer
 
 
 class LoopType(enum.Enum):
@@ -108,7 +105,7 @@ class QueueModel(QAbstractListModel):
 
 
 class Queue(QObject):
-    """Combined Queue and Player"""
+    """Queue managing the list, Discord presence, and WinSMTC; playback is delegated to MediaPlayer."""
 
     queueChanged = Signal()
     songChanged = Signal()
@@ -136,17 +133,6 @@ class Queue(QObject):
         self.logger = logging.getLogger("Queue")
         self._pointer = 0
 
-        vlc_args = ["h254-fps=15", "network-caching", "file-caching", "verbose=1", "vv", "log-verbose=3"]
-        self.instance: vlc.Instance = vlc.Instance(vlc_args)
-
-        def strToCtypes(s: str) -> ctypes.c_char_p:
-            return ctypes.c_char_p(s.encode('utf-8'))
-
-        vlc.libvlc_set_user_agent(self.instance, strToCtypes(f"Clarity {str(g.version)}"), strToCtypes(f"Clarity/{str(g.version)} Python/{platform.python_version()}"))
-
-        self.player: vlc.MediaPlayer = self.instance.media_player_new()
-        self.eventManager: vlc.EventManager = self.player.event_manager()
-
         self._mutex = QMutex()
         self._queueAccessMutex = QMutex()
 
@@ -155,54 +141,64 @@ class Queue(QObject):
 
         self.cache = cacheManager.getCache("queue_cache")
 
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerEndReached, self.songFinished)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerEncounteredError, self.on_vlc_error)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerPaused, self.onPauseEvent)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerPlaying, self.onPlayEvent)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerBuffering, self.onBufferingEvent)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerTimeChanged, self.onTimeChangedEvent)
+        # Media player engine
+        self._player = MediaPlayer()
+        self._player.songChanged.connect(self.songChanged)
+        self._player.durationChanged.connect(self.durationChanged)
+        self._player.timeChanged.connect(self._on_time_changed)
+        self._player.playingStatusChanged.connect(self._on_playing_status_changed)
+        self._player.endReached.connect(self._on_end_reached)
+        self._player.errorOccurred.connect(self._on_vlc_error)
 
-        # Just found out vlc.State exists, implement it later
-
+        # WinSMTC integration
         self.winPlayer = winSMTC._get_player()
         self.songChanged.connect(self.updateWinPlayer)
-
         winSMTC.Handlers.setHandler(winSMTC.HandlerType.PLAY, lambda x, y: self.resume())
         winSMTC.Handlers.setHandler(winSMTC.HandlerType.PAUSE, lambda x, y: self.pause())
         winSMTC.Handlers.setHandler(winSMTC.HandlerType.STOP, lambda x, y: self.stop())
         winSMTC.Handlers.setHandler(winSMTC.HandlerType.NEXT, lambda x, y: self.nextSongSignal.emit())
         winSMTC.Handlers.setHandler(winSMTC.HandlerType.PREVIOUS, lambda x, y: self.prevSongSignal.emit())
 
-        self.__bufflastTime: float = 0
-        self.__playlastTime: float = 0
-        self._playingStatus = PlayingStatus.STOPPED
-
-        self.queue: list[Song]
-        self.pointer: int
-        self.currentSongObject: Song
-
-        self.noMrl = False
-
+        # Presence and state
         self.purgetries = {}
         self.presence = presence.initialize_discord_presence(self)
 
-        self.queueIds: list[str]
-
+        # Relay control signals
         self.playingStatusChanged.connect(lambda: self.currentSongObject.checkPlaybackReady())  # type: ignore[attr-defined]
         self.nextSongSignal.connect(lambda: self.next())
         self.prevSongSignal.connect(lambda: self.prev())
 
+    # ---------- Internal handlers delegating from MediaPlayer ----------
+    def _on_time_changed(self, seconds: int):
+        # Update SMTC timeline and bubble the signal
+        winSMTC.update_timeline(
+            duration_s=self.currentSongDuration,  # type: ignore[arg-type]
+            position_s=self.currentSongTime  # type: ignore[arg-type]
+        )
+        self.timeChanged.emit(seconds)
+
+    def _on_playing_status_changed(self, status: int):
+        # Re-emit for QML bindings
+        self.playingStatusChanged.emit(status)
+        # Sync SMTC basic state
+        if status == PlayingStatus.PLAYING:
+            winSMTC.playback_play()
+        elif status == PlayingStatus.PAUSED:
+            winSMTC.playback_pause()
+
+    def _on_end_reached(self):
+        winSMTC.playback_stop()
+        self.next()
+
+    def _on_vlc_error(self, event):
+        self.logger.error("VLC Error")
+        self.logger.error("VLC error event: %s", event)
+        g.bgworker.add_job(self.refetch)
+
+    # ---------- Public API ----------
     @Slot(Song)
     def songMrlChanged(self, song: Song):
-        if song == self.currentSongObject:
-            self.logger.info("Current Song MRL Changed")
-            if song.playbackReady and self.noMrl:  # if the song is now pb ready, we can set the MRL
-                self.play()
-            else:
-                if song.playbackReady:
-                    self.logger.debug("Current Song is playback ready, and the MRL was already set, so we don't need to do anything.")
-                else:
-                    self.logger.debug("Current Song is not playback ready, so we don't set the MRL.")
+        self._player.on_song_mrl_changed(song)
 
     def updateWinPlayer(self):
         winSMTC.set_now_playing(
@@ -221,59 +217,19 @@ class Queue(QObject):
         else:
             winSMTC.set_previous_enabled(False)
 
-    def onPlayEvent(self, event):
-        self.logger.debug("Play Event")
-        self._playingStatus = PlayingStatus.PLAYING
-        self.playingStatusChanged.emit(self._playingStatus)
-        winSMTC.playback_play()
-
-    def onPauseEvent(self, event):
-        self.logger.debug("Pause Event")
-        self._playingStatus = PlayingStatus.PAUSED
-        self.playingStatusChanged.emit(self._playingStatus)
-        winSMTC.playback_pause()
-
-    def onBufferingEvent(self, event):
-        if time.time() - self.__bufflastTime < 1:
-            return
-        self.__bufflastTime = time.time()
-        self._playingStatus = PlayingStatus.BUFFERING
-        self.playingStatusChanged.emit(self._playingStatus)
-        self.logger.debug("Buffering Event")
-
-    def onTimeChangedEvent(self, event):
-        if time.time() - self.__playlastTime < 0.5:
-            return
-        self.__playlastTime = time.time()
-        if not self.playingStatus == PlayingStatus.PLAYING:
-            self._playingStatus = PlayingStatus.PLAYING
-            self.playingStatusChanged.emit(self._playingStatus)
-            self.logger.debug("Time Changed Event")
-
-        winSMTC.update_timeline(
-            duration_s=self.currentSongDuration,  # type: ignore[arg-type]
-            position_s=self.currentSongTime  # type: ignore[arg-type]
-        )
-        self.timeChanged.emit(self.currentSongTime)  # type: ignore[union-attr]
-
     @QProperty(bool, notify=playingStatusChanged)
     def isPlaying(self):
         with QMutexLocker(self._mutex):
-            return self._playingStatus == PlayingStatus.PLAYING
+            return self._player.get_playing_status() == PlayingStatus.PLAYING
 
     @QProperty(int, notify=playingStatusChanged)
     def playingStatus(self):
         with QMutexLocker(self._mutex):
-            if self.player.get_media() is None:
-                return PlayingStatus.NOT_READY
-            return self._playingStatus
+            return self._player.get_playing_status()
 
     @playingStatus.setter
     def playingStatus(self, value: PlayingStatus):
-        if value not in PlayingStatus:
-            raise ValueError("Invalid PlayingStatus value")
-        self._playingStatus = value
-        self.playingStatusChanged.emit(self._playingStatus)
+        self._player.set_playing_status(value)
 
     @QProperty(list, notify=queueChanged)
     def queue(self):
@@ -329,19 +285,11 @@ class Queue(QObject):
 
     @QProperty(int, notify=songChanged)
     def currentSongDuration(self):
-        try:
-            return self.player.get_length() // 1000
-        except OSError:
-            return 0
+        return self._player.current_duration_s()
 
     @QProperty(int, notify=songChanged)
     def currentSongTime(self):
-        try:
-            if self.player.get_media() is None:
-                return 0
-            return self.player.get_time() // 1000
-        except OSError:
-            return 0
+        return self._player.current_time_s()
 
     @QProperty(int, notify=songChanged)
     def songFinishesAt(self):
@@ -349,7 +297,7 @@ class Queue(QObject):
 
     def checkError(self, url: str):
         r = g.networkManager.get(url)
-        return r.status_code != 200
+        return r is None or getattr(r, "status_code", None) != 200
 
     @Slot(result=dict)
     def getCurrentInfo(self) -> dict:
@@ -359,19 +307,6 @@ class Queue(QObject):
     def setQueue(self, queue: list, skipSetData: bool = False):
         for i in queue:
             self.add(i)
-
-    def songFinished(self, event):
-        self.logger.info("Song Finished")
-        self.logger.info("Player state: %s", self.player.get_state())
-        winSMTC.playback_stop()
-
-        # Queue the method call to happen on the object's thread
-        QMetaObject.invokeMethod(self, "next", Qt.ConnectionType.QueuedConnection)
-
-    def on_vlc_error(self, event):
-        self.logger.error("VLC Error")
-        self.logger.error("VLC error event: %s", event)
-        g.bgworker.add_job(self.refetch)
 
     def refetch(self):
         self.purgetries[self.queueIds[self.pointer]] = self.purgetries.get(self.queueIds[self.pointer], 0) + 1  # type: ignore[index]
@@ -392,77 +327,32 @@ class Queue(QObject):
 
     @Slot()
     def pause(self):
-        self.player.pause()
+        self._player.pause()
 
     @Slot()
     def resume(self):
-        self.player.play()
+        self._player.resume()
 
     @Slot()
     def play(self):
-        if self.player.get_state() in [vlc.State.Error, vlc.State.Opening, vlc.State.Buffering]:
-            self.logger.warning(f"Player in unstable state {self.player.get_state()}, delaying operation")
-            QTimer.singleShot(100, self.play)  # Retry a bit later
-            return
-
-        # If stopping previous media, add a small delay
-        if self.player.get_media() is not None:
-            self.player.stop()  # Stop the current media
-            self.player.set_media(None)  # Reset the media to avoid issues when adding a song that doesn't have a MRL
-            # Add a brief delay to allow VLC to clean up
-            QTimer.singleShot(10, self._do_play)
-        else:
-            self._do_play()
-
-    def _do_play(self):
-        def Media(mrl):
-            media: vlc.Media = self.instance.media_new(mrl)
-            media.add_option("http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Herring/97.1.8280.8")
-            media.add_option("http-referrer=https://www.youtube.com/")
-            return media
-
-        url = self.queue[self.pointer].get_best_playback_MRL()
-        if url is None:
-            self.logger.info(f"No MRL found for song ({self.queue[self.pointer].id} - {self.queue[self.pointer].title}), fetching now...")
-            self.playingStatus = PlayingStatus.NOT_READY  # type: ignore[assignment]
-            self.noMrl = True
-            self.songChanged.emit()
-            self.durationChanged.emit()
-            g.bgworker.add_job(func=self.queue[self.pointer].get_playback)
-            return
-
-        self.noMrl = False
-
-        self.player.set_media(Media(url))
-        self.player.play()
-        self.songChanged.emit()
-        self.durationChanged.emit()
+        self._player.play(self.queue[self.pointer])
 
     def migrate(self, MRL):
-        paused = (self.player.is_playing() == 0)
-        newMedia = self.instance.media_new(MRL)
-        self.player.pause()
-        t = self.player.get_time()
-        self.player.set_media(newMedia)
-        if not paused:
-            self.player.play()
-        else:
-            self.player.pause()
-        self.player.set_time(t)
+        self._player.migrate(MRL)
 
     @Slot()
     def stop(self):
-        self.player.stop()
+        self._player.stop()
         winSMTC.playback_stop()
 
     @Slot()
     def reload(self):
-        self.play()
+        self._player.reload()
 
     @Slot(int)
     def setPointer(self, index: int):
         self.pointer = index
-        self.reload()
+        self.play()
 
     @Slot()
     def next(self):
@@ -530,26 +420,14 @@ class Queue(QObject):
 
         s.playbackReadyChanged.connect(lambda: self.songMrlChanged(s))
 
-    def _seek(self, seek_time: int):
-        if seek_time < 0 or seek_time > self.player.get_length():
-            raise ValueError("Time must be between 0 and video length")
-        if self.player.get_media() is not None:
-            self.player.set_time(seek_time)
-            time.sleep(0.1)
-            self.onPlayEvent(None)
-        else:
-            raise ValueError("No Media Loaded")
-
     @Slot(int)
     def seek(self, time: int):
-        self._seek(time * 1000)
+        self._player.seek(time)
 
     @Slot(int)
     def aseek(self, time: int):
-        self._seek(self.player.get_time() + time * 1000)
+        self._player.aseek(time)
 
     @Slot(int)
     def pseek(self, percentage: int):
-        if percentage < 0 or percentage > 100:
-            raise ValueError("Percentage must be between 0 and 100")
-        self._seek(self.player.get_length() * percentage // 100)
+        self._player.pseek(percentage)
