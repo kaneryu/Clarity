@@ -785,18 +785,30 @@ class SongImageProvider(QQuickImageProvider):
             return
         run_sync(song.ensure_info)
         thumbUrl = song.largestThumbnailUrl
-        # request = QNetworkRequest(thumbUrl)
-        
-        # self.sendRequest.emit(request, str(builtins.id(request)))
-        # reply: QNetworkReply = network.accessManager.getReply(str(builtins.id(request)))
-        # reply.waitForReadyRead(10000)
-        request = g.networkManager.get(thumbUrl)
-        
         img = QImage()
-        if request.status_code != 200:
-            return img
         
-        img.loadFromData(request.content)
+        if g.networkManager.onlineStatus == g.OnlineStatus.OFFLINE or g.networkManager.onlineStatus == g.OnlineStatus.ONLINE_NO_YOUTUBE:
+            placeholder = os.path.join(g.Paths.ASSETSPATH, "placeholders", "generic.png")
+            with open(placeholder, 'rb') as file:
+                data = file.read()
+                
+            img.loadFromData(data)
+        else:
+            request = g.networkManager.get(thumbUrl)
+            if not request:
+                
+                data = None
+                placeholder = os.path.join(g.Paths.ASSETSPATH, "placeholders", "generic.png")
+                with open(placeholder, 'rb') as file:
+                    data = file.read()
+                    
+                img.loadFromData(data)
+            else:
+                img = QImage()
+                if request.status_code != 200:
+                    return img
+                
+                img.loadFromData(request.content)
 
         if requestedSize.width() < 0 or requestedSize.height() < 0:
             requestedSize = QSize(544, 544)
@@ -1039,8 +1051,8 @@ class Queue(QObject):
             self.logger.debug("Time Changed Event")
 
         winSMTC.update_timeline(
-            duration_s=self.currentSongDuration,
-            position_s=self.currentSongTime
+            duration_s=self.currentSongDuration, # type: ignore[arg-type]
+            position_s=self.currentSongTime # type: ignore[arg-type]
         )
         self.timeChanged.emit(self.currentSongTime) # type: ignore[union-attr]
         

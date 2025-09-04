@@ -55,6 +55,8 @@ class Backend(QObject):
     
     settingChanged = QSignal(name="settingChanged")
     
+    onlineChanged = QSignal(name="onlineChanged")
+    
     qmlReload = QSignal(name="qmlReload")
     _instance: "Backend"
     
@@ -72,7 +74,9 @@ class Backend(QObject):
             self._queueVisible = False
             
             self.settingChanged.connect(universal.settings.settingChanged)
-        
+    
+    @Property(bool, notify=onlineChanged)
+    
         
         
     @Property(str, notify=urlChanged)
@@ -102,11 +106,11 @@ class Backend(QObject):
         path = universal.appUrl.getPath()
         if path[0] == "page":
             if path == "/":
-                ret = os.path.join(universal.Paths.qmlPath, "pages", "home.qml")
+                ret = os.path.join(universal.Paths.QMLPATH, "pages", "home.qml")
             else:
                 first = path[1]
                 first.replace("/", "")
-                ret = os.path.join(universal.Paths.qmlPath, "pages", first + ".qml")
+                ret = os.path.join(universal.Paths.QMLPATH, "pages", first + ".qml")
                 
             if not os.path.exists(ret):
                 print("Path does not exist", ret)

@@ -20,7 +20,7 @@ Purpose: help AI agents work productively in this repo. Follow these concrete pa
 
 ## Conventions and singletons
 - Use `src/universal.py` as the gateway:
-  - Paths: `universal.Paths.assetsPath/qmlPath/rootpath`.
+  - Paths: `universal.Paths.ASSETSPATH/qmlPath/rootpath`.
   - Workers: `bgworker` (Qt QThread + QThreadPool) for blocking/CPU; `asyncBgworker` (aiohttp + ytmusicapi) for async I/O. Prefer these over ad‑hoc threads.
   - Network: `universal.networkManager` for all HTTP (set proxy/headers/timeouts; supports parallel downloads).
   - Storage: `cacheManager.getCache(name)` for caches (`songs_cache`, `images_cache`, `queue_cache`); `dataStore.getdataStore("song_datastore")` for downloads and `<id>_downloadMeta`.

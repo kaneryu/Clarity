@@ -61,7 +61,7 @@ def main():
     # engine.addImageProvider TODO: Add image provider
     engine.quit.connect(app.quit)
     
-    qml = os.path.join(universal.Paths.qmlPath, "main.qml")
+    qml = os.path.join(universal.Paths.QMLPATH, "main.qml")
 
     backend = Backend.Backend()
     interactions = Interactions.Interactions()
@@ -81,14 +81,14 @@ def main():
     engine.rootContext().setContextProperty("Backend", backend)
     engine.rootContext().setContextProperty("Interactions", interactions)
     
-    engine.rootContext().setContextProperty("AssetsPath", "file:///" + universal.Paths.assetsPath.replace("\\", "/") + "/")
-    engine.rootContext().setContextProperty("QMLPath", "file:///" + universal.Paths.qmlPath.replace("\\", "/") + "/")
-    engine.rootContext().setContextProperty("RootPath", "file:///" + universal.Paths.rootpath.replace("\\", "/")+ "/")
+    engine.rootContext().setContextProperty("AssetsPath", "file:///" + universal.Paths.ASSETSPATH.replace("\\", "/") + "/")
+    engine.rootContext().setContextProperty("QMLPath", "file:///" + universal.Paths.QMLPATH.replace("\\", "/") + "/")
+    engine.rootContext().setContextProperty("RootPath", "file:///" + universal.Paths.ROOTPATH.replace("\\", "/")+ "/")
 
     sip = universal.song_module.SongImageProvider()
     engine.addImageProvider("SongCover", sip)
     
-    icon = QIcon(os.path.join(universal.Paths.assetsPath, "clarityLogo.png"))
+    icon = QIcon(os.path.join(universal.Paths.ASSETSPATH, "clarityLogo.png"))
     app.setWindowIcon(icon)
     app.setApplicationName("Clarity")
 

@@ -7,6 +7,7 @@
 ## Bugfixes
 
 - Move default settings out of code, and make sure that the active settings file updates itself to the default setting's file schema -- kaneryu on 2025-09-03
+- Update path constants to use uppercase naming convention and add online status management in NetworkManager -- kaneryu on 2025-09-04
 
 
 

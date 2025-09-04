@@ -81,13 +81,17 @@ def install_json_logging(level=logging.INFO):
     root.setLevel(level)
 
 install_json_logging()
+from .misc import settings as settings_module
+settings = settings_module.Settings()
 
 from src.cacheManager import cacheManager as cacheManager_module, dataStore as dataStore_module
 import src.innertube as innertube_module
 from src.innertube import search as search_module
 from src.innertube import song as song_module
 
-from src.network import NetworkManager, networkManager, is_internet_connected, connected as internet_connected
+
+
+from src.network import NetworkManager, networkManager, OnlineStatus
 
 from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG
 
@@ -95,27 +99,24 @@ from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_Background
 
 from .AppUrl import AppUrl, appUrl
 
-from .misc import settings as settings_module
 
 from io import StringIO
 
 from .misc import logHistoryManager
+from .paths import Paths
 
 mainThread: QThread = QThread.currentThread()
 
-settings = settings_module.Settings()
 
 def ghash(thing):
     # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
     return md5(str(thing).encode()).hexdigest()
 
-
-datapath = os.path.abspath("data")
-globalCache = cacheManager_module.CacheManager(name="cache", directory=os.path.join(datapath, "cache"))
-songCache = cacheManager_module.CacheManager(name="songs_cache", directory=os.path.join(datapath, "songs_cache"))
-imageCache = cacheManager_module.CacheManager(name="images_cache", directory=os.path.join(datapath, "images_cache"))
-queueCache = cacheManager_module.CacheManager(name="queue_cache", directory=os.path.join(datapath, "queue_cache"))
-songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(datapath, "song_datastore"))
+globalCache = cacheManager_module.CacheManager(name="cache", directory=os.path.join(Paths.DATAPATH, "cache"))
+songCache = cacheManager_module.CacheManager(name="songs_cache", directory=os.path.join(Paths.DATAPATH, "songs_cache"))
+imageCache = cacheManager_module.CacheManager(name="images_cache", directory=os.path.join(Paths.DATAPATH, "images_cache"))
+queueCache = cacheManager_module.CacheManager(name="queue_cache", directory=os.path.join(Paths.DATAPATH, "queue_cache"))
+songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(Paths.DATAPATH, "song_datastore"))
 
 songDataStore.integrityCheck(True)
 globalCache.integrityCheck()
@@ -130,21 +131,9 @@ searchModel = search_module.BasicSearchResultsModel()
 
 mainThread: QThread = QThread.currentThread()
 
-__compiled__ = False # will be set to true by nuitka
-
-class Paths:
-    assetsPath = os.path.abspath(os.path.join("assets") if __compiled__ else os.path.join("src", "app", "assets"))
-    qmlPath = os.path.abspath(os.path.join("qml") if __compiled__ else os.path.join("src", "app", "qml"))
-    rootpath = os.path.abspath(".")
-
-print("assets path:", Paths.assetsPath)
-print("qml path:", Paths.qmlPath)
-print("root path:", Paths.rootpath)
 
 async def search_shorthand(query: str, ignore_spelling: bool = False) -> search_module.BasicSearchResultsModel:
     return await search_module.search(query, filter = search_module.searchFilters.SONGS, ignore_spelling = ignore_spelling, model = searchModel)
-
-
 
 oldprint = builtins.print
 def nprint(*args, **kwargs):

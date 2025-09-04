@@ -188,7 +188,6 @@ class Handlers:
 
 def default_button_handler(sender, args: wmedia.SystemMediaTransportControlsButtonPressedEventArgs) -> None:
     """Default handler for SMTC button presses."""
-    print("Button pressed:", sender, args)
     match args.button:
         case wmedia.SystemMediaTransportControlsButton.PLAY:
             if Handlers.play:

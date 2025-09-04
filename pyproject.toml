@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-version = "0.35.1"
+version = "0.35.2"
 name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"

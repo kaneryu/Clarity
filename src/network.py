@@ -6,9 +6,22 @@ import urllib3
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from concurrent.futures import ThreadPoolExecutor
+import enum
+import os
 
-class NetworkManager:
+from src import paths
+from src.misc import settings
+
+from PySide6.QtCore import QObject, Signal, Slot, Property
+
+class OnlineStatus(enum.IntEnum):
+    OFFLINE = 0
+    ONLINE = 1
+    ONLINE_NO_YOUTUBE = 2
+ 
+class NetworkManager(QObject):
     """Centralized network request manager for Clarity"""
+    onlineStatusChanged =  Signal(int)
     
     _instance: "NetworkManager" = None  # type: ignore
     
@@ -24,10 +37,11 @@ class NetworkManager:
         if NetworkManager._instance is not None:
             raise RuntimeError("Use NetworkManager.get_instance() instead of constructor")
             
+        super().__init__()
         self.logger = logging.getLogger("NetworkManager")
         self.session = requests.Session()
         self.timeout = 30  # Default timeout in seconds
-        self.proxy_config = None
+        self.proxy_config: Union[dict, None] = None
         self.default_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9"
@@ -47,6 +61,8 @@ class NetworkManager:
         self.session.headers.update(self.default_headers)
         
         NetworkManager._instance = self
+        self._onlineStatus = self.test_onlinemode()
+        self.onlineStatus: OnlineStatus
     
     def set_proxy(self, proxy_url: Optional[str] = None):
         """
@@ -77,7 +93,7 @@ class NetworkManager:
     
     def get(self, url: str, params: Optional[Dict] = None, 
             headers: Optional[Dict] = None, timeout: Optional[int] = None, 
-            stream: bool = False, allow_redirects: bool = True) -> requests.Response:
+            stream: bool = False, allow_redirects: bool = True) -> Union[requests.Response, None]:
         """
         Perform a GET request
         
@@ -107,9 +123,10 @@ class NetworkManager:
             )
             response.raise_for_status()
             return response
-        except requests.RequestException as e:
+        except Exception as e:
             self.logger.error(f"GET request failed: {url} - {str(e)}")
-            raise
+            return None
+            
     
     def post(self, url: str, data: Optional[Dict] = None, 
              json: Optional[Dict] = None, headers: Optional[Dict] = None, 
@@ -141,9 +158,9 @@ class NetworkManager:
             )
             response.raise_for_status()
             return response
-        except requests.RequestException as e:
+        except Exception as e:
             self.logger.error(f"POST request failed: {url} - {str(e)}")
-            raise
+
     
     def download_file(self, url: str, file_obj, 
                      headers: Optional[Dict] = None, 
@@ -320,20 +337,29 @@ class NetworkManager:
             self.session.close()
             self.logger.debug("Session closed")
 
+    def test_onlinemode(self) -> OnlineStatus:
+        connected = True if self.get("https://www.google.com", timeout = 5) else False
+        youtube = True if self.get("https://music.youtube.com", timeout = 5) else False
+        
+        if (connected and youtube):
+            r = OnlineStatus.ONLINE
+        elif (connected and not youtube):
+            r = OnlineStatus.ONLINE_NO_YOUTUBE
+        else:
+            r = OnlineStatus.OFFLINE
+        
+        self._onlineStatus = r
+        return r
+    
+    @Property(int)
+    def onlineStatus(self) -> OnlineStatus:
+        return self._onlineStatus
+    
+    @onlineStatus.setter
+    def onlineStatus(self, value: OnlineStatus) -> None:
+        self._onlineStatus = value
+        self.onlineStatusChanged.emit(self._onlineStatus)
+    
 # Create a global network manager instance for easier imports
 networkManager = NetworkManager.get_instance()
 connected = False
-
-# Let's also check if we're connected to the internet
-def is_internet_connected() -> bool:
-    """Check if internet connection is available"""
-    global connected
-    try:
-        networkManager.get("https://www.google.com", timeout=5)
-        connected = True
-        return True
-    except requests.RequestException:
-        connected = False
-        return False
-
-is_internet_connected()
