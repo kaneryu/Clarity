@@ -1,4 +1,5 @@
-from src.innertube.song import Queue, Song
+from src.innertube.song import Song
+from src.innertube.queue import Queue
 
 '''
 This is a wrapper around ytmusicapi and youtube-dl.

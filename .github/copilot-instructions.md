@@ -24,7 +24,7 @@ Purpose: help AI agents work productively in this repo. Follow these concrete pa
   - Workers: `bgworker` (Qt QThread + QThreadPool) for blocking/CPU; `asyncBgworker` (aiohttp + ytmusicapi) for async I/O. Prefer these over ad‑hoc threads.
   - Network: `universal.networkManager` for all HTTP (set proxy/headers/timeouts; supports parallel downloads).
   - Storage: `cacheManager.getCache(name)` for caches (`songs_cache`, `images_cache`, `queue_cache`); `dataStore.getdataStore("song_datastore")` for downloads and `<id>_downloadMeta`.
-  - Playback: `innertube.song.Queue()` is a singleton; integrates VLC + Windows SMTC + Discord presence.
+  - Playback: `innertube.Queue()` is a singleton; integrates VLC + Windows SMTC + Discord presence.
   - Qt objects: create QObjects bound to the main thread via `universal.createSongMainThread(id)` when needed.
 - Cache/datastore keys: `<id>_info`, `<id>_playbackinfo`, `<id>_downloadMeta`.
 - Logging: `logging.getLogger(...)`; console output uses a humanized JSON formatter from `universal`.
