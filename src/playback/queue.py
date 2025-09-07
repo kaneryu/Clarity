@@ -4,7 +4,7 @@ import enum
 
 from typing import Union
 
-from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker
+from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QTimer
 
 from src import universal as g
 from src import cacheManager
@@ -170,6 +170,19 @@ class Queue(QObject):
         
         self.currentSongObject: Song
 
+        # Debounce state for Next presses
+        self._next_press_count: int = 0
+        self._next_press_exhausted: bool = False
+        self._next_timer = QTimer(self)
+        self._next_timer.setSingleShot(True)
+        self._next_timer.timeout.connect(self._finalize_next_sequence)
+
+        # Debounce state for Prev presses
+        self._prev_press_count: int = 0
+        self._prev_timer = QTimer(self)
+        self._prev_timer.setSingleShot(True)
+        self._prev_timer.timeout.connect(self._finalize_prev_sequence)
+
     # ---------- Internal handlers delegating from MediaPlayer ----------
     def _on_time_changed(self, seconds: int):
         # Update SMTC timeline and bubble the signal
@@ -196,6 +209,25 @@ class Queue(QObject):
         self.logger.error("VLC Error")
         self.logger.error("VLC error event: %s", event)
         g.bgworker.add_job(self.refetch)
+
+    # Finalize debounced Next presses: perform single play/stop
+    def _finalize_next_sequence(self):
+        presses = self._next_press_count
+        self._next_press_count = 0
+        if self._next_press_exhausted:
+            self._next_press_exhausted = False
+            self.stop()
+            return
+        if not self.queue:
+            return
+        self.play()
+
+    # Finalize debounced Prev presses: perform single play
+    def _finalize_prev_sequence(self):
+        self._prev_press_count = 0
+        if not self.queue:
+            return
+        self.play()
 
     # ---------- Public API ----------
     @Slot(Song)
@@ -358,28 +390,60 @@ class Queue(QObject):
 
     @Slot()
     def next(self):
-        self.logger.info("Next")
-        self.logger.info("Pointer: %s, Length: %s", self.pointer, len(self.queue))
+        self.logger.info("Next (debounced)")
+        if not self.queue:
+            return
+
+        # Grow debounce window with each press; cap to 500ms
+        self._next_press_count = min(self._next_press_count + 1, 500)
+
+        # Apply one logical next step without starting playback
         if self.pointer == len(self.queue) - 1:
-            self.logger.info("Queue Finished")
+            self.logger.info("Pointer at end")
             if self.loop == LoopType.SINGLE:
-                self.play()  # pointer doesn't change, song doesn't change
-                return
+                # Repeat current track (no pointer change); update bindings
+                self.songChanged.emit()
             elif self.loop == LoopType.ALL:
                 self.pointer = 0
-                self.play()
-                return
+                self.songChanged.emit()
             else:
-                self.logger.info("Queue Exhausted")
-                self.stop()
-                return
-        self.pointer += 1
-        self.play()
+                # Exhausted and no looping: stop on finalize
+                self._next_press_exhausted = True
+        else:
+            self.pointer += 1
+            self.songChanged.emit()
+
+        # Start/reset timer: 100ms per press, up to 500ms
+        interval_ms = min(100 * self._next_press_count, 500)
+        self._next_timer.start(interval_ms)
 
     @Slot()
     def prev(self):
-        self.pointer = self.pointer - 1 if self.pointer > 0 else 0
-        self.play()
+        self.logger.info("Prev (debounced)")
+        if not self.queue:
+            return
+
+        # Grow debounce window with each press; cap to 500ms
+        self._prev_press_count = min(self._prev_press_count + 1, 500)
+
+        # Apply one logical prev step without starting playback
+        if self.pointer == 0:
+            if self.loop == LoopType.SINGLE:
+                # Repeat current track
+                self.songChanged.emit()
+            elif self.loop == LoopType.ALL:
+                self.pointer = len(self.queue) - 1
+                self.songChanged.emit()
+            else:
+                # No looping: stay at start
+                self.songChanged.emit()
+        else:
+            self.pointer -= 1
+            self.songChanged.emit()
+
+        # Start/reset timer: 100ms per press, up to 500ms
+        interval_ms = min(100 * self._prev_press_count, 500)
+        self._prev_timer.start(interval_ms)
 
     def info(self, pointer: int):
         if len(self.queue) == 0:
