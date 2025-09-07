@@ -37,16 +37,6 @@
             "hidden": false,
             "name": "Enable YouTube Login",
             "secure": false
-        },
-        
-        "maxNetworkCacheSize": {
-            "value": 1000,
-            "type": "int",
-            "description": "Maximum size for the general Network Cache",
-            "group": "Cache",
-            "hidden": false,
-            "name": "Max Netowork Cache Size",
-            "secure": false
         }
     }
 }

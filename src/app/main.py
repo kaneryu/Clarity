@@ -66,7 +66,7 @@ def main():
     backend = Backend.Backend()
     interactions = Interactions.Interactions()
     
-    theme = materialInterface.Theme()
+    theme = materialInterface.Theme.getInstance()
     theme.get_dynamicColors(0x1A1D1D, True, 0.0)
     
     def reloadQML():

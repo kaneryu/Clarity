@@ -19,8 +19,10 @@ from datetime import datetime, timezone
 
 import os
 import logging
+import sys
 import json
 
+print("Running with GIL", "disabled" if not sys._is_gil_enabled() else "enabled")
 class JSONFormatter(logging.Formatter):
     def formatTime(self, record, datefmt=None):
         dt = datetime.fromtimestamp(record.created, timezone.utc)

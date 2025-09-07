@@ -34,6 +34,8 @@ from PySide6.QtCore import Property
 
 
 import src.universal as universal
+import src.app.materialInterface as materialInterface
+import src.network as networking
 import src.paths as paths
 import src.misc.settings as settings
 import src.misc.logHistoryManager as logHistoryManager
@@ -61,7 +63,7 @@ class Backend(QObject):
     _instance: "Backend"
     
     def __new__(cls) -> "Backend":
-        if (hasattr(cls, "_instance") and cls._instance is not None) or not hasattr(cls, "_instance"): # if instance var exists and is not None, or if it does not exist
+        if (hasattr(cls, "_instance") and cls._instance is None) or not hasattr(cls, "_instance"): # if instance var exists and is not None, or if it does not exist
             cls._instance = super().__new__(cls)
         return cls._instance
     
@@ -74,11 +76,24 @@ class Backend(QObject):
             self._queueVisible = False
             
             self.settingChanged.connect(universal.settings.settingChanged)
+            universal.queueInstance.songChanged.connect(self.updateMaterialColors)
     
-    @Property(bool, notify=onlineChanged)
+    # @Property(bool, notify=onlineChanged)
     
-        
-        
+    def updateMaterialColors(self):
+        songobj = universal.queueInstance.currentSongObject
+        thumb = songobj.smallestThumbailUrl # type: ignore[attr-defined]
+        res = networking.networkManager.get(thumb)
+        if res is None:
+            return
+        with open(os.path.join(paths.Paths.DATAPATH, "currentthumb"), "wb") as f:
+            f.write(res.content)
+            
+        if res is not None:
+            obj = materialInterface.Theme.getInstance().get_dynamicColorsFromImage(os.path.join(paths.Paths.DATAPATH, "currentthumb"))
+            if obj is not None:
+                materialInterface.Theme.getInstance().update_dynamicColors(obj)
+
     @Property(str, notify=urlChanged)
     def url(self):
         return universal.appUrl.getUrl()

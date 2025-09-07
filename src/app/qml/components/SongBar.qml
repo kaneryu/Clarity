@@ -114,6 +114,8 @@ Item {
             Layout.preferredHeight: centerPanel.iconHeight
             Layout.preferredWidth: height
             onClicked: Interactions.back()
+
+            textcolor: Theme.onSurface
         }
 
         Components.Button {
@@ -192,6 +194,8 @@ Item {
             Layout.preferredHeight: centerPanel.iconHeight
             Layout.preferredWidth: height
             onClicked: Interactions.next()
+            textcolor: Theme.onSurface
+
         }
 
         Components.Button {
@@ -203,6 +207,7 @@ Item {
             Layout.preferredHeight: centerPanel.iconHeight
             Layout.preferredWidth: height
             onClicked: Interactions.downloadSong(Interactions.currentSongId)
+            textcolor: Theme.onSurface
 
             Components.ProgressBar {
                 id: downloadProgress
@@ -236,7 +241,7 @@ Item {
             isIcon: true
             isTransparent: true
             icon: AssetsPath + "icons/songbar/queue_music.svg"
-            colortype: (Backend.queueVisible) ? "secondary" : "primary"
+            textcolor: (Backend.queueVisible) ? Theme.secondary : Theme.primary
 
             Layout.preferredHeight: centerPanel.iconHeight
             Layout.preferredWidth: height

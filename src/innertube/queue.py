@@ -167,6 +167,8 @@ class Queue(QObject):
         self.playingStatusChanged.connect(lambda: self.currentSongObject.checkPlaybackReady())  # type: ignore[attr-defined]
         self.nextSongSignal.connect(lambda: self.next())
         self.prevSongSignal.connect(lambda: self.prev())
+        
+        self.currentSongObject: Song
 
     # ---------- Internal handlers delegating from MediaPlayer ----------
     def _on_time_changed(self, seconds: int):

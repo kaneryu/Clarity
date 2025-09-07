@@ -19,6 +19,8 @@ Item {
     property string songArtist: song.artist
     property string songLength: Utils.secondsToHMS(song.duration)
 
+    property real radius: 350
+
     /*
     NOT_DOWNLOADED = 0
     DOWNLOADING = 1
@@ -54,7 +56,7 @@ Item {
 
     Image {
         id: songImage
-        source: "image://SongCover/" + song.id + "/350"
+        source: "image://SongCover/" + song.id + "/" + root.radius
         mipmap: true
         width: 80
         height: 80

@@ -377,6 +377,7 @@ ApplicationWindow {
                 required property var qobject
                 required property var index
                 required property var id
+                radius: 230
                 width: queueList.width
                 height: 80
                 song: Interactions.getSong(id)
