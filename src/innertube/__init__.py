@@ -1,5 +1,5 @@
 from src.innertube.song import Song
-from src.innertube.queue import Queue
+from src.innertube.search import search, search_suggestions, searchFilters, BasicSearchResultsModel
 
 '''
 This is a wrapper around ytmusicapi and youtube-dl.
@@ -9,4 +9,4 @@ search.py - search for a song
 song.py - stores the class for a song
 testing.py - internal file for testing future features (not unit tests)
 '''
-__all__ = ["queue", "Queue", "Song"]
+__all__ = ["Song", "search", "search_suggestions", "searchFilters", "BasicSearchResultsModel"]

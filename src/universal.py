@@ -88,8 +88,8 @@ settings = settings_module.Settings()
 
 from src.cacheManager import cacheManager as cacheManager_module, dataStore as dataStore_module
 import src.innertube as innertube_module
-from src.innertube import search as search_module
 from src.innertube import song as song_module
+from src.playback import queue as queue_module
 
 
 
@@ -126,16 +126,16 @@ songCache.integrityCheck()
 imageCache.integrityCheck()
 
 
-queueInstance: innertube_module.Queue = innertube_module.Queue()
-search = search_module.search
+queueInstance: queue_module.Queue = queue_module.Queue()
+search = innertube_module.search
 
-searchModel = search_module.BasicSearchResultsModel()
+searchModel = innertube_module.BasicSearchResultsModel()
 
 mainThread: QThread = QThread.currentThread()
 
 
-async def search_shorthand(query: str, ignore_spelling: bool = False) -> search_module.BasicSearchResultsModel:
-    return await search_module.search(query, filter = search_module.searchFilters.SONGS, ignore_spelling = ignore_spelling, model = searchModel)
+async def search_shorthand(query: str, ignore_spelling: bool = False) -> innertube_module.BasicSearchResultsModel:
+    return await innertube_module.search(query, filter = innertube_module.searchFilters.SONGS, ignore_spelling = ignore_spelling, model = searchModel)
 
 oldprint = builtins.print
 def nprint(*args, **kwargs):
