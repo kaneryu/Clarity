@@ -256,8 +256,7 @@ class MediaPlayer(QObject):
     def _on_song_finished(self, event):
         self.logger.info("Song Finished")
         self.logger.info("Player state: %s", self.player.get_state())
-        # Emit endReached on the Qt event loop
-        QTimer.singleShot(0, self.endReached.emit)
+        self.endReached.emit()
 
     def _on_vlc_error(self, event):
         self.logger.error("VLC Error")

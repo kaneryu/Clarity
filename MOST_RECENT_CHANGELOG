@@ -3,3 +3,7 @@
 ## New Features
 
 - add dynamic color based on current song cover -- kaneryu on 2025-09-07
+
+## Bugfixes
+
+- Emit endReached signal immediately on song finish instead of using QTimer -- kaneryu on 2025-09-07
