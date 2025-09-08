@@ -348,6 +348,8 @@ class NetworkManager(QObject):
         else:
             r = OnlineStatus.OFFLINE
         
+        if not OnlineStatus.ONLINE:
+            self.logger.error(f"You are Offline (offlineMode {r.name})")
         self._onlineStatus = r
         return r
     

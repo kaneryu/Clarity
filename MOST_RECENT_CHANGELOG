@@ -3,3 +3,7 @@
 ## New Features
 
 - implement debounce logic for Next and Prev song controls -- kaneryu on 2025-09-07
+
+## Bugfixes
+
+- fix bug where notifying log model wouldn't add logs based on error level, and disable song fetching if we're offline -- kaneryu on 2025-09-08

@@ -3,7 +3,8 @@ import typing
 import time
 import queue
 import random
-import json  # for parsing structured logs
+from datetime import datetime, timezone
+import json
 
 from PySide6.QtCore import Qt, QObject, Signal, Slot, QAbstractListModel, QModelIndex, QPersistentModelIndex, QTimer
 import threading
@@ -123,7 +124,33 @@ class NotifyingLogModel(LogHistoryModel):
             log["name"] = ""
         return super().addLog(log)
     
+class JSONFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        dt = datetime.fromtimestamp(record.created, timezone.utc)
+        if datefmt:
+            return dt.strftime(datefmt)
+        return dt.isoformat(timespec="milliseconds") + "Z"
 
+    def format(self, record: logging.LogRecord) -> str:
+        base = {
+            "ts": self.formatTime(record, datefmt="%H:%M:%S.%fZ"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+            "module": record.module,
+            "func": record.funcName,
+            "line": record.lineno,
+            "thread": record.threadName,
+        }
+        skip = {"msg","levelname","levelno","pathname","filename","module","exc_info","exc_text","stack_info","lineno","funcName","created","msecs","relativeCreated","thread","threadName","processName","process"}
+        for k, v in record.__dict__.items():
+            if k not in base and k not in skip:
+                try:
+                    json.dumps(v)
+                    base[k] = v
+                except TypeError:
+                    base[k] = repr(v)
+        return json.dumps(base, ensure_ascii=False)
 class MyHandler(logging.Handler):
     myBridge: typing.Union["LoggingBridge", None] = None
     def emit(self, record):
@@ -149,11 +176,10 @@ class LoggingBridge(QObject):
         self.handler = MyHandler()
         MyHandler.myBridge = self
         self.handler.setLevel(logging.DEBUG)
-        # inherit root JSON formatter (do not add another if root already has one)
+        # inherit root JSON formatter
         if logging.getLogger().handlers:
-            self.handler.setFormatter(logging.getLogger().handlers[0].formatter)
+            self.handler.setFormatter(JSONFormatter())
         logging.root.addHandler(self.handler)
-        # do not lower global level here; assume universal configured it
         
         self.notifyingModel = NotifyingLogModel() # A log model that will store pressing notifications. Each log will automatically delete itself after a certain time.
         self.notifyingLevel = logging.ERROR  # The level at which logs will be added to the notifying model.

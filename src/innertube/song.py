@@ -195,7 +195,7 @@ class Song(QObject):
         self._source = None
 
         self._downloadProgress = 0
-        self.rawPlaybackInfo: dict = {}
+        self.rawPlaybackInfo: Union[dict, None] = {}
         self.playbackInfo: dict = {}
         self._initialized: bool = True
         self.gettingPlaybackReady = False
@@ -379,6 +379,10 @@ class Song(QObject):
         identifier = self.id + "_playbackinfo"
         self.rawPlaybackInfo: dict
         cachedData: str
+        if g.networkManager.onlineStatus == g.OnlineStatus.OFFLINE or g.OnlineStatus.ONLINE_NO_YOUTUBE:
+            self.rawPlaybackInfo = None
+            return
+        
         if not (cachedData := c.get(identifier)): # type: ignore[assignment]
             self.rawPlaybackInfo = ytdl.extract_info(self.id, download=False)
             c.put(identifier, json.dumps(self.rawPlaybackInfo), byte = False, expiration = int(time.time() + 3600)) # 1 hour
@@ -409,6 +413,11 @@ class Song(QObject):
             self.download_playbackInfo()
         
         playbackinfo = self.rawPlaybackInfo
+        
+        if playbackinfo == None:
+            self.logger.error("Failed to get playback info, probably due to network reasons.")
+            self.playbackInfo = {"audio": None, "video": None}
+            return
         
         video = []
         audio = []
