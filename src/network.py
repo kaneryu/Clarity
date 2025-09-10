@@ -338,8 +338,8 @@ class NetworkManager(QObject):
             self.logger.debug("Session closed")
 
     def test_onlinemode(self) -> OnlineStatus:
-        connected = True if self.get("https://www.google.com", timeout = 5) else False
-        youtube = True if self.get("https://music.youtube.com", timeout = 5) else False
+        connected = True if self.get("https://www.google.com", timeout = 1) else False
+        youtube = True if self.get("https://music.youtube.com", timeout = 1) else False
         
         if (connected and youtube):
             r = OnlineStatus.ONLINE
