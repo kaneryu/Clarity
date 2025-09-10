@@ -379,7 +379,7 @@ class Song(QObject):
         identifier = self.id + "_playbackinfo"
         self.rawPlaybackInfo: dict
         cachedData: str
-        if g.networkManager.onlineStatus == g.OnlineStatus.OFFLINE or g.OnlineStatus.ONLINE_NO_YOUTUBE:
+        if g.networkManager.onlineStatus is not g.OnlineStatus.ONLINE:
             self.rawPlaybackInfo = None
             return
         
@@ -796,7 +796,7 @@ class SongImageProvider(QQuickImageProvider):
         thumbUrl = song.largestThumbnailUrl
         img = QImage()
         
-        if g.networkManager.onlineStatus == g.OnlineStatus.OFFLINE or g.networkManager.onlineStatus == g.OnlineStatus.ONLINE_NO_YOUTUBE:
+        if g.networkManager.onlineStatus is not g.OnlineStatus.ONLINE:
             placeholder = os.path.join(g.Paths.ASSETSPATH, "placeholders", "generic.png")
             with open(placeholder, 'rb') as file:
                 data = file.read()
