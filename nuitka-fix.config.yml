@@ -6,6 +6,6 @@
 
 - module-name: 'ytmusicapi'
   data-files:
-    dest_path: '.'
+    dest_path: './assets/ytmusicapi'
     dirs:
       - 'locales'

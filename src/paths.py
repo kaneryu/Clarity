@@ -1,5 +1,5 @@
 import os
-__compiled__ = False # will be set to true by nuitka
+from .misc.compiled import __compiled__
 
 
 class Paths:

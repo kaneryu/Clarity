@@ -1,4 +1,5 @@
 import threading
+import os
 import inspect
 import traceback
 import time
@@ -8,8 +9,11 @@ import logging
 import ytmusicapi
 from PySide6.QtCore import QThread, QThreadPool, QObject, Signal, QRunnable
 import src.misc.cleanup as cleanup
+from src.paths import Paths
 
 mainThread: QThread = QThread.currentThread()
+
+from src.misc.compiled import __compiled__
 
 class JobRunnable(QRunnable):
     def __init__(self, func, args, kwargs, logger):
@@ -84,7 +88,12 @@ class Async_BackgroundWorker(QThread):
     async def Arun(self):
         self.logger.info("Async_BackgroundWorker started, alive: %s", self.isRunning())
         self.session = aiohttp.ClientSession()
-        self.API = ytmusicapi.YTMusic(requests_session=self.session)
+        if not __compiled__:
+            self.API = ytmusicapi.YTMusic(requests_session=self.session)
+        else:
+            print("Compiled mode detected, using locale dir for ytmusicapi at:", os.path.abspath(os.path.join(Paths.ASSETSPATH, os.path.join("ytmusicapi", "locales"))))
+            self.API = ytmusicapi.YTMusic(requests_session=self.session, locale_dir=os.path.abspath(os.path.join(Paths.ASSETSPATH, os.path.join("ytmusicapi", "locales"))))
+        
         try:
             while not self.stopped:
                 await asyncio.sleep(1/60)  # 60hz

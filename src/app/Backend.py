@@ -26,8 +26,6 @@ from PySide6.QtQml import (
     qmlRegisterSingletonInstance,
     qmlRegisterSingletonType,
 )
-from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEngineUrlRequestInterceptor, QWebEngineUrlRequestInfo
-from PySide6.QtWebEngineQuick import QQuickWebEngineProfile
 from PySide6.QtNetwork import QNetworkCookie
 
 from PySide6.QtCore import Property
@@ -216,70 +214,70 @@ def castUb(input: typing.Any) -> typing.Union[bytes, bytearray]:
     return typing.cast(typing.Union[bytes, bytearray], input)
     
 
-class ProfileInterfaceManager:
-    def __init__(self, profile: QWebEngineProfile | QQuickWebEngineProfile):
-        self.profile = profile
-        urlInterceptor = UrlInterceptor()
-        self.profile.setUrlRequestInterceptor(urlInterceptor)
+# class ProfileInterfaceManager:
+#     def __init__(self, profile: QWebEngineProfile | QQuickWebEngineProfile):
+#         self.profile = profile
+#         urlInterceptor = UrlInterceptor()
+#         self.profile.setUrlRequestInterceptor(urlInterceptor)
     
-        cookiestore = self.profile.cookieStore()
-        cookiestore.cookieAdded.connect(self.newCookie)
-        cookiestore.cookieRemoved.connect(self.remCookie)
+#         cookiestore = self.profile.cookieStore()
+#         cookiestore.cookieAdded.connect(self.newCookie)
+#         cookiestore.cookieRemoved.connect(self.remCookie)
     
-    def newCookie(self, cookie: QNetworkCookie):
+#     def newCookie(self, cookie: QNetworkCookie):
         
-        prep = f"""
-        New cookie:
-        Name: {castUb(cookie.name().data()).decode("utf-8")}
-        Value: {castUb(cookie.value().data()).decode("utf-8")}
-        Domain: {cookie.domain()}
-        Path: {cookie.path()}
-        """
-        print(prep)
+#         prep = f"""
+#         New cookie:
+#         Name: {castUb(cookie.name().data()).decode("utf-8")}
+#         Value: {castUb(cookie.value().data()).decode("utf-8")}
+#         Domain: {cookie.domain()}
+#         Path: {cookie.path()}
+#         """
+#         print(prep)
     
-    def remCookie(self, cookie: QNetworkCookie):
-        prep = f"""
-        Removed cookie:
-        Name: {castUb(cookie.name().data()).decode("utf-8")}
-        Value: {castUb(cookie.value().data()).decode("utf-8")}
-        Domain: {cookie.domain()}
-        Path: {cookie.path()}
-        """
-        print(prep)
+#     def remCookie(self, cookie: QNetworkCookie):
+#         prep = f"""
+#         Removed cookie:
+#         Name: {castUb(cookie.name().data()).decode("utf-8")}
+#         Value: {castUb(cookie.value().data()).decode("utf-8")}
+#         Domain: {cookie.domain()}
+#         Path: {cookie.path()}
+#         """
+#         print(prep)
 
-class UrlInterceptor(QWebEngineUrlRequestInterceptor):
-    def __init__(self):
-        super().__init__()
+# class UrlInterceptor(QWebEngineUrlRequestInterceptor):
+#     def __init__(self):
+#         super().__init__()
         
-    def interceptRequest(self, info: QWebEngineUrlRequestInfo):
-        url = info.requestUrl().toString()
-        headers = info.httpHeaders()
+#     def interceptRequest(self, info: QWebEngineUrlRequestInfo):
+#         url = info.requestUrl().toString()
+#         headers = info.httpHeaders()
         
-        if "Cookie" in headers.keys():
-            print("url", url)
-            print("headers", headers)
+#         if "Cookie" in headers.keys():
+#             print("url", url)
+#             print("headers", headers)
         
-        if url == "https://music.youtube.com":
-            bend = Backend()
-            bend.loginRedirect.emit()
+#         if url == "https://music.youtube.com":
+#             bend = Backend()
+#             bend.loginRedirect.emit()
 
         
-        if url.startswith("https://music.youtube.com/youtubei/v1/browse"):
-            bend = Backend()
-            print("url", url)
-            # Iterate through headers and convert QByteArray to strings
-            headers_dict = {}
-            for key, value in headers.items():
-                headers_dict[castUb(key.data()).decode("utf-8")] = castUb(value.data()).decode("utf-8")
-            print(headers_dict)
+#         if url.startswith("https://music.youtube.com/youtubei/v1/browse"):
+#             bend = Backend()
+#             print("url", url)
+#             # Iterate through headers and convert QByteArray to strings
+#             headers_dict = {}
+#             for key, value in headers.items():
+#                 headers_dict[castUb(key.data()).decode("utf-8")] = castUb(value.data()).decode("utf-8")
+#             print(headers_dict)
             
-            if not "Cookie" in headers_dict.keys() or not "X-Goog-Authuser" in headers_dict.keys():
-                print("bad request")
-                return
+#             if not "Cookie" in headers_dict.keys() or not "X-Goog-Authuser" in headers_dict.keys():
+#                 print("bad request")
+#                 return
             
-            with open("ytheaders.json", "w") as f:
-                json.dump(headers_dict, f)
+#             with open("ytheaders.json", "w") as f:
+#                 json.dump(headers_dict, f)
                 
-            bend.loginComplete.emit()
+#             bend.loginComplete.emit()
             
         

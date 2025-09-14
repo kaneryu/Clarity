@@ -19,9 +19,6 @@ from PySide6.QtQml import (
     QQmlDebuggingEnabler,
     qmlRegisterSingletonInstance
 )
-from PySide6.QtWebEngineQuick import QtWebEngineQuick, QQuickWebEngineProfile
-from PySide6.QtWebEngineCore import QWebEngineUrlRequestInterceptor, QWebEngineUrlRequestInfo
-
 from PySide6.QtCore import Property as Property
 from PySide6.QtWidgets import QApplication
 
@@ -45,11 +42,7 @@ def main():
     
     QQmlDebuggingEnabler.enableDebugging(False)
     
-    QtWebEngineQuick.initialize()
-    
     app = QApplication(sys.argv)
-    webprofile = QQuickWebEngineProfile.defaultProfile()
-    profileInterfaceManager = Backend.ProfileInterfaceManager(webprofile)
 
     app.setStyle("Material")
     app.aboutToQuit.connect(appQuitOverride)

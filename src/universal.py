@@ -8,6 +8,7 @@ except FileNotFoundError:
     
 print("Clarity", repr(version))
 
+from src.misc.compiled import __compiled__, compiled
 
 import threading
 import concurrent.futures

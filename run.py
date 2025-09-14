@@ -5,18 +5,17 @@
 # nuitka-project: --enable-plugin=pyside6
 # nuitka-project: --include-qt-plugins=sensible,styles,qml
 
-# nuitka-project: --include-data-dir=src/app/qml=src/app/qml
-# nuitka-project: --include-data-dir=src/app/assets=src/app/assets
+# nuitka-project: --include-data-dir=src/app/qml=qml
+# nuitka-project: --include-data-dir=src/app/assets=assets
 # nuitka-project: --include-data-file=./version.txt=./version.txt
-# nuitka-project: --include-data-file=src/version.txt=src/version.txt
 # nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
 
 # nuitka-project: --file-description="Clarity -- A music player."
 # nuitka-project: --copyright="This is free and open-source software -- GNU GPL v3"
 # nuitka-project: --windows-product-name="Clarity"
 
-# nuitka-project: --product-version=0.37.3
-# nuitka-project: --file-version=0.37.3
+# nuitka-project: --product-version=0.37.4
+# nuitka-project: --file-version=0.37.4
 
 # nuitka-project: --output-filename=Clarity
 # disabled: --disable-console

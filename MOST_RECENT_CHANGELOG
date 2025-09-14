@@ -9,3 +9,4 @@
 - fix bug where notifying log model wouldn't add logs based on error level, and disable song fetching if we're offline -- kaneryu on 2025-09-08
 - bug where incorrect offline check led to infinite recursion -- kaneryu on 2025-09-09
 - decrease offline mode timeout check for faster offline startup -- kaneryu on 2025-09-09
+- make various bugfixes so the app now compiles again -- kaneryu on 2025-09-13
