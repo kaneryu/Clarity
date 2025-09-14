@@ -326,7 +326,7 @@ ApplicationWindow {
             ]
         }
 
-        state: (Backend.queueVisible == true) ? "visible" : "hidden"
+        state: (Backend.queueVisible === true) ? "visible" : "hidden"
         visible: true
 
         Behavior on y {
@@ -393,7 +393,7 @@ ApplicationWindow {
     }
 
 
-    function onClosing(event) {
-        event.accepted = false
-    }
+    // function onClosing(event) {
+    //     event.accepted = false
+    // }
 }

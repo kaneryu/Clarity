@@ -89,8 +89,6 @@ Item {
         height: parent.height
         color: root.bgcolor
         radius: root.radius
-        border.color: root.bordercolor
-
     }
 
     MultiEffect {

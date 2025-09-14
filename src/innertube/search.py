@@ -214,7 +214,7 @@ async def search_suggestions(query: str, detailed = True) -> list | dict:
     
     return await universal.asyncBgworker.API.get_search_suggestions(query, detailed_runs = detailed)
 
-async def search(query: str, filter: searchFilters | None = None, limit: int = 20, ignore_spelling: bool = False, model: BasicSearchResultsModel = BasicSearchResultsModel()) -> BasicSearchResultsModel:
+async def search(query: str, filter: searchFilters | None = None, limit: int = 20, ignore_spelling: bool = False, model: BasicSearchResultsModel = BasicSearchResultsModel()) -> Union[BasicSearchResultsModel, None]:
     """Searches youtube music
 
     Args:
@@ -261,17 +261,20 @@ async def search(query: str, filter: searchFilters | None = None, limit: int = 2
         model.resetModel()
         
     # print(json.dumps(s))
-    for result in await API.search(query, filter = filter, limit = limit, ignore_spelling = ignore_spelling):
-        if result["category"].lower() == "songs":
-            p = await parseSong(result)
-            if p == None:
-                continue
-            model._newResult(p)
-        if result["category"].lower() == "albums":
-            p = parseAlbum(result)
-            if p == None:
-                continue
-            model._newResult(p)
-        
+    try:
+        for result in await API.search(query, filter = filter, limit = limit, ignore_spelling = ignore_spelling):
+            if result["category"].lower() == "songs":
+                p = await parseSong(result)
+                if p == None:
+                    continue
+                model._newResult(p)
+            if result["category"].lower() == "albums":
+                p = parseAlbum(result)
+                if p == None:
+                    continue
+                model._newResult(p)
+    except Exception as e:
+        logging.getLogger("SearchLogger").error(f"Failed searching for {query}, Error: " + str(e))
+        return None
         # print("\n\n\n")
     return model

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-version = "0.37.4"
+version = "0.37.5"
 name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -77,6 +77,8 @@ dependencies = [
   "yt-dlp",
   "ytmusicapi @ https://github.com/kaneryu/ytmusicapi/archive/async-new.zip",
   "zstandard",
+  "pyside6-live-coding",
+  "python-qt-live-coding",
 ]
 
 [project.optional-dependencies]

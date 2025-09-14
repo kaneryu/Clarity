@@ -24,11 +24,33 @@ Item {
     Item {
         id: loadingIndicator
         anchors.centerIn: parent
-        visible: Backend.searchModel.count === 0
+        visible: true
 
-        BusyIndicator {
+        Rectangle {
+            id: busyIndicatiorRect
             anchors.centerIn: parent
-            running: true
+            width: 100
+            height: 1000
+            color: Theme.primary
+            radius: 3600
+
+            SequentialAnimation {
+                running: true
+                loops: Animation.Infinite
+                OpacityAnimator {
+                    target: busyIndicatiorRect
+                    duration: 200
+                    easing.type: Easing.InQuad
+                    from: 0; to: 1;
+                }
+                OpacityAnimator {
+                    target: busyIndicatiorRect
+                    duration: 200
+                    easing.type: Easing.OutQuad
+                    from: 1; to: 0;
+                }
+            }
+
         }
     }
 

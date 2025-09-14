@@ -96,7 +96,7 @@ from src.playback import queue as queue_module
 
 from src.network import NetworkManager, networkManager, OnlineStatus
 
-from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG
+from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG, QResource
 
 from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_BackgroundWorker
 
@@ -107,6 +107,9 @@ from io import StringIO
 
 from .misc import logHistoryManager
 from .paths import Paths
+
+from src.qt import resources
+
 
 mainThread: QThread = QThread.currentThread()
 

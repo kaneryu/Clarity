@@ -10,3 +10,4 @@
 - bug where incorrect offline check led to infinite recursion -- kaneryu on 2025-09-09
 - decrease offline mode timeout check for faster offline startup -- kaneryu on 2025-09-09
 - make various bugfixes so the app now compiles again -- kaneryu on 2025-09-13
+- add error catching for search, and add hot reload plugin for development -- kaneryu on 2025-09-14

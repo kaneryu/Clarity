@@ -4,7 +4,7 @@ import os
 import pathlib
 import random
 import sys
-import asyncio
+import logging
 import time
 import typing
 import urllib.parse
@@ -117,18 +117,22 @@ class Backend(QObject):
     @Property(str, notify=urlChanged)
     def getCurrentPageFilePath(self):
         path = universal.appUrl.getPath()
-        if path[0] == "page":
-            if path == "/":
-                ret = os.path.join(universal.Paths.QMLPATH, "pages", "home.qml")
-            else:
-                first = path[1]
-                first.replace("/", "")
-                ret = os.path.join(universal.Paths.QMLPATH, "pages", first + ".qml")
-                
-            if not os.path.exists(ret):
-                print("Path does not exist", ret)
-                return ""
-            return "file:///" + ret
+        try:
+            if path[0] == "page":
+                if path == "/":
+                    ret = os.path.join(universal.Paths.QMLPATH, "pages", "home.qml")
+                else:
+                    first = path[1]
+                    first.replace("/", "")
+                    ret = os.path.join(universal.Paths.QMLPATH, "pages", first + ".qml")
+                    
+                if not os.path.exists(ret):
+                    print("Path does not exist", ret)
+                    return ""
+                return "file:///" + ret
+        except Exception as e:
+            logging.getLogger("BackendClassLogger").error("Error in getCurrentPageFilePath: %s", e)
+            return ""
     
     @Slot(str)
     def setSearchURL(self, query):

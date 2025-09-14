@@ -48,7 +48,7 @@ Item {
     
     TextVariant.Default {
         id: _title
-        text: "awaawawawwawawawawawaawawawawawwa"
+        text: "fff"
     }
     TextVariant.Default {
         id: _subtitle

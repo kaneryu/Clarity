@@ -1,0 +1,27 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias = "download.svg">../app/assets/icons/songbar/download.svg</file>
+        <file alias = "close.svg">../app/assets/icons/songbar/close.svg</file>
+        <file alias = "downloaded.svg">../app/assets/icons/songbar/downloaded.svg</file>
+        <file alias = "downloading.svg">../app/assets/icons/songbar/downloading.svg</file>
+        <file alias = "favorite.svg">../app/assets/icons/songbar/fav.svg</file>
+        <file alias = "pause.svg">../app/assets/icons/songbar/pause.svg</file>
+        <file alias = "pending.svg">../app/assets/icons/songbar/pending.svg</file>
+        <file alias = "queue_music.svg">../app/assets/icons/songbar/queue_music.svg</file>
+        <file alias = "repeat.svg">../app/assets/icons/songbar/repeat.svg</file>
+        <file alias = "skip_next.svg">../app/assets/icons/songbar/skip_next.svg</file>
+        <file alias = "skip_previous.svg">../app/assets/icons/songbar/skip_previous.svg</file>
+
+        <file alias = "search.svg">../app/assets/icons/searchbar/search.svg</file>
+        <file alias = "settings.svg">../app/assets/icons/searchbar/settings.svg</file>
+    </qresource>
+    
+    <qresource prefix="/branding">
+        <file alias = "clarityHeader.png">../app/assets/clarityHeader.png</file>
+        <file alias = "clarityLogo.png">../app/assets/clarityLogo.png</file>
+    </qresource>
+
+    <qresource prefix="/qml">
+        <file alias = "main.qml">../app/qml/main.qml</file>
+    </qresource>
+</RCC>
