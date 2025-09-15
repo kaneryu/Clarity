@@ -18,7 +18,6 @@
 # nuitka-project: --file-version=0.37.6
 
 # nuitka-project: --output-filename=Clarity
-# disabled: --disable-console
 # nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml 
 
 # STARTUP FLOW
