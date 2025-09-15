@@ -17,6 +17,7 @@ from hashlib import md5
 import time
 import builtins
 from datetime import datetime, timezone
+from typing import Union
 
 import os
 import logging
@@ -106,6 +107,7 @@ from .AppUrl import AppUrl, appUrl
 from io import StringIO
 
 from .misc import logHistoryManager
+from .misc.enumerations.Search import SearchFilters
 from .paths import Paths
 
 from src.qt import resources
@@ -138,8 +140,8 @@ searchModel = innertube_module.BasicSearchResultsModel()
 mainThread: QThread = QThread.currentThread()
 
 
-async def search_shorthand(query: str, ignore_spelling: bool = False) -> innertube_module.BasicSearchResultsModel:
-    return await innertube_module.search(query, filter = innertube_module.searchFilters.SONGS, ignore_spelling = ignore_spelling, model = searchModel)
+async def search_shorthand(query: str, ignore_spelling: bool = False) -> Union[innertube_module.BasicSearchResultsModel, None]:
+    return await innertube_module.search(query, filter = SearchFilters.SONGS, ignore_spelling = ignore_spelling, model = searchModel)
 
 oldprint = builtins.print
 def nprint(*args, **kwargs):

@@ -11,13 +11,11 @@ import os
 
 from src import paths
 from src.misc import settings
+from src.misc.enumerations.Network import OnlineStatus
 
 from PySide6.QtCore import QObject, Signal, Slot, Property
 
-class OnlineStatus(enum.IntEnum):
-    OFFLINE = 0
-    ONLINE = 1
-    ONLINE_NO_YOUTUBE = 2
+
  
 class NetworkManager(QObject):
     """Centralized network request manager for Clarity"""

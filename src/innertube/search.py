@@ -3,7 +3,7 @@ Search.
 """
 
 import ytmusicapi
-import enum
+from src.misc.enumerations.Search import SearchFilters
 import json
 from typing import Union
 import asyncio
@@ -191,16 +191,6 @@ class Episode(Base):
 #     if category == "Videos":
 #         return Video(item)
 
-class searchFilters(enum.StrEnum):
-    SONGS = "songs"
-    VIDEOS = "videos"
-    ALBUMS = "albums"
-    ARTISTS = "artists"
-    PLAYLISTS = "playlists"
-    COMMUNITY_PLAYLISTS = "community_playlists"
-    FEATURED_PLAYLISTS = "featured_playlists"
-    UPLOADS = "uploads"
-
 async def search_suggestions(query: str, detailed = True) -> list | dict:
     """Will return the text that shows up while you are typing a search query in youtube music.
 
@@ -214,12 +204,12 @@ async def search_suggestions(query: str, detailed = True) -> list | dict:
     
     return await universal.asyncBgworker.API.get_search_suggestions(query, detailed_runs = detailed)
 
-async def search(query: str, filter: searchFilters | None = None, limit: int = 20, ignore_spelling: bool = False, model: BasicSearchResultsModel = BasicSearchResultsModel()) -> Union[BasicSearchResultsModel, None]:
+async def search(query: str, filter: SearchFilters | None = None, limit: int = 20, ignore_spelling: bool = False, model: BasicSearchResultsModel = BasicSearchResultsModel()) -> Union[BasicSearchResultsModel, None]:
     """Searches youtube music
 
     Args:
         query (str): The query to search for.
-        filter (str, optional): The filter to use. Defaults to songs, use the searchFilters enum.
+        filter (str, optional): The filter to use. Defaults to songs, use the SearchFilters enum.
         max_results (int, optional): Maximum results. Defaults to 20.
 
     Returns:

@@ -1,15 +1,11 @@
 """Global data store for the application.
     Quite similar to the cacheManager module, but this one is more persistent and is used for storing data that is not meant to be evicted.
 """
-import asyncio
 import time
 from typing import Any, Optional, Union, cast as typing_cast, Literal
 import os
-from PIL import Image
 import json
 import collections
-import concurrent.futures
-import enum
 from hashlib import md5
 
 import io
@@ -22,15 +18,6 @@ def ghash(thing):
     return md5(str(thing).encode()).hexdigest()
 
     
-class Btypes(enum.StrEnum):
-    BYTES = 'b'
-    TEXT = ''
-    AUTO = 'a'
-
-class ErrorLevel(enum.StrEnum):
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
     
 def dataStoreExists(name: str) -> bool:
     """Check if a dataStore exists

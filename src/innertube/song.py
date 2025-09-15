@@ -3,42 +3,21 @@ from datetime import datetime, timedelta
 import json
 import asyncio
 import io
-import enum
 import os
 import logging
-from typing import Union, cast as type_cast
-import platform
-import ctypes
+from typing import Union
 
-from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QBuffer, QRect, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QMetaObject, QTimer, QThread
+from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QBuffer, QRect
 from PySide6.QtGui import QPixmap, QPainter, QImage
 from PySide6.QtNetwork import QNetworkRequest
 from PySide6.QtQuick import QQuickImageProvider
 
 import ytmusicapi as ytm
 import yt_dlp as yt_dlp_module # type: ignore[import-untyped]
-import httpx
-import vlc # type: ignore[import-untyped]
 
-from src import universal as g
+from src import universal as universal
 from src import cacheManager
-import src.discotube.presence as presence
-import src.wintube.winSMTC as winSMTC
-from functools import lru_cache
-
-from enum import IntEnum
-class PlayingStatus(IntEnum):
-    """Playing Status"""
-    NOT_READY = -1  # Media is not ready to play
-    PLAYING = 0  # Playing
-    PAUSED = 1  # Paused
-    BUFFERING = 2  # Media is buffering
-    STOPPED = 3  # No media is loaded
-    ERROR = 4  # Unrecoverable error
-    
-    NOT_PLAYING = 5  # Only for songproxy class; Returned when the current song is not currently playing
-
-
+from src.misc.enumerations.Song import PlayingStatus, DownloadStatus
 
 ydlOpts: dict[str, Union[list, bool]] = {
     "external_downloader_args": ['-loglevel', 'panic'],
@@ -130,22 +109,17 @@ def convert_to_timestamp(date_str: str) -> float:
 def run_sync(func, *args, **kwargs):
     coro = func(*args, **kwargs)
     if asyncio.iscoroutine(coro):
-        future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
+        future = asyncio.run_coroutine_threadsafe(coro, universal.asyncBgworker.event_loop)
         future.result() # wait for the result
     else:
         return coro
-
-class DownloadStatus(enum.Enum):
-    NOT_DOWNLOADED = 0
-    DOWNLOADING = 1
-    DOWNLOADED = 2
-
+    
 class Song(QObject):
     
     idChanged = Signal(str)
     sourceChanged = Signal(str)
     downloadedChanged = Signal(bool)
-    downloadStatusChanged = Signal(enum.Enum)
+    downloadStatusChanged = Signal(int)
     downloadProgressChanged = Signal(int)
     playbackReadyChanged = Signal(bool)
     
@@ -237,14 +211,14 @@ class Song(QObject):
         self._downloaded = value
         self.downloadedChanged.emit(self._downloaded)
     
-    @QProperty(enum.Enum, notify = downloadStatusChanged)
-    def downloadStatus(self) -> enum.Enum:
-        return self._dowloadStatus
+    @QProperty(int, notify = downloadStatusChanged)
+    def downloadStatus(self) -> int:
+        return self._dowloadStatus._value_
 
     @downloadStatus.setter
-    def downloadStatus(self, value: enum.Enum) -> None:
-        self._dowloadStatus = value
-        self.downloadStatusChanged.emit(self._dowloadStatus)
+    def downloadStatus(self, value: int) -> None:
+        self._dowloadStatus = DownloadStatus(value)
+        self.downloadStatusChanged.emit(self._dowloadStatus._value_)
     
     @QProperty(int, notify = downloadProgressChanged)
     def downloadProgress(self) -> int:
@@ -273,7 +247,7 @@ class Song(QObject):
     
     async def ensure_info(self) -> None:
         if not self.source:
-            await self.get_info(g.asyncBgworker.API)
+            await self.get_info(universal.asyncBgworker.API)
     
     def _set_info(self, rawVideoDetails: dict) -> None:
         self.source = "full"
@@ -379,7 +353,7 @@ class Song(QObject):
         identifier = self.id + "_playbackinfo"
         self.rawPlaybackInfo: dict
         cachedData: str
-        if g.networkManager.onlineStatus is not g.OnlineStatus.ONLINE:
+        if universal.networkManager.onlineStatus is not universal.OnlineStatus.ONLINE:
             self.rawPlaybackInfo = None
             return
         
@@ -501,7 +475,7 @@ class Song(QObject):
         try:
             
             # Use the NetworkManager's parallel download functionality
-            success = await g.networkManager.download_file_parallel(
+            success = await universal.networkManager.download_file_parallel(
                 url=url,
                 file_obj=file,
                 chunk_size=10 * 1024 * 1024,  # 10 MB chunks
@@ -512,7 +486,7 @@ class Song(QObject):
             
             if not success:
                 self.logger.warning(f"Download failed for {self.title}, retrying with single-threaded download.")
-                success = g.networkManager.download_file(
+                success = universal.networkManager.download_file(
                     url=url,
                     file_obj=file,
                     progress_callback=progress_callback,
@@ -564,7 +538,7 @@ class Song(QObject):
             ext = video["ext"]
             using = video
 
-        q = g.queueInstance
+        q = universal.queueInstance
         if q.currentSongObject == self:
             q.migrate(url)
 
@@ -616,7 +590,7 @@ class SongProxy(QObject):
     idChanged = Signal(str)
     sourceChanged = Signal(str)
     downloadedChanged = Signal(bool)
-    downloadStatusChanged = Signal(enum.Enum)
+    downloadStatusChanged = Signal(int)
     downloadProgressChanged = Signal(int)
     playingStatusChanged = Signal(bool)
     
@@ -700,8 +674,8 @@ class SongProxy(QObject):
     def downloaded(self) -> bool:
         return getattr(self, "_downloaded")
 
-    @QProperty(enum.Enum, notify=downloadStatusChanged)
-    def downloadStatus(self) -> enum.Enum:
+    @QProperty(int, notify=downloadStatusChanged)
+    def downloadStatus(self) -> int:
         return getattr(self, "_downloadStatus")
 
     @QProperty(int, notify=downloadProgressChanged)
@@ -710,7 +684,7 @@ class SongProxy(QObject):
     
     @QProperty(int, notify=playingStatusChanged)
     def playingStatus(self) -> int:
-        q = g.queueInstance
+        q = universal.queueInstance
         if q.currentSongId == self.id:
             return q.playingStatus  # type: ignore[return-value]
         else:
@@ -796,18 +770,18 @@ class SongImageProvider(QQuickImageProvider):
         thumbUrl = song.largestThumbnailUrl
         img = QImage()
         
-        if g.networkManager.onlineStatus is not g.OnlineStatus.ONLINE:
-            placeholder = os.path.join(g.Paths.ASSETSPATH, "placeholders", "generic.png")
+        if universal.networkManager.onlineStatus is not universal.OnlineStatus.ONLINE:
+            placeholder = os.path.join(universal.Paths.ASSETSPATH, "placeholders", "generic.png")
             with open(placeholder, 'rb') as file:
                 data = file.read()
                 
             img.loadFromData(data)
         else:
-            request = g.networkManager.get(thumbUrl)
+            request = universal.networkManager.get(thumbUrl)
             if not request:
                 
                 data = None
-                placeholder = os.path.join(g.Paths.ASSETSPATH, "placeholders", "generic.png")
+                placeholder = os.path.join(universal.Paths.ASSETSPATH, "placeholders", "generic.png")
                 with open(placeholder, 'rb') as file:
                     data = file.read()
                     

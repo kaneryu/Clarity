@@ -12,8 +12,9 @@ from PySide6.QtCore import QObject, Signal, Slot, Qt, QTimer
 
 import vlc  # type: ignore[import-untyped]
 
-from src import universal as g
-from src.innertube.song import Song, PlayingStatus
+from src import universal as universal
+from src.innertube.song import Song
+from src.misc.enumerations.Song import PlayingStatus 
 
 
 class MediaPlayer(QObject):
@@ -56,8 +57,8 @@ class MediaPlayer(QObject):
 
         vlc.libvlc_set_user_agent(
             self.instance,
-            strToCtypes(f"Clarity {str(g.version)}"),
-            strToCtypes(f"Clarity/{str(g.version)} Python/{platform.python_version()}"),
+            strToCtypes(f"Clarity {str(universal.version)}"),
+            strToCtypes(f"Clarity/{str(universal.version)} Python/{platform.python_version()}"),
         )
 
         self.player: vlc.MediaPlayer = self.instance.media_player_new()
@@ -146,7 +147,7 @@ class MediaPlayer(QObject):
             self._noMrl = True
             self.songChanged.emit()
             self.durationChanged.emit()
-            g.bgworker.add_job(func=song.get_playback)
+            universal.bgworker.add_job(func=song.get_playback)
             return
 
         self._noMrl = False

@@ -1,13 +1,13 @@
 import time
 import logging
-import enum
 
 from typing import Union
 
 from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QTimer
 
-from src import universal as g
+from src import universal as universal
 from src import cacheManager
+from src.misc.enumerations.Queue import LoopType
 import src.discotube.presence as presence
 import src.wintube.winSMTC as winSMTC
 
@@ -17,11 +17,6 @@ from src.innertube.song import Song, PlayingStatus
 from src.playback.player import MediaPlayer
 
 
-class LoopType(enum.Enum):
-    """Loop Types"""
-    NONE = 0  # Halt after playing all songs
-    SINGLE = 1  # Repeat the current song
-    ALL = 2  # Repeat all songs in the queue
 
 
 class QueueModel(QAbstractListModel):
@@ -208,7 +203,7 @@ class Queue(QObject):
     def _on_vlc_error(self, event):
         self.logger.error("VLC Error")
         self.logger.error("VLC error event: %s", event)
-        g.bgworker.add_job(self.refetch)
+        universal.bgworker.add_job(self.refetch)
 
     # Finalize debounced Next presses: perform single play/stop
     def _finalize_next_sequence(self):
@@ -330,7 +325,7 @@ class Queue(QObject):
         return time.time() + self.currentSongDuration - self.currentSongTime  # type: ignore[operator]
 
     def checkError(self, url: str):
-        r = g.networkManager.get(url)
+        r = universal.networkManager.get(url)
         return r is None or getattr(r, "status_code", None) != 200
 
     @Slot(result=dict)
@@ -463,12 +458,12 @@ class Queue(QObject):
     def add(self, id: str, index: int = -1, goto: bool = False):
         s: Song = Song(id=id)
         if s.source == None:  # if we need to get the songinfo
-            coro = s.get_info(g.asyncBgworker.API)
-            future = g.asyncBgworker.run_coroutine_threadsafe(coro) if hasattr(g.asyncBgworker, 'run_coroutine_threadsafe') else None
+            coro = s.get_info(universal.asyncBgworker.API)
+            future = universal.asyncBgworker.run_coroutine_threadsafe(coro) if hasattr(universal.asyncBgworker, 'run_coroutine_threadsafe') else None
             if future is None:
                 # Fallback to accessing the loop directly as in original code
                 import asyncio
-                future = asyncio.run_coroutine_threadsafe(coro, g.asyncBgworker.event_loop)
+                future = asyncio.run_coroutine_threadsafe(coro, universal.asyncBgworker.event_loop)
             future.result()
 
         if index == -1:

@@ -9,28 +9,13 @@ from PIL import Image
 import json
 import collections
 import concurrent.futures
-import enum
+from src.misc.enumerations.Cache import EvictionMethod, Btypes, ErrorLevel
 from hashlib import md5
 import logging
 
 def ghash(thing):
     # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
     return md5(str(thing).encode()).hexdigest()
-
-class EvictionMethod(enum.StrEnum):
-    LRU = "lru"
-    LFU = "lfu"
-    Largest = "largest"
-    
-class Btypes(enum.StrEnum):
-    BYTES = 'b'
-    TEXT = ''
-    AUTO = 'a'
-
-class ErrorLevel(enum.IntEnum):
-    INFO = 0
-    WARNING = 1
-    ERROR = 2
 
 def cacheExists(name: str) -> bool:
     """Check if a cache exists
