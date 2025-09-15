@@ -181,3 +181,8 @@ nuitka-crash-report.xml
 .vs/
 data/
 playbackinfo.json
+.VSCodeCounter/
+ytheaders.json
+.idea/
+settings.json
+test.py
