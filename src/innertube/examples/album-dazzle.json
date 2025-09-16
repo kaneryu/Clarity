@@ -1,0 +1,267 @@
+{
+    "title": "DAZZLE",
+    "type": "Album",
+    "thumbnails": [
+        {
+            "url": "https://lh3.googleusercontent.com/dWnfxnODAtXhyq9lCc55IO-yzX1EAwi-U23KLy_GRa4q8nYC0uJQALaznMomUVxFvaKJfroa7ohJ7s0=w60-h60-l90-rj",
+            "width": 60,
+            "height": 60
+        },
+        {
+            "url": "https://lh3.googleusercontent.com/dWnfxnODAtXhyq9lCc55IO-yzX1EAwi-U23KLy_GRa4q8nYC0uJQALaznMomUVxFvaKJfroa7ohJ7s0=w120-h120-l90-rj",
+            "width": 120,
+            "height": 120
+        },
+        {
+            "url": "https://lh3.googleusercontent.com/dWnfxnODAtXhyq9lCc55IO-yzX1EAwi-U23KLy_GRa4q8nYC0uJQALaznMomUVxFvaKJfroa7ohJ7s0=w226-h226-l90-rj",
+            "width": 226,
+            "height": 226
+        },
+        {
+            "url": "https://lh3.googleusercontent.com/dWnfxnODAtXhyq9lCc55IO-yzX1EAwi-U23KLy_GRa4q8nYC0uJQALaznMomUVxFvaKJfroa7ohJ7s0=w544-h544-l90-rj",
+            "width": 544,
+            "height": 544
+        }
+    ],
+    "isExplicit": false,
+    "description": null,
+    "artists": [
+        {
+            "name": "Various Artists",
+            "id": null
+        }
+    ],
+    "year": "2021",
+    "trackCount": 9,
+    "duration": "32 minutes",
+    "audioPlaylistId": "OLAK5uy_kmkixMXq-Ifxely2XcYzWtONvMWuCR0Dc",
+    "likeStatus": "INDIFFERENT",
+    "tracks": [
+        {
+            "videoId": "dxjhdujeDkg",
+            "title": "The Break of Dawn (feat. Sennzai)",
+            "artists": [
+                {
+                    "name": "Srav3R",
+                    "id": "UCaPioftns9XiA3kqIdQsBjg"
+                }
+            ],
+            "album": "DAZZLE",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "views": "9.9K plays",
+            "trackNumber": 1,
+            "duration": "3:10",
+            "duration_seconds": 190,
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpLVClDkaHUPrw98061-P1B-QIt2fg6uNakkfyPPPNY2OzJHVEpUNd8bglda562I-o_esuYBZjtjm8NmQXqHJbMkBjhS8w"
+            }
+        },
+        {
+            "videoId": "j4vkcPmtlFA",
+            "title": "Lie The All (feat. Kanata.N)",
+            "artists": [
+                {
+                    "name": "Odd Hastur",
+                    "id": "UCM_uHQTqxjXHpDaAVgC3GoQ"
+                }
+            ],
+            "album": "DAZZLE",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "views": "6.3K plays",
+            "trackNumber": 2,
+            "duration": "2:47",
+            "duration_seconds": 167,
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpKAazOC1_LIRfQlFjaIASBIEyZ924NjQuQeDocG2UMIvo-otJE5qc7F2_Y_sVT_LJgh-sOVkSs6gfUc89gq_1nxkPeFxA"
+            }
+        },
+        {
+            "videoId": "8P5AJo0yDas",
+            "title": "Sky Seeker (feat. Chika)",
+            "artists": [
+                {
+                    "name": "rejection",
+                    "id": "UCULFUv_HcRnzLj-WkZXUAlw"
+                }
+            ],
+            "album": "DAZZLE",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "views": "31K plays",
+            "trackNumber": 3,
+            "duration": "4:49",
+            "duration_seconds": 289,
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpJIvvSwzJdjnDzeJSLC6MOcjf2DtBoKoIQz2efyEKutIKy2N8kXWxUF_BMOWcLcEZEXz1lgIvnxNDa0IiOLvi1n8PgFvQ"
+            }
+        },
+        {
+            "videoId": "iVYULFxGufo",
+            "title": "Surveillance (feat. RANASOL)",
+            "artists": [
+                {
+                    "name": "Nhato",
+                    "id": "UC8ZRQzRinop90MIrUr5fbaA"
+                }
+            ],
+            "album": "DAZZLE",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "views": "20K plays",
+            "trackNumber": 4,
+            "duration": "4:06",
+            "duration_seconds": 246,
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpLIerua67OZmMz05YrwZ6v2uIPRmY8KGeJ2EA7Rh0buT_M4Y5qvJc8cqSAFyoQ-RcqFsMpQpvDH6X__Z-MNqdRo5A0_fQ"
+            }
+        },
+        {
+            "videoId": "N_Ajgljt2tg",
+            "title": "Salvation (feat. Renko)",
+            "artists": [
+                {
+                    "name": "NUU$HI",
+                    "id": "UCGb5xtWxZZS4qHLVgoMnuhw"
+                }
+            ],
+            "album": "DAZZLE",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "views": "8.1K plays",
+            "trackNumber": 5,
+            "duration": "4:02",
+            "duration_seconds": 242,
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpKspfKYyZrAD1FCeC-vCUB_LitDx84wEhmqu2LxsIFWBX2MpHBBGUwoBlzdYfz_Z4fFSeB8w2bnDUPcP-ARMUl3hqDgaA"
+            }
+        },
+        {
+            "videoId": "5cBwp96YpdE",
+            "title": "Virtual illusioN",
+            "artists": [
+                {
+                    "name": "KARUT",
+                    "id": "UCFr_mcgFFCYiPIsuONJSpeQ"
+                }
+            ],
+            "album": "DAZZLE",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "views": "9.5K plays",
+            "trackNumber": 6,
+            "duration": "3:35",
+            "duration_seconds": 215,
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpKY9muQIaksZqPI2UJ3Tj1BNc9G0lHyX-KmdExuCG9xsnwZZwu00E_S5aiPqSUpZVk6W4jp7_Bf4YZ_Zv9xGHM-Lfe-ew"
+            }
+        },
+        {
+            "videoId": "KUaDzGDzdaM",
+            "title": "truuuuust (feat. shully)",
+            "artists": [
+                {
+                    "name": "Blacklolita",
+                    "id": "UCubgZxkBK6dSx5MSBH_1z-A"
+                }
+            ],
+            "album": "DAZZLE",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "views": "6.7K plays",
+            "trackNumber": 7,
+            "duration": "3:20",
+            "duration_seconds": 200,
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpI-DGGuuQaNJ2MWIbVK8jDsfL0z6naT3GzdmLbDhLe9H0h2kEFwm8MUDfWwb0G4ZldzkTqaKX7ooK4hFk4pFkFpPquvkg"
+            }
+        },
+        {
+            "videoId": "JiEnEkVb7QA",
+            "title": "Make Over (feat. Shizuki)",
+            "artists": [
+                {
+                    "name": "awfuless",
+                    "id": "UC80-_lzns62-61vrnDA8kVg"
+                }
+            ],
+            "album": "DAZZLE",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "views": "17K plays",
+            "trackNumber": 8,
+            "duration": "3:21",
+            "duration_seconds": 201,
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpLxWyfynMZsCfCTVlcEj-frN9H_ovTRzLmXun3mZDWQDflEYHp-8kwn4ipv36gEVnWpOy2eZ6_SjiwtME5TjswD5igjcg"
+            }
+        },
+        {
+            "videoId": "Bu-YMs_VX4Q",
+            "title": "リバーブレーション - Reverberation (feat. Yuki Shizaki)",
+            "artists": [
+                {
+                    "name": "Mameyudoufu",
+                    "id": "UC2yGkbUw4Ot-NUvqvxfe6Mg"
+                }
+            ],
+            "album": "DAZZLE",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "views": "38K plays",
+            "trackNumber": 9,
+            "duration": "3:46",
+            "duration_seconds": 226,
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpJkVPLevBlmcsT4A8M21Slpfz57Iz4_SSZnrBdFOtvDyexa4Fbfxh1_zCrmJcxH8BcRkWhdEpdPUJVsCCcxZrQhvNg4Ng"
+            }
+        }
+    ],
+    "duration_seconds": 1976
+}

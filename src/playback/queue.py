@@ -14,7 +14,8 @@ import src.wintube.winSMTC as winSMTC
 # Import Song and PlayingStatus without creating circular imports.
 # song.py must not import Queue; it should use g.queueInstance when needed.
 from src.innertube.song import Song, PlayingStatus
-from src.playback.player import MediaPlayer
+from src.innertube.album import Album
+from src.playback.player import VLCMediaPlayer
 
 
 
@@ -137,7 +138,7 @@ class Queue(QObject):
         self.cache = cacheManager.getCache("queue_cache")
 
         # Media player engine
-        self._player = MediaPlayer()
+        self._player = VLCMediaPlayer()
         self._player.songChanged.connect(self.songChanged)
         self._player.durationChanged.connect(self.durationChanged)
         self._player.timeChanged.connect(self._on_time_changed)
@@ -492,3 +493,16 @@ class Queue(QObject):
     @Slot(int)
     def pseek(self, percentage: int):
         self._player.pseek(percentage)
+
+
+def addAlbumToQueue(album: Album, goto: bool = False):
+    if not album.songs or len(album.songs) == 0:
+        logging.getLogger("Queue").warning("Album has no songs, cannot add to queue")
+        return
+    q = universal.queueInstance
+    start_index = len(q.queue)
+    for song in album.songs:
+        q.add(song.id)
+    if goto and len(album.songs) > 0:
+        q.pointer = start_index
+        q.play()

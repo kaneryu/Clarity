@@ -93,7 +93,7 @@ Item {
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
-                                Interactions.searchPress(songContainer.ytid)
+                                Interactions.songSearchPress(songContainer.ytid)
                             }
                         }
                     }
@@ -101,13 +101,29 @@ Item {
             }
             DelegateChoice {
                 roleValue: "album"
-                // Base.Album {
-                //     required property string object
-                //     id: album
+                Item {
+                    id: albumContainer
+                    required property string ytid
 
-                //     album: object
-                //     anchors.fill: parent
-                // }
+                    width: searchListViewTest.width
+                    height: 100
+
+                    Base.Album {
+                        id: album
+
+                        anchors.fill: parent
+                        anchors.margins: 5
+
+                        album: Interactions.getAlbum(albumContainer.ytid)
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                Interactions.albumSearchPress(albumContainer.ytid)
+                            }
+                        }
+                    }
+                }
             }
         }
         delegate: delegateChooser

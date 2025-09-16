@@ -1,6 +1,6 @@
 # stdlib imports
 import json
-import inspect
+import logging
 from typing import overload
 
 # library imports
@@ -52,6 +52,8 @@ class Interactions(QObject):
         universal.queueInstance.songChanged.connect(self.songChangeMirror)
         universal.queueInstance.playingStatusChanged.connect(self.playingStatusMirror)
         universal.queueInstance.durationChanged.connect(self.durationChangedMirror)
+        
+        self.logger = logging.getLogger("Interactions")
     
     def playingStatusMirror(self):
         self.playingStatusChanged.emit()
@@ -109,12 +111,7 @@ class Interactions(QObject):
     def playingStatus(self):
         return int(universal.queueInstance.playingStatus) # type: ignore[call-overload]
     
-    
-    @Slot(str)
-    def searchPress(self, id: str):
-        q = universal.queueInstance
-        print("searchPress", id)
-        q.add(id, goto=True)
+
     
     @Slot(int)
     def seekPercent(self, percentage: int):
@@ -147,15 +144,40 @@ class Interactions(QObject):
     
     @Slot(str)
     def downloadSong(self, id: str):
-        smodule = universal.song_module
-        song = smodule.Song(id)
+        song = universal.song_module.Song(id)
         universal.asyncBgworker.add_job_sync(song.download)
     
     @Slot(str, result=QObject)
     def getSong(self, id: str):
-        smodule = universal.song_module
-        song = smodule.SongProxy(smodule.Song(id), self)
+        song = universal.song_module.SongProxy(universal.song_module.Song(id), self)
         return song
+    
+        
+    @Slot(str)
+    def songSearchPress(self, id: str):
+        q = universal.queueInstance
+        q.add(id, goto=True)
+
+    @Slot(str, result=QObject)
+    def getAlbumFromSongID(self, id: str):
+        album = universal.album_module.albumFromSongID(id)
+        if album is None:
+            self.logger.warning(f"Album not found for song ID: {id}")
+            return None
+        return universal.album_module.AlbumProxy(album, self)
+    
+    @Slot(str, result=QObject)
+    def getAlbum(self, id: str):
+        album = universal.album_module.AlbumProxy(universal.album_module.Album(id), self)
+        return album
+    
+    @Slot(str)
+    def albumSearchPress(self, id: str):
+        album = universal.album_module.Album(id)
+        if album is None:
+            self.logger.warning(f"Album not found for album ID: {id}")
+            return
+        universal.queue_module.addAlbumToQueue(album, goto=True)
     
     
     # convenience functions for interacting with the song class

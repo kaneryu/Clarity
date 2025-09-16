@@ -17,6 +17,7 @@ import yt_dlp as yt_dlp_module # type: ignore[import-untyped]
 
 from src import universal as universal
 from src import cacheManager
+from src.misc.enumerations import DataStatus
 from src.misc.enumerations.Song import PlayingStatus, DownloadStatus
 
 ydlOpts: dict[str, Union[list, bool]] = {
@@ -118,6 +119,7 @@ class Song(QObject):
     
     idChanged = Signal(str)
     sourceChanged = Signal(str)
+    dataStatusChanged = Signal(int)
     downloadedChanged = Signal(bool)
     downloadStatusChanged = Signal(int)
     downloadProgressChanged = Signal(int)
@@ -167,6 +169,7 @@ class Song(QObject):
         
         self._id = id
         self._source = None
+        self._dataStatus = DataStatus.NOTLOADED
 
         self._downloadProgress = 0
         self.rawPlaybackInfo: Union[dict, None] = {}
@@ -201,6 +204,16 @@ class Song(QObject):
     def source(self, value: str) -> None:
         self._source = value
         self.sourceChanged.emit(self._source)
+        
+    @QProperty(int, notify = dataStatusChanged)
+    def dataStatus(self) -> int:
+        return self._dataStatus.value
+    
+    @dataStatus.setter
+    def dataStatus(self, value: Union[int, DataStatus]) -> None:
+        self._dataStatus = DataStatus(value) if isinstance(value, int) else value
+        self.dataStatusChanged.emit(value if isinstance(value, int) else value.value)
+    
     
     @QProperty(bool, notify = downloadedChanged)
     def downloaded(self) -> bool:
@@ -275,9 +288,9 @@ class Song(QObject):
         
         self.fullUrl: str = self.rawMicroformatData["microformatDataRenderer"]["urlCanonical"]
         self.description: str = self.rawMicroformatData["microformatDataRenderer"]["description"]
-    
-        self.tags: list = self.rawMicroformatData["microformatDataRenderer"]["tags"]
-        
+
+        self.tags: Union[list[str], None] = self.rawMicroformatData["microformatDataRenderer"].get("tags", None)
+
         self.pageOwnerDetails: dict = self.rawMicroformatData["microformatDataRenderer"]["pageOwnerDetails"]
         self.pageOwnerName: str = self.pageOwnerDetails["name"]
         self.pageOwnerChannelId: str = self.pageOwnerDetails["externalChannelId"]
@@ -294,9 +307,11 @@ class Song(QObject):
         
                 
         self.songInfoFetched.emit()
+        self.dataStatus = DataStatus.LOADED
         self.logger = logging.getLogger(f"Song.{self._id}-{self.title}")
         
     def get_info_cache_only(self) -> None:
+        self.dataStatus = DataStatus.LOADING
         c = cacheManager.getCache("songs_cache")
         identifier = self.id + "_info"
         cachedData: str
@@ -310,15 +325,15 @@ class Song(QObject):
             return
         
         self.rawVideoDetails: dict = self.rawData["videoDetails"]
-        
         self._set_info(self.rawVideoDetails)
 
-        
-    async def get_info(self, api, cache_only: bool = False) -> None:
+
+    async def get_info(self, api: Union[ytm.YTMusic, None] = None, cache_only: bool = False) -> None:
         """
         Gets the info of the song.
         """
-        api: ytm.YTMusic = api
+        self.dataStatus = DataStatus.LOADING
+        api: ytm.YTMusic = api if api else universal.asyncBgworker.API
         c = cacheManager.getCache("songs_cache")
 
         if not self.id or self.id == "":

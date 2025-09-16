@@ -1,5 +1,5 @@
 [project]
-version = "0.37.6"
+version = "0.38.0"
 name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -49,7 +49,7 @@ dependencies = [
   "Pygments",
   "pypresence @ https://github.com/kaneryu/pypresence/archive/master.zip",
   "PySide6",
-  "PySide6-stubs @ https://github.com/kaneryu/PySide6-stubs/archive/main.zip#sha256=b94c45b2cc3f07dcd808062e396f960fe5dfb8598a114b074ca0369631b17217",
+  "PySide6-stubs @ https://github.com/kaneryu/PySide6-stubs/archive/main.zip",
   "PySide6_Addons",
   "PySide6_Essentials",
   "python-vlc",

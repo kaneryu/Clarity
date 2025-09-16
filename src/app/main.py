@@ -57,32 +57,9 @@ def engineSetup(engine: QQmlApplicationEngine, theme, backend, interactions):
 
     sip = universal.song_module.SongImageProvider()
     engine.addImageProvider("SongCover", sip)
-
-
-def viewSetup(engine: QQmlApplicationEngine, theme, backend, interactions):
-    engine.rootContext().setContextProperty("Theme", theme)
-    engine.rootContext().setContextProperty("Backend", backend)
-    engine.rootContext().setContextProperty("Interactions", interactions)
     
-    engine.rootContext().setContextProperty("AssetsPath", "file:///" + universal.Paths.ASSETSPATH.replace("\\", "/") + "/")
-    engine.rootContext().setContextProperty("QMLPath", "file:///" + universal.Paths.QMLPATH.replace("\\", "/") + "/")
-    engine.rootContext().setContextProperty("RootPath", "file:///" + universal.Paths.ROOTPATH.replace("\\", "/")+ "/")
-
-    sip = universal.song_module.SongImageProvider()
-    engine.addImageProvider("SongCover", sip)
-    
-def reloadQML(engine: QQmlEngine, app, theme, backend, interactions, qml):
-    print("Reloading QML...")
-    engine.quit.disconnect(app.quit)
-    # engine.quit.emit()
-    engine.deleteLater()
-    
-    newEngine = None
-    newEngine = QQmlApplicationEngine()
-    engineSetup(engine, theme, backend, interactions)
-    newEngine.load(qml)
-    newEngine.quit.connect(app.quit)
-    engine = newEngine
+    aip = universal.album_module.AlbumImageProvider()
+    engine.addImageProvider("AlbumCover", aip)
     
 def main():
     def appQuitOverride():

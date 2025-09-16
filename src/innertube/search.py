@@ -9,6 +9,7 @@ from typing import Union
 import asyncio
 import src.universal as universal
 import logging
+import traceback
 
 from PySide6.QtCore import QObject, Signal, QAbstractListModel, QModelIndex, QPersistentModelIndex, Qt, Property, QMetaObject, QMetaMethod
 
@@ -222,7 +223,12 @@ async def search(query: str, filter: SearchFilters | None = None, limit: int = 2
             title = item.get("title", "")
             creator = item["artists"][0]["id"] if item.get("artists", None) else ""
             id = item["videoId"] if item.get("videoId", None) else item["browseId"]
-            parentId = item["album"]["id"] if len(item.get("album", [])) > 0 else item["artists"][0]["id"] if item.get("artists", None) else ""
+            
+            if item.get("album", None) is not None:
+                parentId = item["album"]["id"] if len(item.get("album", [])) > 0 else item["artists"][0]["id"] if item.get("artists", None) else ""
+            else:
+                parentId = ""
+                
             duration = item["duration_seconds"]
             explicit = item["isExplicit"]
             song = universal.createSongMainThread(id)
@@ -243,28 +249,32 @@ async def search(query: str, filter: SearchFilters | None = None, limit: int = 2
         duration = ""
         thumbnail = item["thumbnails"][0]["url"]
         explicit = ""
-        return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "thumbnail": thumbnail, "duration": duration}
-        
-        
-        
+        album = universal.album_module.Album(item["browseId"])
+        return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "thumbnail": thumbnail, "duration": duration, "object": album}
+
     if model.rowCount(QModelIndex()) > 0:
         model.resetModel()
         
     # print(json.dumps(s))
     try:
         for result in await API.search(query, filter = filter, limit = limit, ignore_spelling = ignore_spelling):
-            if result["category"].lower() == "songs":
+            if result["category"] is None:
+                continue # TEMPORARY BEHAVIOR
+            else:
+                category = result["category"].lower()
+            if category == "songs":
                 p = await parseSong(result)
                 if p == None:
                     continue
                 model._newResult(p)
-            if result["category"].lower() == "albums":
+            if category == "albums":
                 p = parseAlbum(result)
                 if p == None:
                     continue
                 model._newResult(p)
     except Exception as e:
         logging.getLogger("SearchLogger").error(f"Failed searching for {query}, Error: " + str(e))
+        traceback.print_exc()
         return None
         # print("\n\n\n")
     return model
