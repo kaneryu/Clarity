@@ -101,7 +101,7 @@ class Album(QObject):
     def _set_info(self, rawAlbumDetails: dict) -> None:
         self.rawAlbumDetails = rawAlbumDetails
         
-        assert rawAlbumDetails["type"].lower() == "album"
+        assert rawAlbumDetails["type"].lower() == "album" or rawAlbumDetails["type"].lower() == "single", "The provided ID does not correspond to an album or single."
         
         self.title: str = rawAlbumDetails["title"]
         self.description: Union[str, None] = rawAlbumDetails["description"]
