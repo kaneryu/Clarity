@@ -15,7 +15,9 @@ import src.wintube.winSMTC as winSMTC
 # song.py must not import Queue; it should use g.queueInstance when needed.
 from src.innertube.song import Song, PlayingStatus
 from src.innertube.album import Album
-from src.playback.player import VLCMediaPlayer
+from src.playback.player import MediaPlayer
+from src.playback.VlcPlayer import VLCMediaPlayer
+from src.playback.FFPlayPlayer import FFPlayMediaPlayer
 
 
 
@@ -138,13 +140,7 @@ class Queue(QObject):
         self.cache = cacheManager.getCache("queue_cache")
 
         # Media player engine
-        self._player = VLCMediaPlayer()
-        self._player.songChanged.connect(self.songChanged)
-        self._player.durationChanged.connect(self.durationChanged)
-        self._player.timeChanged.connect(self._on_time_changed)
-        self._player.playingStatusChanged.connect(self._on_playing_status_changed)
-        self._player.endReached.connect(self._on_end_reached)
-        self._player.errorOccurred.connect(self._on_vlc_error)
+        self.setupPlayer(VLCMediaPlayer())
 
         # WinSMTC integration
         self.winPlayer = winSMTC._get_player()
@@ -179,6 +175,50 @@ class Queue(QObject):
         self._prev_timer.setSingleShot(True)
         self._prev_timer.timeout.connect(self._finalize_prev_sequence)
 
+    def setupPlayer(self, player: MediaPlayer):
+        # Optional runtime enforcement since Protocol is runtime_checkable
+        if not isinstance(player, MediaPlayer):
+            raise TypeError("player must satisfy the MediaPlayer protocol")
+        self._player = player
+        self._player.songChanged.connect(self.songChanged)
+        self._player.durationChanged.connect(self.durationChanged)
+        self._player.timeChanged.connect(self._on_time_changed)
+        self._player.playingStatusChanged.connect(self._on_playing_status_changed)
+        self._player.endReached.connect(self._on_end_reached)
+        self._player.errorOccurred.connect(self._on_error)
+    
+    def swapPlayers(self, new_player: MediaPlayer):
+        if not isinstance(new_player, MediaPlayer):
+            raise TypeError("new_player must satisfy the MediaPlayer protocol")
+        
+        # Disconnect old player's signals
+        self._player.songChanged.disconnect(self.songChanged)
+        self._player.durationChanged.disconnect(self.durationChanged)
+        self._player.timeChanged.disconnect(self._on_time_changed)
+        self._player.playingStatusChanged.disconnect(self._on_playing_status_changed)
+        self._player.endReached.disconnect(self._on_end_reached)
+        self._player.errorOccurred.disconnect(self._on_error)
+
+        # Optionally migrate state from old player to new player
+        if self.currentSongObject and self.currentSongObject.playbackReady:
+            new_player.play(self.currentSongObject)
+            if self._player.isPlaying():
+                new_player.resume()
+            else:
+                new_player.pause()
+            new_player.seek(self.currentSongTime)
+
+        # Replace with new player
+        self._player = new_player
+
+        # Connect new player's signals
+        self._player.songChanged.connect(self.songChanged)
+        self._player.durationChanged.connect(self.durationChanged)
+        self._player.timeChanged.connect(self._on_time_changed)
+        self._player.playingStatusChanged.connect(self._on_playing_status_changed)
+        self._player.endReached.connect(self._on_end_reached)
+        self._player.errorOccurred.connect(self._on_error)
+    
     # ---------- Internal handlers delegating from MediaPlayer ----------
     def _on_time_changed(self, seconds: int):
         # Update SMTC timeline and bubble the signal
@@ -201,9 +241,9 @@ class Queue(QObject):
         winSMTC.playback_stop()
         self.next()
 
-    def _on_vlc_error(self, event):
-        self.logger.error("VLC Error")
-        self.logger.error("VLC error event: %s", event)
+    def _on_error(self, event):
+        self.logger.error("Player Error")
+        self.logger.error("Player error event: %s", event)
         universal.bgworker.add_job(self.refetch)
 
     # Finalize debounced Next presses: perform single play/stop
@@ -228,7 +268,7 @@ class Queue(QObject):
     # ---------- Public API ----------
     @Slot(Song)
     def songMrlChanged(self, song: Song):
-        self._player.on_song_mrl_changed(song)
+        self._player.onSongMrlChanged(song)
 
     def updateWinPlayer(self):
         winSMTC.set_now_playing(
@@ -250,7 +290,7 @@ class Queue(QObject):
     @QProperty(bool, notify=playingStatusChanged)
     def isPlaying(self):
         with QMutexLocker(self._mutex):
-            return self._player.get_playing_status() == PlayingStatus.PLAYING
+            return self._player.get_playing_status() == int(PlayingStatus.PLAYING)
 
     @QProperty(int, notify=playingStatusChanged)
     def playingStatus(self):
