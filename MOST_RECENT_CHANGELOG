@@ -1,9 +1,5 @@
-# Version 0.40
+# Version 0.41
 
 ## New Features
 
-- Implement multiple media player backends -- kaneryu on 2025-09-21
-
-## Bugfixes
-
-- Update _set_info validation to include EP type -- kaneryu on 2025-09-21
+- Add occasional task management to BackgroundWorker for dynamic interval tasks, Added occasional offlinecheck and occasional discord recconect attempts (closes: 13) -- kaneryu on 2025-09-21

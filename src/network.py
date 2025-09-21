@@ -12,6 +12,7 @@ import os
 from src import paths
 from src.misc import settings
 from src.misc.enumerations.Network import OnlineStatus
+from src.workers import bgworker
 
 from PySide6.QtCore import QObject, Signal, Slot, Property
 
@@ -61,6 +62,11 @@ class NetworkManager(QObject):
         NetworkManager._instance = self
         self._onlineStatus = self.test_onlinemode()
         self.onlineStatus: OnlineStatus
+        bgworker.add_occasional_task(self.occasionally_test_onlinemode, dynamic_interval_max=300)  # Max interval of 5 minutes
+    
+    def occasionally_test_onlinemode(self) -> bool:
+        self.test_onlinemode()
+        return self._onlineStatus == OnlineStatus.ONLINE
     
     def set_proxy(self, proxy_url: Optional[str] = None):
         """

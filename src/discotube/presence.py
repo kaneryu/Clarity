@@ -5,8 +5,8 @@ import queue
 
 from src.misc import cleanup, settings
 from PySide6.QtCore import QThread, Slot
-from pypresence import Presence, ActivityType, StatusDisplayType
-
+from pypresence import Presence, ActivityType, StatusDisplayType, DiscordNotFound
+from workers import bgworker
 
 class PresenceManagerThread(QThread):
     def __init__(self, queue_instance, parent=None):
@@ -80,6 +80,17 @@ class PresenceManagerThread(QThread):
 
     def playingStatusChanged(self):
         self.jobs.put(self.onPlayingStatusChanged)
+    
+    def occasional_reconnect_try(self):
+        try:
+            self.rpc.connect()
+            self.logger.info("Reconnected to Discord RPC", {"notifying": True})
+            if self.enabled and self.queue_instance.isPlaying:
+                self.onNewSong()
+            bgworker.remove_occasional_task(self.occasional_reconnect_try)
+        except Exception as e:
+            self.logger.warning(f"Reconnection to Discord RPC failed: {e}")
+
 
     def run(self):
         self.rpc = Presence(self.client_id)
@@ -88,6 +99,8 @@ class PresenceManagerThread(QThread):
             self.logger.info("Discord RPC connected")
         except Exception as e:
             self.logger.error(f"Failed to connect to Discord: {e}")
+            if isinstance(e, DiscordNotFound):
+                bgworker.add_occasional_task(self.occasional_reconnect_try, interval=30)  # Try reconnecting every 30 seconds
             return
 
         # Run an update once if a song is playing

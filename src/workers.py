@@ -4,6 +4,7 @@ import inspect
 import traceback
 import time
 import asyncio, aiohttp
+from typing import Any, Callable, Optional, overload, Dict, Literal, Union, Tuple
 import logging
 
 import ytmusicapi
@@ -42,6 +43,8 @@ class BackgroundWorker(QThread):
         self.daemon = True
         self.stopped = False
         self.jobs = []  # list of {"func": function, "args": args, "kwargs": kwargs}
+        self.occasionalTasks = []  # list of {"func": function, "args": args, "kwargs": kwargs, "interval": seconds, "dynamic_interval_max": seconds, "last_run": timestamp}
+        self.min_interval = 1  # Minimum interval for dynamic tasks
         self.threadpool = QThreadPool.globalInstance()
         self.threadpool.setMaxThreadCount(max_threads)
         self.setObjectName("BackgroundWorker")
@@ -58,6 +61,13 @@ class BackgroundWorker(QThread):
                 job_runnable = JobRunnable(i["func"], i["args"], i["kwargs"], self.logger)
                 self.threadpool.start(job_runnable)
                 self.jobs.remove(i)
+            current_time = time.time()
+            for task in self.occasionalTasks:
+                if current_time - task["last_run"] >= task["interval"]:
+                    job_runnable = JobRunnable(task["func"], task["args"], task["kwargs"], self.logger)
+                    self.threadpool.start(job_runnable)
+                    task["last_run"] = current_time
+                        
 
     def stop(self):
         self.stopped = True
@@ -68,6 +78,82 @@ class BackgroundWorker(QThread):
     def add_job(self, func, *args, **kwargs):
         job = {"func": func, "args": args, "kwargs": kwargs}
         self.jobs.append(job)
+
+    @overload
+    def add_occasional_task(self, func: Callable[..., Any], interval: int, *args, **kwargs): ...
+    
+    @overload
+    def add_occasional_task(self, func: Callable[..., bool], *, dynamic_interval_max: int, **kwargs): ...
+
+    def add_occasional_task(self, func: Callable[..., Any], interval: Optional[int] = None, dynamic_interval_max: Optional[int] = None, *args, **kwargs) -> None:
+        """Add a task to be run occasionally in the background.
+        
+        The task can be scheduled to run at a fixed interval or with a dynamic interval that adjusts based on the task's success.
+        The task is not guaranteed to run at the exact interval, but will run as close to it as possible depending on system load and other factors.
+        \n
+        For a dynamic interval, the function must return a boolean indicating success (True) or failure (False).
+        If the function returns True, the interval doubles until it reaches the maximum specified by dynamic_interval_max.
+        If the function returns False, the interval resets to the maximum (set in BackgroundWorker.min_interval).
+        To enable dynamic interval, set dynamic_interval_max and omit interval.
+        \n
+        
+        Args:
+            func (Callable[..., Any]): The function to run.
+            interval (Optional[int], optional): The interval in seconds to run the task. Defaults to None.
+            dynamic_interval_max (Optional[int], optional): The maximum dynamic interval in seconds. Defaults to None.
+
+        Raises:
+            TypeError: If both interval and dynamic_interval_max are provided.
+            TypeError: If the function does not have a return type of bool when using dynamic_interval_max.
+
+        Returns:
+            None
+            
+        """
+        if interval is None and dynamic_interval_max is None:
+            raise TypeError("add_occasional_task() requires at least one of 'interval' or 'dynamic_interval_max'")
+        if interval is not None and dynamic_interval_max is not None:
+            raise TypeError("add_occasional_task() accepts only one of 'interval' or 'dynamic_interval_max', not both")
+        
+        task = {
+            "func": func, 
+            "args": args, 
+            "kwargs": kwargs, 
+            "interval": interval or 0, 
+            "last_run": 0, 
+            "dynamic_interval_max": dynamic_interval_max
+        }
+        
+        if dynamic_interval_max is not None:
+            function_signature = inspect.signature(func)
+            return_annotation = function_signature.return_annotation
+            if return_annotation is inspect.Signature.empty or return_annotation is not bool:
+                raise TypeError("When using 'dynamic_interval_max', the function must have a return type of 'bool'")
+            task["interval"] = self.min_interval  # Start with minimum interval
+            def dynamic_task_wrapper():
+                result = func(*args, **kwargs)
+                if isinstance(result, bool):
+                    if result:
+                        task["interval"] *= 2  # Double the interval if successful
+                        if task["interval"] > dynamic_interval_max:
+                            task["interval"] = dynamic_interval_max  # Cap at max interval
+                    else:
+                        task["interval"] = self.min_interval  # If not, revert to min interval
+                return result
+            task["func"] = dynamic_task_wrapper
+        
+        self.occasionalTasks.append(task)
+    
+    def remove_occasional_task(self, func: Callable[..., Any]) -> None:
+        """Remove a previously added occasional task.
+        
+        Args:
+            func (Callable[..., Any]): The function to remove from the occasional tasks.
+
+        Returns:
+            None
+        """
+        self.occasionalTasks = [task for task in self.occasionalTasks if task["func"] != func]
 
 class Async_BackgroundWorker(QThread):
     def __init__(self):

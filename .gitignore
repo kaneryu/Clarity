@@ -187,3 +187,4 @@ ytheaders.json
 settings.json
 test.py
 src/app/assets/libs/
+debug_album+*.json
