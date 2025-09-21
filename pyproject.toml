@@ -1,5 +1,5 @@
 [project]
-version = "0.39.2"
+version = "0.40.0"
 name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -76,6 +76,7 @@ dependencies = [
   "pyside6-live-coding",
   "python-qt-live-coding",
   "ffpyplayer",
+  "python-mpv",
 ]
 
 [project.optional-dependencies]

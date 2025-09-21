@@ -3,7 +3,7 @@
     "settings": {
         "discordPresenceEnabled": {
             "value": true,
-            "type": "bool",
+            "type": "switch",
             "description": "Enable Discord Rich Presence",
             "group": "Discord",
             "hidden": false,
@@ -12,7 +12,7 @@
         },
         "discordClientId": {
             "value": "1221181347071000637",
-            "type": "str",
+            "type": "textEdit",
             "description": "Discord Client ID",
             "group": "Discord",
             "hidden": true,
@@ -22,7 +22,7 @@
 
         "youtubeHeaders": {
             "value": "",
-            "type": "str",
+            "type": "textEdit",
             "description": "Input your YouTube headers here to login to YouTube. ",
             "group": "Login",
             "hidden": false,
@@ -31,12 +31,24 @@
         },
         "youtubeLoginEnabled": {
             "value": false,
-            "type": "bool",
+            "type": "switch",
             "description": "Enable YouTube Login",
             "group": "Login",
             "hidden": false,
             "name": "Enable YouTube Login",
             "secure": false
+        },
+
+        "mediaPlayerBackend": {
+            "value": "vlc",
+            "type": "dropdown",
+            "description": "Media Player Backend to use. VLC is recommended for best compatibility. MPV is stable and will work in more situations. Qt is stable. FFPlay is buggy and not recommended.",
+            "group": "Media Player",
+            "hidden": false,
+            "name": "Media Player Backend",
+            "secure": false,
+            "dropdownOptions": ["vlc", "mpv", "qt", "ffplay"],
+            "visualDropdownOptions": ["VLC (Recommended)", "MPV (Stable)", "Qt (Stable)", "FFPlay (buggy)"]
         }
     }
 }

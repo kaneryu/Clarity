@@ -34,10 +34,15 @@ default_rootItem = {
 settings_fields = {"value": str, "type": str, "description": str, "group": str, "hidden": bool, "name": str, "secure": bool}
 
 type_map = {
+    # UI/control types
+    "switch": bool,
+    "textEdit": str,
+    "dropdown": str,
+    # Back-compat literal types (legacy)
     "bool": bool,
     "str": str,
     "int": int,
-    "float": float
+    "float": float,
 }
 
 def get_type(type_: typing.Union[str, type]) -> type:
@@ -136,6 +141,8 @@ class SettingsModel(QAbstractItemModel):
     DescriptionRole = Qt.ItemDataRole.ToolTipRole
     GroupRole = Qt.ItemDataRole.UserRole + 7
     isGroupRole = Qt.ItemDataRole.UserRole + 8
+    DropdownOptionsRole = Qt.ItemDataRole.UserRole + 9
+    VisualDropdownOptionsRole = Qt.ItemDataRole.UserRole + 10
 
     def __init__(self, settings: "Settings", parent: typing.Union[QObject, None] = None):
         super().__init__(parent)
@@ -168,6 +175,8 @@ class SettingsModel(QAbstractItemModel):
         roles[self.DescriptionRole] = QByteArray(b"description")
         roles[self.GroupRole] = QByteArray(b"group")
         roles[self.isGroupRole] = QByteArray(b"isGroup")
+        roles[self.DropdownOptionsRole] = QByteArray(b"dropdownOptions")
+        roles[self.VisualDropdownOptionsRole] = QByteArray(b"visualDropdownOptions")
         return roles
     
     def data(self, index: ModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> typing.Any:
@@ -189,18 +198,21 @@ class SettingsModel(QAbstractItemModel):
         elif role == Qt.ItemDataRole.EditRole or role == self.ValueRole:
             return item.data("value")
         elif role == self.TypeRole:
-            # Return the type name as string for QML
-            type_obj = item.data("type")
-            return type_obj.__name__ if hasattr(type_obj, '__name__') else str(type_obj)
+            # Return the declared UI/control type string as-is (e.g., "switch", "dropdown", "textEdit")
+            return item.data("type")
         elif role == self.DescriptionRole:
             return item.data("description")
         elif role == self.GroupRole:
             return item.data("group")
         elif role == self.isGroupRole:
             return item.data("group") == "isGroup"
-        
+        elif role == self.DropdownOptionsRole:
+            return item.data("dropdownOptions") or []
+        elif role == self.VisualDropdownOptionsRole:
+            # Fallback to dropdownOptions for display if visual labels aren't provided
+            return item.data("visualDropdownOptions") or item.data("dropdownOptions") or []
         return None
-    
+
     def flags(self, index: ModelIndex) -> Qt.ItemFlag:
         if not index.isValid():
             return Qt.ItemFlag.NoItemFlags
@@ -236,7 +248,7 @@ class SettingsModel(QAbstractItemModel):
         if parent_item:
             return parent_item.childCount()
         
-        return parent_item.child_count() if parent_item else 0
+        return 0
     
     def columnCount(self, parent: ModelIndex = QModelIndex()) -> int:
         return self.rootItem.columnCount()
@@ -247,41 +259,31 @@ class SettingsModel(QAbstractItemModel):
 
         item = self.get_item(index)
         
-        # qt may return everything as a string, so we need to convert it to the correct type
+        # Convert to the underlying value type
         try:
-            type_ = item.data("type")
-            if isinstance(type_, str):
-                type_ = get_type(type_)
-            value = value if not isinstance(value, str) else type_(value)
+            declared_type = item.data("type")  # "switch", "textEdit", "dropdown"
+            py_type = get_type(declared_type)
+            if declared_type == "dropdown":
+                options = item.data("dropdownOptions") or []
+                if value not in options:
+                    logging.error(f"Dropdown value '{value}' not in allowed options {options}")
+                    return False
+            if isinstance(value, str) and py_type is not str:
+                # Cast only if needed; checkbox sends bool already, combo sends str
+                value = py_type(value)
         except Exception as e:
-            logging.error(f"Failed to convert value {value} to type {item.data('type')}: {e}")
+            logging.error(f"Failed to convert value {value} for type {item.data('type')}: {e}")
 
-        if role == Qt.ItemDataRole.EditRole:
+        if role in (Qt.ItemDataRole.EditRole, self.ValueRole):
             if not item.setValue(value):
                 return False
             self.dataChanged.emit(index, index, [Qt.ItemDataRole.EditRole, self.ValueRole])
-            return True
-        elif role == self.ValueRole:
-            if not item.setData(self.rootItem.fields.index("value"), value):
-                 return False
-            # Find the index for the 'value' column to emit dataChanged correctly
-            value_col_idx = -1
-            try:
-                value_col_idx = self.rootItem.display_fields.index("value")
-            except ValueError:
-                pass # 'value' column is not visible
-
-            if value_col_idx != -1:
-                value_index = self.index(index.row(), value_col_idx, self.parent(index))
-                self.dataChanged.emit(value_index, value_index, [Qt.ItemDataRole.EditRole, self.ValueRole])
             return True
         
         child = self.get_item(index)
         if not child:
             return False
-        
-        # In a tree view, setData is typically for column 0.
-        # The role determines what data is being set, based on the enum value.
+
         if not child.setData(index.column(), value):
             return False
         self.dataChanged.emit(index, index, [Qt.ItemDataRole.EditRole])
@@ -354,53 +356,62 @@ class Settings(QObject):
                 self.settingsDict = json.load(f)
         except Exception as e:
             self.logger.error(f"Failed to load settings file: {e}")
-            self.settingsDict = defaultSettings
-        
-        settingsDictSettings: dict = self.settingsDict.get("settings") # type: ignore[assignment, union-attr]
-        defaultSettingsDictSettings: dict = defaultSettings.get("settings") # type: ignore[assignment, union-attr]
-        if not settingsDictSettings.keys() == defaultSettingsDictSettings.keys():
-            missingKeys = [i for i in defaultSettingsDictSettings.keys() if not i in settingsDictSettings.keys()]
-            missing = []
-            for key in missingKeys:
-                missing.append((key, defaultSettingsDictSettings[key]))
-            settingsDictSettings.update(missing)
-        
-        if not settingsDictSettings.keys() == defaultSettingsDictSettings.keys():
-            extraKeys = [i for i in settingsDictSettings.keys() if not i in defaultSettingsDictSettings.keys()]
-            for key in extraKeys:
-                settingsDictSettings.pop(key)
-        
+            self.settingsDict = {}
+
+        # Always start from defaults to preserve metadata like dropdownOptions
+        defaultSettingsDictSettings: dict = typing.cast(dict, defaultSettings.get("settings", {}))
+        savedSettings: dict = typing.cast(dict, (self.settingsDict or {}).get("settings", {}))
+
+        merged_settings: dict[str, dict] = {}
+        for key, default_entry in defaultSettingsDictSettings.items():
+            entry = dict(default_entry)  # shallow copy; values are primitives/lists
+            saved_entry = savedSettings.get(key, {})
+            if isinstance(saved_entry, dict) and "value" in saved_entry:
+                entry["value"] = saved_entry["value"]
+            merged_settings[key] = entry
+
         if not self.settingsDict.get("for") or self.settingsDict.get("for") != version:
             self.logger.warning("Settings file outdated")
-            
-        value: dict
-        for key, value in self.settingsDict.get("settings", {}).items(): # type: ignore
+
+        # Rebuild internal maps
+        self.settingObjects.clear()
+        self.groupKeyMap.clear()
+
+        for key, value in merged_settings.items():
             name = value.get("name")
             value_ = value.get("value")
-            type_ = value.get("type", "")
-            
+            declared_type = value.get("type", "textEdit")
+
+            # Validate basic underlying type using the mapping
             try:
-                type_ = get_type(type_)
+                base_type = get_type(declared_type)
             except Exception as e:
-                self.logger.error(f"Setting {name} has invalid type: {e}, Inferring type...")
-                type_ = type(value_)
-            
-            if not isinstance(value_, type_):
-                self.logger.error(f"Setting {name}'s type is supposed to be {type_}, but it is {type(value_)}, skipping...")
-                continue
-            
-            group = value.get("group")
-            
+                self.logger.error(f"Setting {name} has invalid type '{declared_type}': {e}, inferring from current value...")
+                base_type = type(value_)
+
+            # Coerce some common mismatches
+            if base_type is float and isinstance(value_, int):
+                value_ = float(value_)
+            if base_type is bool and isinstance(value_, int):
+                value_ = value_ == 1
+
+            # Enforce dropdown membership
+            if declared_type == "dropdown":
+                options = value.get("dropdownOptions") or []
+                if value_ not in options and options:
+                    self.logger.warning(f"'{name}' value '{value_}' not in {options}, defaulting to first option.")
+                    value_ = options[0]
+                value["value"] = value_
+
+            # Create Setting object
             value["key"] = key
-            
-            new = Setting(data = value)
+            new = Setting(data=value)
             self.settingObjects[key] = new
-            
+
+            group = value.get("group")
             if group:
-                if group not in self.groupKeyMap:
-                    self.groupKeyMap[group] = []
-                self.groupKeyMap[group].append(key)
-                
+                self.groupKeyMap.setdefault(group, []).append(key)
+
         newroot = self.createModel()
         self.settingsModel.resetModel(newroot)
         self.logger.info("Settings loaded successfully")
@@ -437,16 +448,23 @@ class Settings(QObject):
     def save(self):
         settings_to_save = {"for": version, "settings": {}}
         for key, setting in self.settingObjects.items():
-            settings_to_save["settings"][key] = { # type: ignore
-            "value": setting.value,
-            "type": get_type(setting.type).__name__,
-            "description": setting.description,
-            "group": setting.group,
-            "hidden": setting.hidden,
-            "name": setting.name,
-            "secure": getattr(setting, "secure", False)  # Add secure field if it exists
+            out = {
+                "value": setting.value,
+                "type": setting.type,
+                "description": setting.description,
+                "group": setting.group,
+                "hidden": setting.hidden,
+                "name": setting.name,
+                "secure": getattr(setting, "secure", False),
             }
-        
+            # Preserve dropdownOptions if present so UI has data even without defaults
+            if getattr(setting, "dropdownOptions", None):
+                out["dropdownOptions"] = setting.dropdownOptions
+            # Preserve visualDropdownOptions if present so UI labels remain available
+            if getattr(setting, "visualDropdownOptions", None):
+                out["visualDropdownOptions"] = setting.visualDropdownOptions
+            settings_to_save["settings"][key] = out  # type: ignore
+
         try:
             with open(self.settings_file, "w") as f:
                 json.dump(settings_to_save, f, indent=4)
@@ -506,7 +524,7 @@ class QmlSettingsInterface(QObject):
         """Get a setting value by key."""
         return self.settings.get(key, default)
     
-    @Slot(str)
+    @Slot(str, object)
     def set(self, key: str, value) -> None:
         """Set a setting value by key."""
         self.settings.set(key, value)
@@ -536,7 +554,7 @@ class QmlSettingsInterface(QObject):
 class Setting(QObject):
     dataChanged = Signal(str, object)
     valueChanged = Signal()
-    
+
     def __init__(self, data: dict):
         super().__init__()
         if data.get("settings") is not None:
@@ -548,20 +566,26 @@ class Setting(QObject):
         
         self.logger = logging.getLogger("Settings")
         
-        self.protectedFields = ["key", "name", "value", "description", "group", "hidden", "type", "secure"]
-        
+        self.protectedFields = [
+            "key", "name", "value", "description", "group", "hidden",
+            "type", "secure", "dropdownOptions", "visualDropdownOptions"
+        ]
+
         self.data = data
         self.key = data["key"]
         self.value = data["value"]
-        self.type = data["type"]
+        self.type = data["type"]  # UI/control type string
         self.description = data["description"]
         self.group = data["group"]
-        self.hidden = data.get("hidden", False)  # Add hidden field if it exists
+        self.hidden = data.get("hidden", False)
         self.name = data["name"]
-        self.secure = data.get("secure", False)  # Add secure field if it exists
-        
-        self.valueProperty = Property(get_type(self.type), self.get, self.set, notify=self.dataChanged) # type: ignore
-        
+        self.secure = data.get("secure", False)
+        self.dropdownOptions = data.get("dropdownOptions", None)
+        self.visualDropdownOptions = data.get("visualDropdownOptions", None)
+
+        # Underlying value type is derived from UI/control type
+        self.valueProperty = Property(get_type(self.type), self.get, self.set, notify=self.dataChanged)  # type: ignore
+
     
     def get(self, key: str, default=None):
         return self.data.get(key, default)
@@ -570,24 +594,33 @@ class Setting(QObject):
         if key not in self.data:
             self.logger.error(f"Setting {self.key} does not have key {key}, skipping...")
             return
-        
-        if isinstance(value, int) and get_type(self.type) == float:
+
+        # Normalize to underlying base type
+        base_type = get_type(self.type)
+
+        if isinstance(value, int) and base_type == float:
             value = float(value)
-        
-        if isinstance(value, int) and get_type(self.type) == bool:
+        if isinstance(value, int) and base_type == bool:
             value = value == 1
-        
-        if not isinstance(value, get_type(self.type)):
-            self.logger.error(f"Setting {self.key} is supposed to be of type {self.type}, but it is {type(value)} ({value}), skipping...")
+
+        # Enforce dropdown options
+        if self.type == "dropdown":
+            options = self.data.get("dropdownOptions") or []
+            if value not in options:
+                self.logger.error(f"Setting {self.key} only accepts one of {options}, got '{value}', skipping...")
+                return
+
+        if not isinstance(value, base_type):
+            self.logger.error(f"Setting {self.key} expects {base_type}, got {type(value)} ({value}), skipping...")
             return
-        
+
         self.logger.info(f"Setting '{key}' on {self.key} to {value}")
         self.data[key] = value
         self.__setattr__(key, value)
         self.dataChanged.emit(key, value)
         if key == "value":
             self.valueChanged.emit()
-        
+
         Settings.instance().save()
     
     def setValue(self, value):
@@ -613,4 +646,4 @@ def getSetting(key: str) -> Setting:
     setting = Settings.instance().settingObjects.get(key)
     if not setting:
         raise KeyError(f"No setting found with key: {key}")
-    return setting 
+    return setting

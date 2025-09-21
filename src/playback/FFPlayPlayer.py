@@ -43,7 +43,7 @@ class FFPlayMediaPlayer(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self.logger = logging.getLogger("FFPlayPlayer")
+        self.logger = logging.getLogger("MediaPlayer.FFPlayPlayer")
 
         self._player: Optional[FFMediaPlayer] = None
         self._playingStatus: PlayingStatus = PlayingStatus.STOPPED
@@ -59,6 +59,13 @@ class FFPlayMediaPlayer(QObject):
 
         # Connect cross-thread callback signal to main-thread handler
         self._ffThreadEvent.connect(self._handle_ff_event)
+    
+    def destroy(self) -> None:
+        """Clean up resources, stop playback, disconnect signals, prepare for deletion."""
+        self.stop()
+        self._ffThreadEvent.disconnect(self._handle_ff_event)
+        self._timeTimer.timeout.disconnect(self._on_time_tick)
+        self.deleteLater()
 
     # -------------------- Internal helpers --------------------
     def _emit_status(self, status: PlayingStatus) -> None:
@@ -108,9 +115,12 @@ class FFPlayMediaPlayer(QObject):
                     "autoexit": True,   # eof stops internally
                     "sync": "audio",    # use audio clock
                     "paused": False,    # start playing immediately
+                    "vn": True,       # no video
                 },
+                thread_lib = "python"
             )
-            self._emit_status(PlayingStatus.BUFFERING)
+            # Initial decode/demux buffering is local
+            self._emit_status(PlayingStatus.BUFFERING_LOCAL)
             if not self._timeTimer.isActive():
                 self._timeTimer.start()
         except Exception as e:

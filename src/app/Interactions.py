@@ -16,6 +16,7 @@ from PySide6.QtQml import (
 from PySide6.QtCore import Property
 
 import src.universal as universal
+import src.misc.enumerations.Song as song_enums
 
 QML_IMPORT_NAME = "CreateTheSun"
 QML_IMPORT_MAJOR_VERSION = 1
@@ -123,7 +124,7 @@ class Interactions(QObject):
     def next(self):
         q = universal.queueInstance
         q.next()
-
+    
     @Slot(int)
     def setQueueIndex(self, index: int):
         q = universal.queueInstance
@@ -133,11 +134,11 @@ class Interactions(QObject):
     def back(self):
         q = universal.queueInstance
         q.prev()
-        
+   
     @Slot()
     def togglePlayback(self):
         q = universal.queueInstance
-        if q.isPlaying:
+        if q.isPlaying or q.playingStatus == song_enums.PlayingStatus.BUFFERING_LOCAL:
             q.pause()
         else:
             q.resume()

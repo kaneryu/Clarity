@@ -160,6 +160,15 @@ Item {
                     }
                 },
                 State {
+                    // Local buffering should not interrupt playback UX
+                    name: "bufferingLocal"
+                    when: Interactions.playingStatus == 6
+                    PropertyChanges {
+                        // Keep showing pause to indicate playback should continue
+                        playButton.icon: AssetsPath + "icons/songbar/pause.svg"
+                    }
+                },
+                State {
                     name: "stopped"
                     when: Interactions.playingStatus == 3
                     PropertyChanges {

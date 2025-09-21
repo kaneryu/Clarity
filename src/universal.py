@@ -85,6 +85,10 @@ def install_json_logging(level=logging.INFO):
     root.setLevel(level)
 
 install_json_logging()
+from .paths import Paths
+
+os.environ["PATH"] = (os.path.abspath(os.path.join(Paths.ASSETSPATH, "libs"))) + os.pathsep + os.environ["PATH"]
+
 from .misc import settings as settings_module
 settings = settings_module.Settings()
 
@@ -92,7 +96,8 @@ from src.cacheManager import cacheManager as cacheManager_module, dataStore as d
 import src.innertube as innertube_module
 from src.innertube import song as song_module
 from src.innertube import album as album_module
-from src.playback import queue as queue_module
+from playback import queuemanager as queue_module
+
 
 
 
@@ -109,7 +114,6 @@ from io import StringIO
 
 from .misc import logHistoryManager
 from .misc.enumerations.Search import SearchFilters
-from .paths import Paths
 
 from src.qt import resources
 

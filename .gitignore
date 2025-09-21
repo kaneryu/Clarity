@@ -186,3 +186,4 @@ ytheaders.json
 .idea/
 settings.json
 test.py
+src/app/assets/libs/

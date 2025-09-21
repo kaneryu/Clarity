@@ -39,7 +39,7 @@ class VLCMediaPlayer(QObject):
 
     def __init__(self) -> None:
         super().__init__()
-        self.logger = logging.getLogger("MediaPlayer")
+        self.logger = logging.getLogger("MediaPlayer.VLCMediaPlayer")
 
         # VLC init
         vlc_args = [
@@ -199,6 +199,18 @@ class VLCMediaPlayer(QObject):
         else:
             self.player.pause()
         self.player.set_time(t)
+    
+    def destroy(self) -> None:
+        self.stop()
+        self.eventManager.event_detach(vlc.EventType.MediaPlayerEndReached)
+        self.eventManager.event_detach(vlc.EventType.MediaPlayerEncounteredError)
+        self.eventManager.event_detach(vlc.EventType.MediaPlayerPaused)
+        self.eventManager.event_detach(vlc.EventType.MediaPlayerPlaying)
+        self.eventManager.event_detach(vlc.EventType.MediaPlayerBuffering)
+        self.eventManager.event_detach(vlc.EventType.MediaPlayerTimeChanged)
+        self.player.release()
+        self.instance.release()
+        self.logger.info("VLC MediaPlayer destroyed")
 
     def _seek(self, seek_time_ms: int):
         if seek_time_ms < 0 or seek_time_ms > self.player.get_length():
@@ -239,7 +251,8 @@ class VLCMediaPlayer(QObject):
         if time.time() - self.__bufflastTime < 1:
             return
         self.__bufflastTime = time.time()
-        self._playingStatus = PlayingStatus.BUFFERING
+        # Treat VLC buffering as local, since VLC doesn't distinguish cache stalls
+        self._playingStatus = PlayingStatus.BUFFERING_LOCAL
         self.playingStatusChanged.emit(int(self._playingStatus))
         self.logger.debug("Buffering Event")
 

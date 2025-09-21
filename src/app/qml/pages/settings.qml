@@ -20,7 +20,7 @@ Item {
             id: treeViewItem
 
             implicitWidth: padding + label.x + label.implicitWidth + padding
-            implicitHeight: label.implicitHeight * 1.5
+            implicitHeight: descriptionLabel.contentHeight * 1.15 + configItem.height + padding * 2
 
             readonly property real indentation: 20
             readonly property real padding: 5
@@ -35,47 +35,35 @@ Item {
             required property int column
             required property bool current
 
-            // Rotate indicator when expanded by the user
-            // (requires TreeView to have a selectionModel)
-            property Animation indicatorAnimation: NumberAnimation {
-                target: indicator
-                property: "rotation"
-                from: treeViewItem.expanded ? 0 : 90
-                to: treeViewItem.expanded ? 90 : 0
-                duration: 100
-                easing.type: Easing.OutQuart
-            }
-            TableView.onPooled: indicatorAnimation.complete()
-            TableView.onReused: if (current) indicatorAnimation.start()
-            onExpandedChanged: indicator.rotation = expanded ? 90 : 0
-
-            // ColObjs.ColRect {
-            //     id: background
-            //     anchors.fill: parent
-            //     color: Theme.surfaceContainerHighest
+            // Let the view know how tall this row needs to be (for description lines)
+            // function updateRowHeight() {
+            //     var base = Math.max(label.implicitHeight, indicator.implicitHeight)
+            //     var extra = 40 * descriptionLabel.lineCount + padding
+            //     console.log("Row", row, "base:", base, "extra:", extra)
+            //     var h = Math.ceil(base + extra + padding)
+            //     // Update the map immutably so bindings react
+            //     var map = treeView.rowHeights || {}
+            //     var next = {}
+            //     for (var k in map) next[k] = map[k]
+            //     next[row] = h
+            //     treeView.rowHeights = next
             // }
 
-            Label {
-                id: indicator
-                x: padding + (treeViewItem.depth * treeViewItem.indentation)
-                anchors.verticalCenter: parent.verticalCenter
-                visible: treeViewItem.isTreeNode && treeViewItem.hasChildren
-                text: "▶"
-                
-                color: Theme.onSurface
+            // Component.onCompleted: updateRowHeight()
+            // onImplicitHeightChanged: updateRowHeight()
 
-                TapHandler {
-                    onSingleTapped: {
-                        let index = treeViewItem.treeView.index(treeViewItem.row, treeViewItem.column)
-                        treeViewItem.treeView.toggleExpanded(treeViewItem.row)
-                    }
-                }
+            Item {
+                id: startx
+                width: 5
+                x: padding + (isTreeNode ? (depth + 1) * indentation : 0)
             }
 
             Label {
                 id: label
-                x: padding + (isTreeNode ? (depth + 1) * indentation : 0)
-                anchors.verticalCenter: parent.verticalCenter
+
+                anchors.left: startx.right
+                anchors.verticalCenter: configItem.verticalCenter
+
                 clip: true
                 text: model.display
 
@@ -87,9 +75,10 @@ Item {
                 anchors.left: label.right
                 anchors.leftMargin: 10
                 anchors.right: parent.right
+                anchors.top: parent.top                
+                height: 30
 
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
+                // Keep the control inline with the setting title; description sits below
                 Connections{
                     target: Backend
                     function onSettingChanged() {
@@ -113,16 +102,14 @@ Item {
 
                     function getComponentType() {
                         switch (model.type) {
-                            case "bool":
-                                return switchComponent;
-                            case "int":
-                            case "float":
-                                return sliderComponent;
-                            case "str":
-                            case "password":
-                                return textComponent;
+                        case "switch":
+                            return switchComponent;
+                        case "dropdown":
+                            return dropdownComponent;
+                        case "textEdit":
+                        default:
+                            return textComponent;
                         }
-                        return null;
                     }
 
                     function reload() {
@@ -133,6 +120,26 @@ Item {
                     sourceComponent: getComponentType()
                 }
             }
+
+            // Setting description, shown under the control row
+            Text {
+                id: descriptionLabel
+                text: model.description || ""
+                visible: text && text.length > 0
+                wrapMode: Text.WordWrap
+                color: Theme.onSurface
+                opacity: 0.75
+                
+                anchors.top: label.bottom
+                anchors.left: startx.right
+                anchors.right: parent.right
+                anchors.leftMargin: padding + 15
+                anchors.topMargin: 10
+
+                font.pixelSize: Math.max(11, label.font.pixelSize - 2)
+
+                height: contentHeight
+            }
         }
     }
 
@@ -140,27 +147,8 @@ Item {
         id: switchComponent
         Components.Checkbox {
             anchors.fill: parent
-            // Two-way binding with the Loader's property
             checked: modelValue
-            onClicked: {
-                setData(checked);
-            }
-        }
-    }
-
-    Component {
-        id: sliderComponent
-        Slider {
-            from: model_.min || 0
-            to: model_.max || 100
-            stepSize: model_.step || 1
-            // Two-way binding with the Loader's property
-            value: parent.modelValue
-            onValueChanged: {
-                if (value !== parent.modelValue) {
-                    setData(value);
-                }
-            }
+            onClicked: setData(checked)
         }
     }
 
@@ -169,9 +157,7 @@ Item {
         TextField {
             selectByMouse: true
             text: modelValue
-            onTextChanged: {
-                console.log("Text changed for", model_.display, "to", text);
-            }
+            echoMode: model_.secure ? TextInput.Password : TextInput.Normal
             onAccepted: {
                 if (text !== parent.modelValue) {
                     setData(text);
@@ -179,14 +165,29 @@ Item {
             }
         }
     }
-    
+
+    Component {
+        id: dropdownComponent
+        ComboBox {
+            anchors.fill: parent
+            // Actual values and their visual labels
+            property var options: model_.dropdownOptions || []
+            property var visualOptions: model_.visualDropdownOptions || options
+            model: visualOptions
+            // Keep selection by matching actual value index
+            currentIndex: Math.max(0, options.indexOf(parent.modelValue))
+            // Write back the actual value corresponding to the selected label
+            onActivated: setData(options[currentIndex])
+        }
+    }
+
     Component {
         id: treeViewGroupDelegate
 
         Item {
-            id: treeViewItem
+            id: groupTreeViewItem
 
-            implicitWidth: treeView.width
+            implicitWidth: treeView.width - scrollView.effectiveScrollBarWidth
             implicitHeight: label.implicitHeight * 1.5
 
             readonly property real indentation: 20
@@ -207,14 +208,15 @@ Item {
             property Animation indicatorAnimation: NumberAnimation {
                 target: indicator
                 property: "rotation"
-                from: treeViewItem.expanded ? 0 : 90
-                to: treeViewItem.expanded ? 90 : 0
+                from: groupTreeViewItem.expanded ? 0 : 90
+                to: groupTreeViewItem.expanded ? 90 : 0
                 duration: 1000
                 easing.type: Easing.OutQuart
             }
             TableView.onPooled: indicatorAnimation.complete()
             TableView.onReused: if (current) indicatorAnimation.start()
             onExpandedChanged: indicator.rotation = expanded ? 90 : 0
+            
 
             // ColObjs.ColRect {
             //     id: background
@@ -223,17 +225,28 @@ Item {
             // }
 
             MouseArea {
-                anchors.fill: parent
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+
+                anchors.rightMargin: (scrollView.effectiveScrollBarWidth > 0 ? 30 : 0)
                 onClicked: {
-                    let index = treeViewItem.treeView.index(treeViewItem.row, treeViewItem.column)
-                    treeViewItem.treeView.toggleExpanded(treeViewItem.row)
+                    let index = groupTreeViewItem.treeView.index(groupTreeViewItem.row, groupTreeViewItem.column)
+                    groupTreeViewItem.treeView.toggleExpanded(groupTreeViewItem.row)
                 }
+
+                // Rectangle {
+                //     anchors.fill: parent
+                //     color: "green"
+                //     border.color: "red"
+                // }
             }
             Label {
                 id: indicator
-                x: padding + (treeViewItem.depth * treeViewItem.indentation)
+                x: padding + (groupTreeViewItem.depth * groupTreeViewItem.indentation)
                 anchors.verticalCenter: parent.verticalCenter
-                visible: treeViewItem.isTreeNode && treeViewItem.hasChildren
+                visible: groupTreeViewItem.isTreeNode && groupTreeViewItem.hasChildren
                 text: "▶"
                 color: Theme.onSurface
             }
@@ -260,30 +273,37 @@ Item {
                 color: Theme.onSurface
                 
             }
-
         }
     }
 
-    TreeView {
-        id: treeView
+
+    
+    ScrollView {
+        id: scrollView
         anchors.fill: parent
-        model: Backend.settingsModel
+        clip: true
 
-        reuseItems: false
+        // Flickable properties
 
-        delegate: chooser
-        
-        WheelHandler {
-            onWheel: {
-                parent.contentY -= wheel.angleDelta / 10
-                wheel.accepted = true
+        property real contentY: treeView.contentY
+
+        ScrollBar.vertical.interactive: true
+
+        TreeView {
+            id: treeView
+            anchors.fill: parent
+            model: Backend.settingsModel
+
+            reuseItems: false
+
+            delegate: chooser
+
+            DelegateChooser {
+                id: chooser
+                role: "isGroup"
+                DelegateChoice { roleValue: true; delegate: treeViewGroupDelegate }
+                DelegateChoice { roleValue: false; delegate: treeViewDelegate }
             }
-        }
-        DelegateChooser {
-            id: chooser
-            role: "isGroup"
-            DelegateChoice { roleValue: true; delegate: treeViewGroupDelegate }
-            DelegateChoice { roleValue: false; delegate: treeViewDelegate }
         }
     }
 }
