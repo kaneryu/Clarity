@@ -18,6 +18,7 @@ Item {
     property string albumTitle: album.title
     property string albumArtist: album.artist
     property string albumLength: Utils.secondsToHMS(album.duration)
+    property string albumType: album.albumType  // "album", "single", or "ep"
 
     property real radius: 350
 
@@ -97,7 +98,7 @@ Item {
 
         TextVariant.Default {
             id: artistLengthText
-            text: root.albumArtist + " • " + root.albumLength
+            text: albumTypeCorrector(root.albumType) + " By " + root.albumArtist + " • " + root.albumLength
             color: root.textColor
             width: parent.width
             marquee: true
@@ -107,6 +108,18 @@ Item {
                 color: "green"
                 anchors.fill: artistLengthText
                 z: -1
+            }
+
+            function albumTypeCorrector(type) {
+                if (type.toLowerCase() === "album") {
+                    return "Album"
+                } else if (type.toLowerCase() === "single") {
+                    return "Single"
+                } else if (type.toLowerCase() === "ep") {
+                    return "EP"
+                } else {
+                    return type
+                }
             }
         }
         

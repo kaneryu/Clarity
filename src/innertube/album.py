@@ -24,39 +24,6 @@ from src.misc.enumerations.Song import DownloadStatus as SongDownloadStatus
 from src.misc.enumerations import DataStatus
 
 
-"""
-What do we need albums to do?
-Albums are basically just a collection of songs, with some metadata.
-
-We should be able to:
-- Get album metadata (title, artist, year, etc.) DONE
-- Get album songs (list of song objects) DONE
-- Maybe get album duration (total length of all songs) DONE
-- Perform bulk operations on albums (e.g., download all songs)
-    - Note on the previous one, we'll pass albums into methods to do bulk operations (other than downloading)
-    so to add all songs to queue, we'd call queue.addAlbumToQueue(album) **example method, check actual implemetation
-
-Just like Song, albums should be singletons. There should only be one instance of an album for a given album ID.
-"""
-
-
-
-def dataCheck(errorMessage: str, checkSongsToo: bool):
-    def inner(func):
-        def wrap(*args, **kwargs):
-            if checkSongsToo:
-                if len(args[0].songs) == 0 or DataStatus(args[0].dataStatus) is not DataStatus.LOADED:
-                    args[0].logger.error(errorMessage)
-                    return
-            else:
-                if DataStatus(args[0].dataStatus) is not DataStatus.LOADED:
-                    args[0].logger.error(errorMessage)
-                    return
-            result = func(*args, **kwargs)
-            return result
-        return wrap
-    return inner
-
 def run_sync(func, *args, **kwargs):
     coro = func(*args, **kwargs)
     if asyncio.iscoroutine(coro):
@@ -85,7 +52,7 @@ class Album(QObject):
         if hasattr(self, "_initialized") and self._initialized:
             return
         super().__init__()
-        self._initialized = True
+        self._initialized: bool = True
 
         self.id = id
         self.rawAlbumDetails = givenInfo if givenInfo != {"None": None} else {}
@@ -100,10 +67,13 @@ class Album(QObject):
         
     def _set_info(self, rawAlbumDetails: dict) -> None:
         self.rawAlbumDetails = rawAlbumDetails
+        with open(f"debug_album+{self.id}.json", "w", encoding="utf-8") as f:
+            json.dump(rawAlbumDetails, f, ensure_ascii=False, indent=4)
 
         assert rawAlbumDetails["type"].lower() == "album" or rawAlbumDetails["type"].lower() == "single" or rawAlbumDetails["type"].lower() == "ep", "The provided ID does not correspond to an album or single or EP."
 
         self.title: str = rawAlbumDetails["title"]
+        self.type: str = rawAlbumDetails["type"].lower()  # "album", "single", or "ep"
         self.description: Union[str, None] = rawAlbumDetails["description"]
         
         self.isExplicit: bool = rawAlbumDetails["isExplicit"]
@@ -154,19 +124,22 @@ class Album(QObject):
         self._downloadStatus = DownloadStatus(value) if isinstance(value, int) else value
         self.downloadStatusChanged.emit(value if isinstance(value, int) else value.value)
 
-    @dataCheck("Tried to fetch album's songs, but there is no data available", False)
     def _set_songs(self) -> Union[list[song.Song], None]:
+        if DataStatus(self.dataStatus) is not DataStatus.LOADED:
+            self.logger.error("Tried to fetch album's songs, but there is no data available")
+            return None
+
         if len(self.songs) > 0:
             self.logger.warning("Songs already fetched, refetching anyway.")
-        
         idlist = list(self.trackIdTitleMap.keys())
-        
+
         tracklist = [song.Song(id) for id in idlist]
         for track in tracklist:
             if not track.dataStatus == DataStatus.LOADED:
                 universal.asyncBgworker.add_job_sync(track.get_info)
             track.downloadStatusChanged.connect(self.songDownloadStatusChanged)
         self.songs = tracklist
+        return self.songs
     
     def get_info_cache_only(self) -> None:
         self.dataStatus = DataStatus.LOADING
@@ -220,8 +193,11 @@ class Album(QObject):
         self._set_songs()
 
 
-    @dataCheck("Tried to fetch album's songs, but there is no data available", True)
     def songDownloadStatusChanged(self) -> None:
+        if len(self.songs) == 0 or DataStatus(self.dataStatus) is not DataStatus.LOADED:
+            self.logger.error("Tried to fetch album's songs, but there is no data available")
+            return
+
         downloadStatuses: dict[Literal["id"], SongDownloadStatus] = {}
         for track in self.songs:
             downloadStatuses[track.id] = track.downloadStatus
@@ -237,15 +213,18 @@ class Album(QObject):
                     break
                 case SongDownloadStatus.DOWNLOADED:
                     continue
-        
+
         self.downloadStatus = downloadStatus
     
     
-    @dataCheck("Tried to download album's songs, but there is no data available", True)
     def download(self) -> None:
+        if len(self.songs) == 0 or DataStatus(self.dataStatus) is not DataStatus.LOADED:
+            self.logger.error("Tried to download album's songs, but there is no data available")
+            return
+
         for track in self.songs:
             universal.asyncBgworker.add_job_sync(track.download)
-        self.logger.log("Added all song downloads to queue")
+        self.logger.info("Added all song downloads to queue")
         
 
 async def _afs(songID: str) -> Union[str, None]:
@@ -317,6 +296,10 @@ class AlbumProxy(QObject):
     @QProperty(str, notify=infoChanged)
     def title(self) -> str:
         return getattr(self.target, "title", "")
+
+    @QProperty(str, notify=infoChanged)
+    def albumType(self) -> str:
+        return getattr(self.target, "type", "")
 
     @QProperty(str, notify=infoChanged)
     def artist(self) -> str:

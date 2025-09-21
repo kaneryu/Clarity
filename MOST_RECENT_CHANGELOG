@@ -3,3 +3,7 @@
 ## New Features
 
 - Add occasional task management to BackgroundWorker for dynamic interval tasks, Added occasional offlinecheck and occasional discord recconect attempts (closes: 13) -- kaneryu on 2025-09-21
+
+## Bugfixes
+
+- made it so the albumtype is displayed in UI -- kaneryu on 2025-09-21
