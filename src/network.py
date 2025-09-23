@@ -60,8 +60,8 @@ class NetworkManager(QObject):
         self.session.headers.update(self.default_headers)
         
         NetworkManager._instance = self
-        self._onlineStatus = self.test_onlinemode()
-        self.onlineStatus: OnlineStatus
+        self.onlineStatus: OnlineStatus = OnlineStatus.ONLINE
+        
         bgworker.add_occasional_task(self.occasionally_test_onlinemode, dynamic_interval_max=60)  # Max interval of 5 minutes
     
     def occasionally_test_onlinemode(self) -> bool:
@@ -355,7 +355,7 @@ class NetworkManager(QObject):
         
         if not OnlineStatus.ONLINE:
             self.logger.error(f"Offlinemode check resulted in {r.name}", {"notifying": True, "customMsg": f"You are offline (offlineMode {r.name})"})
-        self._onlineStatus = r
+        self.onlineStatus = r
         return r
     
     @Property(int)
