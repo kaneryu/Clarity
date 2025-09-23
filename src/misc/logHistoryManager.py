@@ -226,7 +226,8 @@ class LoggingBridge(QObject):
         # Emit structured dict (keeping previous signal type but now dict already)
         self.logAdded.emit(log_dict)
         self.logHistoryChanged.emit()
-        if logging._nameToLevel.get(log_dict["level"], 0) >= self.notifyingLevel or (log_dict.get("args") and log_dict["args"].get("notifying", False)):
+        notifying = log_dict.get("args", {"notifying": True}).get("notifying", True)
+        if (logging._nameToLevel.get(log_dict["level"], 0) >= self.notifyingLevel and notifying is not False) or notifying is True:
             self.notifyingModel.addLog(log_dict)
             self.notifyingLogAdded.emit(log_dict)
             timeToRemoveInSeconds = 10

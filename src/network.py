@@ -129,7 +129,7 @@ class NetworkManager(QObject):
             response.raise_for_status()
             return response
         except Exception as e:
-            self.logger.error(f"GET request failed: {url} - {str(e)}")
+            self.logger.error(f"GET request failed: {url} - {str(e)}", {"notifying": False}) # some requests may occasionally fail, no need to tell the user
             return None
             
     
@@ -164,7 +164,7 @@ class NetworkManager(QObject):
             response.raise_for_status()
             return response
         except Exception as e:
-            self.logger.error(f"POST request failed: {url} - {str(e)}")
+            self.logger.error(f"POST request failed: {url} - {str(e)}", {"notifying": False}) # same reasoning as above
 
     
     def download_file(self, url: str, file_obj, 
@@ -354,7 +354,7 @@ class NetworkManager(QObject):
             r = OnlineStatus.OFFLINE
         
         if not OnlineStatus.ONLINE:
-            self.logger.error(f"You are Offline (offlineMode {r.name})")
+            self.logger.error(f"Offlinemode check resulted in {r.name}", {"notifying": True, "customMsg": f"You are offline (offlineMode {r.name})"})
         self._onlineStatus = r
         return r
     
