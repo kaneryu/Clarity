@@ -7,3 +7,4 @@
 ## Bugfixes
 
 - made it so the albumtype is displayed in UI -- kaneryu on 2025-09-21
+- don't spam online checks when we're offline -- kaneryu on 2025-09-23
