@@ -9,3 +9,4 @@
 - made it so the albumtype is displayed in UI -- kaneryu on 2025-09-21
 - don't spam online checks when we're offline -- kaneryu on 2025-09-23
 - improvements to notifying logs -- kaneryu on 2025-09-23
+- ensure multiple instances of interval tasks can't be started at the same time -- kaneryu on 2025-09-23

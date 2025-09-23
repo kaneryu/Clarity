@@ -63,7 +63,7 @@ class BackgroundWorker(QThread):
                 self.jobs.remove(i)
             current_time = time.time()
             for task in self.occasionalTasks:
-                if current_time - task["last_run"] >= task["interval"]:
+                if current_time - task["last_run"] >= task["interval"] and not task["isRunning"]:
                     job_runnable = JobRunnable(task["func"], task["args"], task["kwargs"], self.logger)
                     self.threadpool.start(job_runnable)
                     task["last_run"] = current_time
@@ -121,7 +121,8 @@ class BackgroundWorker(QThread):
             "kwargs": kwargs, 
             "interval": interval or 0, 
             "last_run": 0, 
-            "dynamic_interval_max": dynamic_interval_max
+            "dynamic_interval_max": dynamic_interval_max,
+            "isRunning": False
         }
         
         if dynamic_interval_max is not None:
@@ -131,7 +132,13 @@ class BackgroundWorker(QThread):
                 raise TypeError("When using 'dynamic_interval_max', the function must have a return type of 'bool'")
             task["interval"] = self.min_interval  # Start with minimum interval
             def dynamic_task_wrapper():
-                result = func(*args, **kwargs)
+                task["isRunning"] = True
+                try:
+                    result = func(*args, **kwargs)
+                except Exception as e:
+                    self.logger.error(f"Error with job {func}, {e}")
+                    traceback.print_exc()
+                    
                 if isinstance(result, bool):
                     if result:
                         task["interval"] *= 2  # Double the interval if successful
@@ -139,9 +146,9 @@ class BackgroundWorker(QThread):
                             task["interval"] = dynamic_interval_max  # Cap at max interval
                     else:
                         task["interval"] = self.min_interval  # If not, revert to min interval
+                task["isRunning"] = False
                 return result
             task["func"] = dynamic_task_wrapper
-        
         self.occasionalTasks.append(task)
     
     def remove_occasional_task(self, func: Callable[..., Any]) -> None:
