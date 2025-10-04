@@ -13,6 +13,8 @@ import "colobjs" as ColObjs
 import "js/utils.js" as Utils
 import "components/text" as TextVariant
 
+pragma ComponentBehavior: Bound
+
 ApplicationWindow {
     id: root
     visible: true
@@ -99,7 +101,7 @@ ApplicationWindow {
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
-                    Backend.setUrl("page/home")
+                    Backend.setUrl("page/album?id=MPREb_qCpqRdQhMVT")
                 }
             }
         }
@@ -201,37 +203,13 @@ ApplicationWindow {
         id: queueView
         // A floating view that shows the current queue
         property int visibleYpos: parent.height - (height + footer.height + 5)
-
-        anchors.right: parent.right
+        property int visibleXpos: parent.width - (width + 5)
+        x: visibleXpos
         y: visibleYpos
         height: parent.height / 2
         width: parent.width / 3
         z: 999
-
-        // MultiEffect {
-        //     anchors.fill: queueView
-        //     source: effectSource
-        //     blurEnabled: true
-        //     blur: 1
-        //     blurMax: 32
-        //     blurMultiplier: 1
-
-        //     // shadowEnabled: true
-        //     // shadowScale: 0
-        //     // shadowHorizontalOffset: 0
-        //     // shadowVerticalOffset: 5
-        //     // shadowBlur: 0.7
-        //     // shadowColor: "#71000000"
-        // }
-        // ShaderEffectSource {
-        //     id: effectSource
-
-        //     sourceItem: content
-        //     anchors.fill: parent
-        //     x: parent.x
-        //     y: parent.y
-        //     sourceRect: Qt.rect(x,y, width, height)
-        // }
+        clip: true
 
         MouseArea {
             id: clickblocker
@@ -245,12 +223,44 @@ ApplicationWindow {
             }
         }
 
+        ShaderEffectSource {
+            id: effectSource
+            anchors.fill: parent
+            sourceItem: content
+            sourceRect: Qt.rect(parent.x - 5, parent.y - footer.height - 10, parent.width, parent.height)
+        }
+
+        MultiEffect {
+            anchors.fill: effectSource
+            source: effectSource
+            autoPaddingEnabled: false
+            blurEnabled: true
+            blurMax: 64
+            blur: 0.5
+            
+            maskEnabled: true
+            maskThresholdMin: 0.5
+            maskSpreadAtMin: 1.0
+            maskSource: queueMask
+        }
+        
+        Item {
+            id: queueMask
+            layer.enabled: true
+            layer.smooth: true
+            anchors.fill: parent
+            visible: false
+
+            Rectangle {
+                anchors.fill: parent
+                radius: 15
+            }
+        }
         Rectangle {
             id: queueBackground
             anchors.fill: parent
             color: Utils.addAlpha("80", Theme.surfaceContainerHighest)
             radius: 15
-
         }
 
         Rectangle {
@@ -329,49 +339,77 @@ ApplicationWindow {
         state: (Backend.queueVisible === true) ? "visible" : "hidden"
         visible: true
 
-        Behavior on y {
-            NumberAnimation {
-                duration: 200
-            }
-        }
+
 
         states: [
             State {
                 name: "hidden"
-                PropertyChanges{
-                    target: queueView
-                    y: root.width + width
-                }
                 PropertyChanges {
                     target: queueView
-                    visible: false
+                    x: root.width + width
+                    y: root.height + height
                 }
+                // PropertyChanges {
+                //     target: queueView
+                //     visible: false
+                // }
             },
             State {
                 name: "visible"
                 PropertyChanges {
                     target: queueView
+                    x: queueView.visibleXpos
                     y: queueView.visibleYpos
                 }
-                PropertyChanges {
-                    target: queueView
-                    visible: true
-                }
+                // PropertyChanges {
+                //     target: queueView
+                //     visible: true
+                // }
             }
         ]
 
+        transitions: [
+            Transition {
+                from: "*"; to: "visible"
+                SequentialAnimation {
+                    NumberAnimation {
+                        properties: "x,y"
+                        easing.type: Easing.InOutQuad;
+                        duration: 300;
+                    }
+                }
+            },
+
+            Transition {
+                from: "*"; to: "hidden"
+                SequentialAnimation {
+                    NumberAnimation {
+                        properties: "x,y"
+                        easing.type: Easing.InOutQuad;
+                        duration: 200;
+                    }
+                }
+            }
+
+        ]
+
+        // MultiEffect {
+        //     anchors.fill: parent
+        //     source: parent
+        //     maskEnabled: true
+        //     maskSource: queueMask
+        // } TODO: mask the queuelist....
         ListView {
             id: queueList
             anchors.fill: parent
-            anchors.leftMargin: 5
-            anchors.rightMargin: 5
             anchors.topMargin: 5
             anchors.bottomMargin: 5
+            anchors.leftMargin: 5
+            anchors.rightMargin: 5
             z: 1
             spacing: 5
             
             model: Backend.getqueueModel()
-            clip: true
 
             delegate: Base.Song {
                 required property var qobject

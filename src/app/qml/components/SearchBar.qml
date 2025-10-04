@@ -118,7 +118,7 @@ Item {
 
         Keys.onReturnPressed: {
             Backend.setSearchURL(searchbarField.text)
-            Backend.search(searchbarField.text)
+            Interactions.search(searchbarField.text)
             searchbarField.text = ""
         }
     }

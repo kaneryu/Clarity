@@ -98,7 +98,7 @@ Item {
 
         TextVariant.Default {
             id: artistLengthText
-            text: albumTypeCorrector(root.albumType) + " By " + root.albumArtist + " • " + root.albumLength
+            text: Utils.albumTypeCorrector(root.albumType) + " By " + root.albumArtist + " • " + root.albumLength
             color: root.textColor
             width: parent.width
             marquee: true
@@ -108,18 +108,6 @@ Item {
                 color: "green"
                 anchors.fill: artistLengthText
                 z: -1
-            }
-
-            function albumTypeCorrector(type) {
-                if (type.toLowerCase() === "album") {
-                    return "Album"
-                } else if (type.toLowerCase() === "single") {
-                    return "Single"
-                } else if (type.toLowerCase() === "ep") {
-                    return "EP"
-                } else {
-                    return type
-                }
             }
         }
         

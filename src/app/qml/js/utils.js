@@ -27,3 +27,15 @@ function secondsToHMS(seconds) {
 
     return retlist.join(':');
 }
+
+function albumTypeCorrector(type) {
+    if (type.toLowerCase() === "album") {
+        return "Album"
+    } else if (type.toLowerCase() === "single") {
+        return "Single"
+    } else if (type.toLowerCase() === "ep") {
+        return "EP"
+    } else {
+        return type
+    }
+}

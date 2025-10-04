@@ -1,5 +1,5 @@
-# Version 0.46
+# Version 0.47
 
 ## New Features
 
-- add album page with SongListModel and SongProxyListModel -- kaneryu on 2025-10-04
+- improve QML components with particles, blur effects, and visual feedback -- kaneryu on 2025-10-04

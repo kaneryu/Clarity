@@ -21,38 +21,38 @@ Item {
         id: albumResultDelegate
     }
 
-    Item {
-        id: loadingIndicator
-        anchors.centerIn: parent
-        visible: true
+    // Item {
+    //     id: loadingIndicator
+    //     anchors.centerIn: parent
+    //     visible: true
 
-        Rectangle {
-            id: busyIndicatiorRect
-            anchors.centerIn: parent
-            width: 100
-            height: 1000
-            color: Theme.primary
-            radius: 3600
+    //     Rectangle {
+    //         id: busyIndicatiorRect
+    //         anchors.centerIn: parent
+    //         width: 100
+    //         height: 1000
+    //         color: Theme.primary
+    //         radius: 3600
 
-            SequentialAnimation {
-                running: true
-                loops: Animation.Infinite
-                OpacityAnimator {
-                    target: busyIndicatiorRect
-                    duration: 200
-                    easing.type: Easing.InQuad
-                    from: 0; to: 1;
-                }
-                OpacityAnimator {
-                    target: busyIndicatiorRect
-                    duration: 200
-                    easing.type: Easing.OutQuad
-                    from: 1; to: 0;
-                }
-            }
+    //         SequentialAnimation {
+    //             running: true
+    //             loops: Animation.Infinite
+    //             OpacityAnimator {
+    //                 target: busyIndicatiorRect
+    //                 duration: 200
+    //                 easing.type: Easing.InQuad
+    //                 from: 0; to: 1;
+    //             }
+    //             OpacityAnimator {
+    //                 target: busyIndicatiorRect
+    //                 duration: 200
+    //                 easing.type: Easing.OutQuad
+    //                 from: 1; to: 0;
+    //             }
+    //         }
 
-        }
-    }
+    //     }
+    // }
 
     ListView {
         id: searchListViewTest
@@ -93,7 +93,7 @@ Item {
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
-                                Interactions.songSearchPress(songContainer.ytid)
+                                Interactions.songPress(songContainer.ytid)
                             }
                         }
                     }
