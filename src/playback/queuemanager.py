@@ -144,8 +144,6 @@ class Queue(QObject):
         self.queueIds: list[str]
         self.queueModel = QueueModel()
 
-        self.cache = cacheManager.getCache("queue_cache")
-
         # Media player engine: start with VLC to satisfy type expectations, then swap if needed
         self._player = cast(MediaPlayer, VLCMediaPlayer())
         self.setupPlayer(self._player)
