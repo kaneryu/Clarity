@@ -61,4 +61,10 @@ Use these project-specific notes to be productive quickly. Keep changes aligned 
 - Long I/O and network must run off the UI thread; prefer background workers.
 - When adding runtime assets/QML, respect `Paths.ASSETSPATH`, `Paths.QMLPATH`, and include in Nuitka via `# nuitka-project: --include-data-*` if needed.
 
-Questions or missing areas? Tell me what’s unclear (e.g., workers API, SMTC hooks, or packaging specifics) and I’ll refine this file.
+## Notes on type checker
+The type checker complains a lot about PySide6/PyQt6 types. You can ignore these warnings, or add `# type: ignore` to the relevant lines.
+For example, the type checker thinks PySide6 properties are objects, not their underlying type, so please just ignore all those warnings and use the property anyway.
+
+
+## Extra notes
+Don't overcomment. Use comments to explain why something is done, not what is being done. The code should be clear enough to explain what is being done. Avoid redundant comments. For example, don't comment `self.x = 5  # Set x to 5`. Instead, if necessary, explain why `x` is set to 5.
