@@ -1,178 +1,197 @@
-import sys
-import subprocess
-import re
-subprocess.run(['git', 'init'])
-commit_history = subprocess.check_output(['git', 'log', '--pretty=format:"%h %an %ad %s', '--date=short']).decode('utf-8').split('\n')
-commit_history.reverse()
-commit_count = len(commit_history) - 1
+"""
+Automatic changelog generation based on conventional commits.
+Generates both full changelog and most recent changelog for CI/CD.
+"""
 
-commit_type_increment_mapping = [
-    {
-        "type": "feat",
-        "inc": "minor",
-        "amt": 1
-    },
-    {
-        "type": "fix",
-        "inc": "patch",
-        "amt": 1
-    },
-    {
-        "type": "perf",
-        "inc": "patch",
-        "amt": 1
-    },
-    {
-        "type": "refactor",
-        "inc": "patch",
-        "amt": 1
-    },
-    {
-        "type": "chore",
-        "inc": "patch",
-        "amt": 0
-    },
-    {
-        "type": "docs",
-        "inc": "patch",
-        "amt": 0
-    }
-]
+import logging
+from typing import Dict, List, Tuple
+from version_utils import (
+    get_commit_history_detailed,
+    parse_detailed_commit,
+    is_git_repository,
+    is_breaking_change,
+    COMMIT_TYPE_INCREMENT_MAPPING,
+    COMMIT_TYPE_INDEX_MAP
+)
 
-commit_type_index_map = {item["type"]: index for index, item in enumerate(commit_type_increment_mapping)}
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-major = 0
-minor = 0
-patch = 0
 
-regex = re.compile(r"(?P<hash>\w+) (?P<author>\w+) (?P<date>\d{4}-\d{2}-\d{2})\s+(?P<type>feat|chore|fix|perf|refactor|docs)(\((?P<scope>.*?)\))?: (?P<desc>.*)")
-
-def get_dict_changelog():
-    global major, minor, patch
-    changelog = {"0.1": []}
+def get_dict_changelog() -> Dict[str, List[Dict[str, str]]]:
+    """
+    Parse git commit history and organize into changelog dictionary.
+    Returns dict with version strings as keys and list of commits as values.
+    """
+    if not is_git_repository():
+        logger.error("Not in a git repository")
+        return {"0.1.0": []}
+    
+    commit_history = get_commit_history_detailed()
+    
+    major = 0
+    minor = 0
+    patch = 0
+    
+    changelog: Dict[str, List[Dict[str, str]]] = {}
+    current_version = f"{major}.{minor}.{patch}"
+    changelog[current_version] = []
+    
     for commit in commit_history:
-        commit = commit.strip('"').strip(" ")
-        print(f'"{commit}"')
-        matches = regex.match(commit)
-        if not matches:
-            print(f"Skipping commit: {commit}")
+        parsed = parse_detailed_commit(commit)
+        if not parsed:
             continue
-        hash = matches.group("hash")
-        type = matches.group("type")
-        scope = matches.group("scope")
-        desc = matches.group("desc")
-        date = matches.group("date").strip(" ")
-        author = matches.group("author").strip(" ")
         
+        commit_hash = parsed["hash"]
+        commit_type = parsed["type"]
+        scope = parsed["scope"]
+        desc = parsed["desc"]
+        date = parsed["date"]
+        author = parsed["author"]
+        full_message = parsed["full_message"]
         
-        commit_increment_details = commit_type_increment_mapping[commit_type_index_map[type]]
-        if commit_increment_details["inc"] == "major":
+        # Calculate version increment
+        if commit_type not in COMMIT_TYPE_INDEX_MAP:
+            logger.warning(f"Unknown commit type: {commit_type}")
+            continue
+        
+        commit_increment_details = COMMIT_TYPE_INCREMENT_MAPPING[COMMIT_TYPE_INDEX_MAP[commit_type]]
+        
+        # Check for breaking changes first (takes precedence)
+        if is_breaking_change(full_message):
+            major += 1
+            minor = 0
+            patch = 0
+            current_version = f"{major}.{minor}.{patch}"
+            changelog[current_version] = []
+        # Apply normal increment
+        elif commit_increment_details["inc"] == "major":
             major += commit_increment_details["amt"]
             minor = 0
             patch = 0
-        if commit_increment_details["inc"] == "minor":
+            if commit_increment_details["amt"] > 0:
+                current_version = f"{major}.{minor}.{patch}"
+                changelog[current_version] = []
+        elif commit_increment_details["inc"] == "minor":
             minor += commit_increment_details["amt"]
             patch = 0
-        if commit_increment_details["inc"] == "patch":
+            if commit_increment_details["amt"] > 0:
+                current_version = f"{major}.{minor}.{patch}"
+                if current_version not in changelog:
+                    changelog[current_version] = []
+        elif commit_increment_details["inc"] == "patch":
             patch += commit_increment_details["amt"]
+            if commit_increment_details["amt"] > 0:
+                current_version = f"{major}.{minor}.{patch}"
+                if current_version not in changelog:
+                    changelog[current_version] = []
         
-        if "BREAKING CHANGE" in commit:
-            major += 1
-            
-        if "BREAKING CHANGE" in commit or type == "major" or type == "feat":
-            changelog[f"{major}.{minor}"] = [
-                {
-                    "type": type,
-                    "hash": hash,
-                    "scope": scope,
-                    "desc": desc,
-                    "date": date,
-                    "author": author
-                }
-            ]
-        else:
-            changelog[f"{major}.{minor}"].append({
-                "type": type,
-                "hash": hash,
-                "scope": scope,
-                "desc": desc,
-                "date": date,
-                "author": author
-            })
-
+        # Append commit to current version (FIXED: no longer overwrites)
+        changelog[current_version].append({
+            "type": commit_type,
+            "hash": commit_hash,
+            "scope": scope,
+            "desc": desc,
+            "date": date,
+            "author": author
+        })
+    
     return changelog
 
-def checkCommit(commit):
-    matches = regex.match(commit)
-    if not matches:
-        return False
-    return True
 
-def create_changelog():
+def create_changelog() -> Tuple[str, str]:
+    """
+    Create formatted changelog strings.
+    Returns tuple of (full_changelog, most_recent_changelog).
+    """
     changelog = get_dict_changelog()
     changelog_str = ""
     most_recent_changelog = ""
+    
+    if not changelog:
+        logger.warning("No changelog entries found")
+        return ("", "")
+    
     most_recent_version = list(changelog.keys())[-1]
-    for version in reversed(changelog):
+    
+    for version in reversed(changelog.keys()):
+        version_section = f"# Version {version}\n\n"
+        headline_changes = ""
         new_features = ""
         bugfixes = ""
         perfimprovements = ""
-        headline_changes = ""
-        changelog_str += f"# Version {version}\n\n"
+        
+        # Headline Changes (Breaking changes - using is_breaking_change logic)
+        headline_items = [
+            item for item in changelog[version]
+            if item.get("desc") and ("BREAKING CHANGE" in item.get("desc", "") or "BUMP MAJOR" in item.get("desc", ""))
+        ]
+        if headline_items:
+            headline_changes = "## Headline Changes\n\n"
+            for item in headline_items:
+                headline_changes += f"- {item['desc']} -- {item['author']} on {item['date']}\n"
+            headline_changes += "\n"
+        
+        # New Features
+        feature_items = [item for item in changelog[version] if item["type"] == "feat"]
+        if feature_items:
+            new_features = "## New Features\n\n"
+            for item in feature_items:
+                new_features += f"- {item['desc']} -- {item['author']} on {item['date']}\n"
+            new_features += "\n"
+        
+        # Bugfixes
+        bugfix_items = [item for item in changelog[version] if item["type"] == "fix"]
+        if bugfix_items:
+            bugfixes = "## Bugfixes\n\n"
+            for item in bugfix_items:
+                bugfixes += f"- {item['desc']} -- {item['author']} on {item['date']}\n"
+            bugfixes += "\n"
+        
+        # Performance Improvements
+        perf_items = [item for item in changelog[version] if item["type"] == "perf"]
+        if perf_items:
+            perfimprovements = "## Performance Improvements\n\n"
+            for item in perf_items:
+                perfimprovements += f"- {item['desc']} -- {item['author']} on {item['date']}\n"
+            perfimprovements += "\n"
+        
+        # Assemble version section
+        version_content = version_section + headline_changes + new_features + bugfixes + perfimprovements
+        changelog_str += version_content + "\n"
+        
+        # Save most recent version
         if version == most_recent_version:
-            most_recent_changelog = f"# Version {version}\n\n"
-        
-        headline_changes += "## Headline Changes\n\n"
-        for item in changelog[version]:
-            if item["type"] == "major":
-                headline_changes += f"- {item['desc']} -- {item["author"]} on {item["date"]}\n"
-        
-        new_features += "## New Features\n\n"
-        for item in changelog[version]:
-            if item["type"] == "feat":
-                new_features += f"- {item['desc']} -- {item["author"]} on {item["date"]}\n"
-                
-        bugfixes += "\n## Bugfixes\n\n"
-        for item in changelog[version]:
-            if item["type"] == "fix":
-                bugfixes += f"- {item['desc']} -- {item["author"]} on {item["date"]}\n"
-                
-        perfimprovements += "\n## Performance Improvements\n\n"
-        for item in changelog[version]:
-            if item["type"] == "perf":
-                perfimprovements += f"- {item['desc']} -- {item["author"]} on {item["date"]}\n"
-
-        if headline_changes != "## Headline Changes\n\n":
-            changelog_str += headline_changes
-            if version == most_recent_version:
-                most_recent_changelog += headline_changes
-                
-        if new_features != "## New Features\n\n":
-            changelog_str += new_features
-            if version == most_recent_version:
-                most_recent_changelog += new_features
-                
-        if bugfixes != "\n## Bugfixes\n\n":
-            changelog_str += bugfixes
-            if version == most_recent_version:
-                most_recent_changelog += bugfixes
-                
-        if perfimprovements != "\n## Performance Improvements\n\n":
-            changelog_str += perfimprovements
-            if version == most_recent_version:
-                most_recent_changelog += perfimprovements
-        
-        changelog_str += "\n\n\n"
-        
+            most_recent_changelog = version_content
+    
     return (changelog_str, most_recent_changelog)
 
-def write_changelog():
-    res = create_changelog()
-    f = open("CHANGELOG", "w")
-    fb = open("MOST_RECENT_CHANGELOG", "w")
-    
-    f.write(res[0])
-    fb.write(res[1])
-    
-    fb.close()
-    f.close()
+
+def write_changelog() -> None:
+    """
+    Generate and write changelog files to disk.
+    Creates CHANGELOG and MOST_RECENT_CHANGELOG files.
+    """
+    try:
+        changelog_full, changelog_recent = create_changelog()
+        
+        # Write full changelog
+        with open("CHANGELOG", "w", encoding="utf-8") as f:
+            f.write(changelog_full)
+        logger.info("Successfully wrote CHANGELOG")
+        
+        # Write most recent changelog
+        with open("MOST_RECENT_CHANGELOG", "w", encoding="utf-8") as f:
+            f.write(changelog_recent)
+        logger.info("Successfully wrote MOST_RECENT_CHANGELOG")
+        
+    except IOError as e:
+        logger.error(f"Failed to write changelog files: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error while generating changelog: {e}")
+        raise

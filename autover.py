@@ -1,85 +1,47 @@
-import sys
-import subprocess
-import re
+"""
+Automatic versioning based on conventional commits.
+This module provides functions for calculating semantic versions from git history
+and validating commit message formats.
+"""
 
-commit_history = subprocess.check_output(['git', 'log', '--oneline']).decode('utf-8').split('\n')
-commit_history.reverse()
-commit_count = len(commit_history) - 1
+import logging
+from version_utils import (
+    get_version_string,
+    check_commit_format,
+    is_git_repository
+)
 
-typeincmap = [
-    {
-        "type": "feat",
-        "inc": "minor",
-        "amt": 1
-    },
-    {
-        "type": "fix",
-        "inc": "patch",
-        "amt": 1
-    },
-    {
-        "type": "perf",
-        "inc": "patch",
-        "amt": 1
-    },
-    {
-        "type": "refactor",
-        "inc": "patch",
-        "amt": 1
-    },
-    {
-        "type": "chore",
-        "inc": "patch",
-        "amt": 0
-    },
-    {
-        "type": "docs",
-        "inc": "patch",
-        "amt": 0
-    }
-]
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-mapmap = {item["type"]: index for index, item in enumerate(typeincmap)}
 
-major = 0
-minor = 0
-patch = 0
+def getVer() -> str:
+    """
+    Calculate the current semantic version from git commit history.
+    Returns version string in format: major.minor.patch
+    """
+    if not is_git_repository():
+        logger.error("Not in a git repository")
+        return "0.0.0"
+    
+    try:
+        return get_version_string()
+    except Exception as e:
+        logger.error(f"Failed to calculate version: {e}")
+        return "0.0.0"
 
-regex = re.compile(r"(?P<hash>.*?) ?(?P<type>feat|chore|fix|perf|refactor|docs)(\((?P<scope>.*?)\))?: (?P<desc>.*)")
 
-def getVer():
-    global major, minor, patch
-    for commit in commit_history:
-
-        matches = regex.match(commit)
-        if not matches:
-            continue
-        hash = matches.group("hash")
-        type = matches.group("type")
-        scope = matches.group("scope")
-        desc = matches.group("desc")
-        
-        
-        mitem = typeincmap[mapmap[type]]
-        if mitem["inc"] == "major":
-            major += mitem["amt"]
-            minor = 0
-            patch = 0
-        if mitem["inc"] == "minor":
-            minor += mitem["amt"]
-            patch = 0
-        if mitem["inc"] == "patch":
-            patch += mitem["amt"]
-        
-        if "BREAKING CHANGE" in commit or "BUMP MAJOR" in commit:
-            major += 1
-            minor = 0
-            patch = 0
-
-    return f"{major}.{minor}.{patch}"
-
-def checkCommit(commit):
-    matches = regex.match(commit)
-    if not matches:
+def checkCommit(commit: str) -> bool:
+    """
+    Validate if a commit message follows conventional commit format.
+    Returns True if valid, False otherwise.
+    """
+    try:
+        return check_commit_format(commit)
+    except Exception as e:
+        logger.error(f"Failed to validate commit: {e}")
         return False
-    return True
