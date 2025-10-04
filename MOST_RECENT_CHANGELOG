@@ -1,5 +1,5 @@
-# Version 0.43
+# Version 0.44
 
 ## New Features
 
-- standardize MediaPlayer with NAME constant and songChanged(int) signal -- kaneryu on 2025-10-04
+- rename downloaded to downloadState and improve initialization -- kaneryu on 2025-10-04

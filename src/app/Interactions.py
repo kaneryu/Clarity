@@ -127,8 +127,11 @@ class Interactions(QObject):
     
     @Slot(int)
     def setQueueIndex(self, index: int):
-        q = universal.queueInstance
-        q.setPointer(index)
+        def _func():
+            q = universal.queueInstance
+            q.goto(index)
+        # universal.bgworker.runnow(_func) # try and fix ui stutter?
+        _func() # probably going to have to make the whole queue run in a separate thread at some point
     
     @Slot()
     def back(self):
@@ -153,11 +156,15 @@ class Interactions(QObject):
         song = universal.song_module.SongProxy(universal.song_module.Song(id), self)
         return song
     
+    @Slot(str, result=bool)
+    def search(self, query: str) -> bool:
+        universal.asyncBgworker.add_job_sync(func = universal.search_shorthand, usestar = False, a = [], kw = {"query": query})
+        return True
         
     @Slot(str)
-    def songSearchPress(self, id: str):
+    def songPress(self, id: str):
         q = universal.queueInstance
-        q.add(id, goto=True)
+        q.gotoOrAdd(id)
 
     @Slot(str, result=QObject)
     def getAlbumFromSongID(self, id: str):
@@ -178,7 +185,14 @@ class Interactions(QObject):
         if album is None:
             self.logger.warning(f"Album not found for album ID: {id}")
             return
-        universal.queue_module.addAlbumToQueue(album, goto=True)
+        universal.appUrl.setUrl(f"clarity:///page/album?id={id}")
+    
+    @Slot(QObject)
+    def addAlbumToQueue(self, album: universal.album_module.AlbumProxy):
+        if album is None:
+            self.logger.warning("Album is None, cannot add to queue")
+            return
+        universal.queue_module.addAlbumToQueue(album.target, goto=True)
     
     
     # convenience functions for interacting with the song class
@@ -187,7 +201,7 @@ class Interactions(QObject):
     def getSongDownloadStatus(self, id: str):
         smodule = universal.song_module
         song = smodule.Song(id)
-        return song.downloadStatus
+        return song.downloadState
     
     @Slot(str)
     def getSongDownloadProgress(self, id: str):

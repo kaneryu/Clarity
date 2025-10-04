@@ -8,7 +8,7 @@ import logging
 from typing import Union
 
 from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QBuffer, QRect
-from PySide6.QtGui import QPixmap, QPainter, QImage
+from PySide6.QtGui import QPixmap, QPainter, QImage, QImageReader, QImageWriter
 from PySide6.QtNetwork import QNetworkRequest
 from PySide6.QtQuick import QQuickImageProvider
 
@@ -120,12 +120,13 @@ class Song(QObject):
     idChanged = Signal(str)
     sourceChanged = Signal(str)
     dataStatusChanged = Signal(int)
-    downloadedChanged = Signal(bool)
-    downloadStatusChanged = Signal(int)
+    downloadStateChanged = Signal(int)
     downloadProgressChanged = Signal(int)
     playbackReadyChanged = Signal(bool)
     
     songInfoFetched = Signal()
+    
+    playingStatusChanged = Signal(int)
     
     _instances: dict[str, "Song"] = {}
     
@@ -154,16 +155,9 @@ class Song(QObject):
         get_info_full: Gets the full info of the song.
         get_lyrics: Gets the lyrics of the song.
         """
-        self.logger = logging.getLogger(f"Song.{id}")
-        self._downloaded = cacheManager.getdataStore("song_datastore").checkFileExists(id)
-            
-        if self._downloaded:
-            self._dowloadStatus = DownloadStatus.DOWNLOADED
-        else:
-            self._dowloadStatus = DownloadStatus.NOT_DOWNLOADED
-            
         if hasattr(self, '_initialized'):
             return
+        self.logger = logging.getLogger(f"Song.{id}")
         
         super().__init__()
         
@@ -176,13 +170,29 @@ class Song(QObject):
         self.playbackInfo: dict = {}
         self._initialized: bool = True
         self.gettingPlaybackReady = False
-        
-        self.downloadedChanged.connect(self.playbackReadyChanged)
-        
+        self._downloadState = DownloadStatus.NOT_DOWNLOADED
+        self.downloadStateChanged.connect(lambda: self.checkPlaybackReady())
+
         self.playbackReadyChanged.connect(lambda: self.logger.debug(f"Playback ready changed for song {self.id} ({self.title}): {self.playbackReady}"))
 
-        self.get_info_cache_only() # immediately check if song data is in cache already
+        self._prev_playbackreadyresult: Union[bool, None] = None
+        
+        # Schedule cache check and file existence check on background thread
+        # This avoids blocking UI during Song creation
+        def _lazy_init():
+            if cacheManager.getdataStore("song_datastore").checkFileExists(id):
+                self._downloadState = DownloadStatus.DOWNLOADED
+                self.downloadStateChanged.emit(self._downloadState)
+            self.get_info_cache_only()
+        
+        universal.bgworker.add_job(_lazy_init)
         # self.moveToThread(g.mainThread)
+        
+        self.title: str = "Unknown Title"
+        self.artist: str = "Unknown Artist"
+        self.duration: int = 0
+        # 99% of the time, the UI tries to fetch these immediately
+        # So we set them to some default values to avoid attribute errors
 
         return None
     
@@ -207,31 +217,21 @@ class Song(QObject):
         
     @QProperty(int, notify = dataStatusChanged)
     def dataStatus(self) -> int:
-        return self._dataStatus.value
+        return self._dataStatus
     
     @dataStatus.setter
     def dataStatus(self, value: Union[int, DataStatus]) -> None:
         self._dataStatus = DataStatus(value) if isinstance(value, int) else value
         self.dataStatusChanged.emit(value if isinstance(value, int) else value.value)
     
-    
-    @QProperty(bool, notify = downloadedChanged)
-    def downloaded(self) -> bool:
-        return cacheManager.getdataStore("song_datastore").checkFileExists(self.id)
+    @QProperty(int, notify = downloadStateChanged)
+    def downloadState(self) -> int:
+        return self._downloadState._value_
 
-    @downloaded.setter
-    def downloaded(self, value: bool) -> None:
-        self._downloaded = value
-        self.downloadedChanged.emit(self._downloaded)
-    
-    @QProperty(int, notify = downloadStatusChanged)
-    def downloadStatus(self) -> int:
-        return self._dowloadStatus._value_
-
-    @downloadStatus.setter
-    def downloadStatus(self, value: int) -> None:
-        self._dowloadStatus = DownloadStatus(value)
-        self.downloadStatusChanged.emit(self._dowloadStatus._value_)
+    @downloadState.setter
+    def downloadState(self, value: int) -> None:
+        self._downloadState = DownloadStatus(value)
+        self.downloadStateChanged.emit(self._downloadState._value_)
     
     @QProperty(int, notify = downloadProgressChanged)
     def downloadProgress(self) -> int:
@@ -245,12 +245,14 @@ class Song(QObject):
     @QProperty(bool, notify = playbackReadyChanged)
     def playbackReady(self) -> bool:
         """Returns whether the song is ready for playback or not."""
-        return self._downloaded or (self.playbackInfo != {})
+        return self.downloadState == DownloadStatus.DOWNLOADED or (self.playbackInfo != {})
     
     def checkPlaybackReady(self, noEmit: bool = False) -> bool:
         """Checks if the song is ready for playback."""
-        new_playbackReady = self._downloaded or (self.playbackInfo is not {})
-        self.playbackReadyChanged.emit(new_playbackReady)
+        new_playbackReady = self.downloadState == DownloadStatus.DOWNLOADED or (self.playbackInfo != {})
+        if new_playbackReady != self._prev_playbackreadyresult and not noEmit:
+            self._prev_playbackreadyresult = new_playbackReady
+            self.playbackReadyChanged.emit(new_playbackReady)
         return new_playbackReady
     
     def from_search_result(self, search_result: dict) -> None:
@@ -352,8 +354,13 @@ class Song(QObject):
         else:
             self.rawData = json.loads(cachedData)
             if self.rawData.get("playabilityStatus", {}).get("status") == "ERROR":
-                raise Exception(f"Song cannot be retrieved due to playability issues. id: {self.id} " + self.rawData.get("playabilityStatus", {}).get("reason"))
-
+                self.logger.warning(f"Song cannot be retrieved due to playability issues. id: {self.id} " + self.rawData.get("playabilityStatus", {}).get("reason"))
+                self.dataStatus = DataStatus.NOTLOADED
+                return
+            if self.rawData.get("playabilityStatus", {}).get("status") == "LOGIN_REQUIRED":
+                self.logger.warning(f"Song cannot be retrieved due to login requirements. id: {self.id} " + self.rawData.get("playabilityStatus", {}).get("reason"))
+                self.dataStatus = DataStatus.NOTLOADED
+                return
 
         self.rawVideoDetails: dict = self.rawData["videoDetails"]
         self._set_info(self.rawVideoDetails)
@@ -377,8 +384,11 @@ class Song(QObject):
             c.put(identifier, json.dumps(self.rawPlaybackInfo), byte = False, expiration = int(time.time() + 3600)) # 1 hour
         else:
             self.rawPlaybackInfo = json.loads(cachedData)
-        
-        
+
+        if self.rawPlaybackInfo == {}:
+            self.rawPlaybackInfo = None
+            return
+
         # open("playbackinfo.json", "w").write(json.dumps(self.rawPlaybackInfo))
         
     def get_playback(self, skip_download: bool = False) -> None:
@@ -387,16 +397,16 @@ class Song(QObject):
         if not datastore:
             self.logger.critical("No data store found for songs, cannot get download info.")
             return
-        if self.downloaded and not skip_download:
+        if self.downloadState == DownloadStatus.DOWNLOADED and not skip_download:
             try:
                 fp = cacheManager.getdataStore("song_datastore").getFilePath(self.id)
                 meta: dict = json.loads(cacheManager.getdataStore("song_datastore").get_file(self.id + "_downloadMeta"))
                 meta["url"] = fp
                 self.playbackInfo = {"audio": [meta], "fromdownload": True}
                 return
-            except Exception:
-                # temporary fix since some files were downloaded before the meta was saved
-                pass
+            except (FileNotFoundError, KeyError, json.JSONDecodeError):
+                # Metadata missing or corrupted - fall through to re-download playback info
+                self.logger.warning(f"Download metadata missing for {self.id}, will re-fetch playback info")
         
         if not self.rawPlaybackInfo:
             self.download_playbackInfo()
@@ -466,11 +476,10 @@ class Song(QObject):
         c.delete(identifier)
         self.rawPlaybackInfo = {}
         
-        if self.downloaded:
+        if self.downloadState == DownloadStatus.DOWNLOADED:
             cacheManager.getdataStore("song_datastore").delete(self.id)
             cacheManager.getdataStore("song_datastore").delete(self.id + "_downloadMeta")
-            self.downloaded = False
-            self.downloadStatus = DownloadStatus.NOT_DOWNLOADED
+            self.downloadState = DownloadStatus.NOT_DOWNLOADED
             
         self.get_playback(skip_download = True)
 
@@ -479,7 +488,7 @@ class Song(QObject):
         file: io.FileIO = datastore.open_write_file(key=id, ext=ext, bytes=True)
         downloaded = file.tell()  # Get the current file size to determine how many bytes have been written
 
-        self.downloadStatus = DownloadStatus.DOWNLOADING
+        self.downloadState = DownloadStatus.DOWNLOADING
         self.downloadProgress = 0
         
         # Define a progress callback
@@ -511,17 +520,16 @@ class Song(QObject):
             if success:
                 self.logger.info(f"Download complete for {self.title}", {"notifying": True, "customMessage": f"Download complete for {self.title}"})
                 datastore.close_write_file(key=self.id, ext=ext, file=file)
-                self.downloadStatus = DownloadStatus.DOWNLOADED
+                self.downloadState = DownloadStatus.DOWNLOADED
                 self.downloadProgress = 100
-                self.downloaded = True
             else:
                 self.logger.error(f"Download failed for {self.title}")
-                self.downloadStatus = DownloadStatus.NOT_DOWNLOADED
+                self.downloadState = DownloadStatus.NOT_DOWNLOADED
                 datastore.close_write_file(key=self.id, ext=ext, file=file)
                 
         except Exception as e:
             self.logger.error(f"Download exception for {self.title}: {str(e)}")
-            self.downloadStatus = DownloadStatus.NOT_DOWNLOADED
+            self.downloadState = DownloadStatus.NOT_DOWNLOADED
             try:
                 datastore.close_write_file(key=self.id, ext=ext, file=file)
             except:
@@ -572,7 +580,7 @@ class Song(QObject):
         Returns:
             str: Path or URL
         """
-        if self.downloaded or self.downloadStatus == DownloadStatus.DOWNLOADED:
+        if self.downloadState == DownloadStatus.DOWNLOADED:
             # print("Asked for MRL; returning path")
             if result := cacheManager.getdataStore("song_datastore").getFilePath(self.id):
                 return result
@@ -604,10 +612,11 @@ class Song(QObject):
 class SongProxy(QObject):
     idChanged = Signal(str)
     sourceChanged = Signal(str)
+    dataStatusChanged = Signal(int)
     downloadedChanged = Signal(bool)
     downloadStatusChanged = Signal(int)
     downloadProgressChanged = Signal(int)
-    playingStatusChanged = Signal(bool)
+    playingStatusChanged = Signal(int)
     
     infoChanged = Signal()
     
@@ -617,22 +626,23 @@ class SongProxy(QObject):
         
         self.target.idChanged.connect(self.idChanged)
         self.target.sourceChanged.connect(self.sourceChanged)
-        self.target.downloadedChanged.connect(self.downloadedChanged)
-        self.target.downloadStatusChanged.connect(self.downloadStatusChanged)
+        self.target.downloadStateChanged.connect(self.downloadStatusChanged)
+        self.target.dataStatusChanged.connect(self.dataStatusChanged)
         self.target.downloadProgressChanged.connect(self.downloadProgressChanged)
+        self.target.playingStatusChanged.connect(self.playingStatusChanged)
         
         self.target.songInfoFetched.connect(self.infoChanged)
         
         self.target.idChanged.connect(lambda: self.update("id"))
         self.target.sourceChanged.connect(lambda: self.update("source"))
-        self.target.downloadedChanged.connect(lambda: self.update("downloaded"))
-        self.target.downloadStatusChanged.connect(lambda: self.update("downloadStatus"))
+        self.target.downloadStateChanged.connect(lambda: self.update("downloadState"))
         self.target.downloadProgressChanged.connect(lambda: self.update("downloadProgress"))
+
         
+
         self._id = self.target.id
         self._source = self.target.source
-        self._downloaded = self.target.downloaded
-        self._downloadStatus = self.target.downloadStatus
+        self._downloadState = self.target.downloadState
         self._downloadProgress = self.target.downloadProgress
         self._playbackReady = self.target.playbackReady
         
@@ -685,13 +695,9 @@ class SongProxy(QObject):
     def source(self) -> str:
         return getattr(self, "_source")
 
-    @QProperty(bool, notify=downloadedChanged)
-    def downloaded(self) -> bool:
-        return getattr(self, "_downloaded")
-
     @QProperty(int, notify=downloadStatusChanged)
     def downloadStatus(self) -> int:
-        return getattr(self, "_downloadStatus")
+        return getattr(self, "_downloadState")
 
     @QProperty(int, notify=downloadProgressChanged)
     def downloadProgress(self) -> int:
@@ -704,6 +710,10 @@ class SongProxy(QObject):
             return q.playingStatus  # type: ignore[return-value]
         else:
             return PlayingStatus.NOT_PLAYING
+    
+    @QProperty(int, notify=dataStatusChanged)
+    def dataStatus(self) -> int:
+        return getattr(self.target, "_dataStatus").value
         
     @QProperty(bool, notify=infoChanged)
     def playbackReady(self) -> bool:
@@ -775,38 +785,56 @@ class SongImageProvider(QQuickImageProvider):
     def requestImage(self, id, size, requestedSize):
         # should be in a diff. thread, if i read the docs right
         # ID will be in the format songID/radius
+
+        skipCache = False
+        cacheIdentifier = universal.ghash(f"songimage_{id}_{requestedSize.width()}x{requestedSize.height()}")
+        if cachedData := universal.imageCache.get(cacheIdentifier):
+            img = QImage()
+            img.loadFromData(cachedData)
+            return img
         
-        
+        def usePlaceholder():
+            placeholder = os.path.join(universal.Paths.ASSETSPATH, "placeholders", "generic.png")
+            with open(placeholder, 'rb') as file:
+                data = file.read()
+            img.loadFromData(data)
+            
+            
         song_id, radius = id.split("/")
         song = Song(song_id)
         if song_id == '' or song_id is None:
             return
-        run_sync(song.ensure_info)
-        thumbUrl = song.largestThumbnailUrl
+        if song.dataStatus == DataStatus.NOTLOADED:
+            run_sync(song.get_info)
+        if song.dataStatus is DataStatus.LOADING:
+            while song.dataStatus is DataStatus.LOADING:
+                time.sleep(0.1) # wait a bit for the info to load
         img = QImage()
-        
-        if universal.networkManager.onlineStatus is not universal.OnlineStatus.ONLINE:
-            placeholder = os.path.join(universal.Paths.ASSETSPATH, "placeholders", "generic.png")
-            with open(placeholder, 'rb') as file:
-                data = file.read()
-                
-            img.loadFromData(data)
+
+        if (universal.networkManager.onlineStatus is not universal.OnlineStatus.ONLINE) or (song.dataStatus is not DataStatus.LOADED):
+            usePlaceholder()
+            skipCache = True
         else:
-            request = universal.networkManager.get(thumbUrl)
-            if not request:
-                
-                data = None
-                placeholder = os.path.join(universal.Paths.ASSETSPATH, "placeholders", "generic.png")
-                with open(placeholder, 'rb') as file:
-                    data = file.read()
-                    
-                img.loadFromData(data)
-            else:
-                img = QImage()
-                if request.status_code != 200:
-                    return img
-                
-                img.loadFromData(request.content)
+            try:
+                thumbUrl = song.largestThumbnailUrl
+            except AttributeError:
+                usePlaceholder()
+                skipCache = True
+            else: # No exception
+                if cachedData := universal.imageCache.get(universal.ghash(thumbUrl)):
+                    img.loadFromData(cachedData)
+                else:
+                    request = universal.networkManager.get(thumbUrl)
+                    if not request:
+                        usePlaceholder()
+                        skipCache = True
+                    else:
+                        img = QImage()
+                        if request.status_code != 200:
+                            return img
+                        
+                        img.loadFromData(request.content)
+                        universal.imageCache.put(universal.ghash(thumbUrl), request.content, byte=True)
 
         if requestedSize.width() < 0 or requestedSize.height() < 0:
             requestedSize = QSize(544, 544)
@@ -815,9 +843,16 @@ class SongImageProvider(QQuickImageProvider):
         mask = self.createRoundingImage(requestedSize, int(radius))
         
         img.setAlphaChannel(mask.toImage())
+
+        if not skipCache:
+            buff = QBuffer()
+            res = buff.open(QBuffer.OpenModeFlag.ReadWrite)
+            result = img.save(buff, "PNG", quality=100) # type: ignore[call-overload]
+            buff.seek(0)
+            if not result:
+                logging.getLogger("SongImageProvider").error(f"Failed to cache image {id} with size {requestedSize.width()}x{requestedSize.height()}")
+            else:
+                universal.imageCache.put(cacheIdentifier, buff.data(), byte=True)
+            buff.close()
         
         return img
-        
-        
-
-    

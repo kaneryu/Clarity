@@ -23,6 +23,8 @@ from src.misc.enumerations.Album import DownloadStatus
 from src.misc.enumerations.Song import DownloadStatus as SongDownloadStatus
 from src.misc.enumerations import DataStatus
 
+from src.innertube.models.songListModel import SongListModel, SongProxyListModel
+
 
 def run_sync(func, *args, **kwargs):
     coro = func(*args, **kwargs)
@@ -130,14 +132,17 @@ class Album(QObject):
             return None
 
         if len(self.songs) > 0:
-            self.logger.warning("Songs already fetched, refetching anyway.")
+            # self.logger.warning("Songs already fetched, refetching anyway.")
+            # above is prev behavior, but I see no reason to ever refetch, so just return existing list
+            return self.songs
+        
         idlist = list(self.trackIdTitleMap.keys())
 
         tracklist = [song.Song(id) for id in idlist]
         for track in tracklist:
             if not track.dataStatus == DataStatus.LOADED:
                 universal.asyncBgworker.add_job_sync(track.get_info)
-            track.downloadStatusChanged.connect(self.songDownloadStatusChanged)
+            track.downloadStateChanged.connect(self.songDownloadStatusChanged)
         self.songs = tracklist
         return self.songs
     
@@ -200,7 +205,7 @@ class Album(QObject):
 
         downloadStatuses: dict[Literal["id"], SongDownloadStatus] = {}
         for track in self.songs:
-            downloadStatuses[track.id] = track.downloadStatus
+            downloadStatuses[track.id] = track.downloadState
 
         downloadStatus = DownloadStatus.FULLY_DOWNLOADED
         for status in downloadStatuses.values():
@@ -269,7 +274,10 @@ class AlbumProxy(QObject):
 
         self.target.dataStatusChanged.connect(self._on_data_status_changed)
         self.target.downloadStatusChanged.connect(self._on_download_status_changed)
-
+        
+        self.songsModel: Union[SongListModel, None] = None
+        self.songsProxyModel: Union[SongProxyListModel, None] = None
+            
         # Keep proxy on UI thread
         self.setParent(parent)
         self.moveToThread(parent.thread())
@@ -355,6 +363,31 @@ class AlbumProxy(QObject):
     @QProperty(int, notify=downloadStatusChanged)
     def downloadStatus(self) -> int:
         return self._downloadStatus
+
+    @Slot(result=QObject)
+    def getSongsModel(self) -> Union[SongListModel, None]:
+        if not self.songsModel:
+            if DataStatus(self.dataStatus) is not DataStatus.LOADED:
+                return None
+            model = SongListModel()
+            model.setSongList(self.target.songs)
+            self.songsModel = model
+        return self.songsModel
+
+    @Slot(result=QObject)
+    def getSongsProxyModel(self) -> Union[SongProxyListModel, None]:
+        if not self.songsProxyModel:
+            if DataStatus(self.dataStatus) is not DataStatus.LOADED:
+                return None
+            model = SongProxyListModel(self)
+            model.setSongList(self.target.songs)
+            self.songsProxyModel = model
+        return self.songsProxyModel
+    
+    @Slot()
+    def download(self) -> None:
+        self.target.download()
+
 
 class AlbumImageProvider(QQuickImageProvider):
     sendRequest = Signal(QNetworkRequest, str, name="sendRequest")
