@@ -4,6 +4,10 @@
 
 - rename downloaded to downloadState and improve initialization -- kaneryu on 2025-10-04
 
+## Bugfixes
+
+- add Qt signals and proper change notifications to AppUrl -- kaneryu on 2025-10-04
+
 
 
 # Version 0.43
