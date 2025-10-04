@@ -1,3 +1,11 @@
+# Version 0.45
+
+## New Features
+
+- add async song insertion, goto/gotoOrAdd, and improve player backend fallback -- kaneryu on 2025-10-04
+
+
+
 # Version 0.44
 
 ## New Features

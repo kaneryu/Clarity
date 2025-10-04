@@ -4,7 +4,7 @@ import traceback
 
 from typing import Union, Any, cast
 
-from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QTimer
+from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QTimer, QThread
 
 from src import universal as universal
 from src import cacheManager
@@ -100,7 +100,9 @@ class QueueModel(QAbstractListModel):
 
     def insertRows(self, row: int, count: int = 1, parent: QModelIndex | QPersistentModelIndex = QModelIndex()):
         self.beginInsertRows(QModelIndex(), row, row + count - 1)
-        self._queue.insert(row, [[] for _ in range(count)])  # type: ignore[arg-type]
+        # Insert actual Song placeholders at the position
+        for i in range(count):
+            self._queue.insert(row + i, None)  # type: ignore[arg-type]
         self.endInsertRows()
 
 
@@ -108,7 +110,7 @@ class Queue(QObject):
     """Queue managing the list, Discord presence, and WinSMTC; playback is delegated to MediaPlayer."""
 
     queueChanged = Signal()
-    songChanged = Signal()
+    songChanged = Signal(int) # emits PREVIOUS song index
     pointerMoved = Signal()
     playingStatusChanged = Signal(int)
     durationChanged = Signal()
@@ -116,6 +118,7 @@ class Queue(QObject):
 
     nextSongSignal = Signal()
     prevSongSignal = Signal()
+    gotoSignal = Signal(int)
 
     singleton: Union["Queue", None] = None
 
@@ -138,6 +141,7 @@ class Queue(QObject):
 
         self.loop: LoopType = LoopType.NONE
         self.queue: list[Song]
+        self.queueIds: list[str]
         self.queueModel = QueueModel()
 
         self.cache = cacheManager.getCache("queue_cache")
@@ -165,10 +169,12 @@ class Queue(QObject):
 
         # Relay control signals
         self.playingStatusChanged.connect(lambda: self.currentSongObject.checkPlaybackReady())  # type: ignore[attr-defined]
+        self.playingStatusChanged.connect(lambda: self.currentSongObject.playingStatusChanged.emit(self.playingStatus))  # type: ignore[attr-defined]
+        self.songChanged.connect(self.songChangedPlaybackStatusUpdate)
         self.nextSongSignal.connect(lambda: self.next())
         self.prevSongSignal.connect(lambda: self.prev())
+        self.gotoSignal.connect(lambda index: self.goto(index))
         
-        # Note: currentSongObject is a QProperty getter below; no direct field needed
 
         # Debounce state for Next presses
         self._next_press_count = 0
@@ -183,6 +189,12 @@ class Queue(QObject):
         self._prev_timer.setSingleShot(True)
         self._prev_timer.timeout.connect(self._finalize_prev_sequence)
     
+    @Slot(int)
+    def songChangedPlaybackStatusUpdate(self, prevpointer):
+        if not prevpointer == -1:
+            song: Song = self.queue[prevpointer]
+            song.playingStatusChanged.emit(PlayingStatus.NOT_PLAYING)
+    
     def updateMediaPlayer(self, fallback: bool = True):
         backend = getSetting("mediaPlayerBackend").value
         setting = getSetting("mediaPlayerBackend")
@@ -191,50 +203,46 @@ class Queue(QObject):
             try:
                 self.swapPlayers(VLCMediaPlayer())
                 setting.value = "vlc"
-                return
+                
             except Exception as e:
                 self.logger.exception("Failed to initialize vlc backend: %s", e)
                 if fallback and self._player is None:
-                    self.swapPlayers(VLCMediaPlayer())
-                    
+                    self.swapPlayers(MpvMediaPlayer())        
         elif backend == "ffplay" and not isinstance(self._player, FFPlayMediaPlayer):
             try:
                 self.swapPlayers(FFPlayMediaPlayer())
                 setting.value = "ffplay"
-                return
+                
             except Exception as e:
                 self.logger.exception("Failed to initialize ffplay backend: %s", e)
                 if fallback and self._player is None:
-                    self.swapPlayers(VLCMediaPlayer())
-                    
+                    self.swapPlayers(MpvMediaPlayer()) 
         elif backend == "mpv":
             try:
                 if not isinstance(self._player, MpvMediaPlayer):
                     self.swapPlayers(MpvMediaPlayer())
                 setting.value = "mpv"
-                return
+                
             except Exception as e:
                 self.logger.exception("Failed to initialize mpv backend: %s", e)
                 traceback.print_exc()
                 if fallback and self._player is None:
                     self.swapPlayers(VLCMediaPlayer())
-        
         elif backend == "qt":
             try:
                 if not isinstance(self._player, QtMediaPlayer):
                     self.swapPlayers(QtMediaPlayer())
                 setting.value = "qt"
-                return
+                
             except Exception as e:
                 self.logger.exception("Failed to initialize QtMultimedia backend: %s", e)
                 if fallback and self._player is None:
-                    self.swapPlayers(VLCMediaPlayer())
-                    
+                    self.swapPlayers(MpvMediaPlayer())        
         elif fallback and self._player is None:
-            self.swapPlayers(VLCMediaPlayer())  # Default to VLC if no valid backend is set
-            return
+            self.swapPlayers(MpvMediaPlayer())  # Default to MPV if no valid backend is set
+            
 
-        if fallback: setting.value = "vlc" # We only reach here if there's a failure, so we set it to fallback if it's on
+        if backend is not self._player.NAME: setting.setValue(self._player.NAME)
 
     def setupPlayer(self, player: MediaPlayer):
         # Optional runtime enforcement since Protocol is runtime_checkable
@@ -482,8 +490,7 @@ class Queue(QObject):
 
     @Slot(int)
     def setPointer(self, index: int):
-        self.pointer = index
-        self.play()
+        self.goto(index)
 
     @Slot()
     def next(self):
@@ -499,16 +506,18 @@ class Queue(QObject):
             self.logger.info("Pointer at end")
             if self.loop == LoopType.SINGLE:
                 # Repeat current track (no pointer change); update bindings
-                self.songChanged.emit()
+                self.songChanged.emit(self.pointer)
             elif self.loop == LoopType.ALL:
+                prevpointer = self.pointer
                 self.pointer = 0
-                self.songChanged.emit()
+                self.songChanged.emit(prevpointer)
             else:
                 # Exhausted and no looping: stop on finalize
                 self._next_press_exhausted = True
         else:
+            prevpointer = self.pointer
             self.pointer += 1
-            self.songChanged.emit()
+            self.songChanged.emit(prevpointer)
 
         # Start/reset timer: 100ms per press, up to 500ms
         interval_ms = min(100 * self._next_press_count, 500)
@@ -527,20 +536,31 @@ class Queue(QObject):
         if self.pointer == 0:
             if self.loop == LoopType.SINGLE:
                 # Repeat current track
-                self.songChanged.emit()
+                self.songChanged.emit(self.pointer)
             elif self.loop == LoopType.ALL:
+                prevpointer = self.pointer
                 self.pointer = len(self.queue) - 1
-                self.songChanged.emit()
+                self.songChanged.emit(prevpointer)
             else:
                 # No looping: stay at start
-                self.songChanged.emit()
+                self.songChanged.emit(self.pointer)
         else:
+            prevpointer = self.pointer
             self.pointer -= 1
-            self.songChanged.emit()
+            self.songChanged.emit(prevpointer)
 
         # Start/reset timer: 100ms per press, up to 500ms
         interval_ms = min(100 * self._prev_press_count, 500)
         self._prev_timer.start(interval_ms)
+    
+    @Slot(int)
+    def goto(self, index: int):
+        if index < 0 or index >= len(self.queue):
+            raise ValueError("Index out of bounds")
+        prevpointer = self.pointer
+        self.pointer = index
+        self.songChanged.emit(prevpointer)
+        self.play()
 
     def info(self, pointer: int):
         if len(self.queue) == 0:
@@ -559,29 +579,54 @@ class Queue(QObject):
 
     def add(self, id: str, index: int = -1, goto: bool = False):
         s: Song = Song(id=id)
-        if s.source == None:  # if we need to get the songinfo
-            coro = s.get_info(universal.asyncBgworker.API)
-            future = universal.asyncBgworker.run_coroutine_threadsafe(coro) if hasattr(universal.asyncBgworker, 'run_coroutine_threadsafe') else None
-            if future is None:
-                # Fallback to accessing the loop directly as in original code
-                import asyncio
-                future = asyncio.run_coroutine_threadsafe(coro, universal.asyncBgworker.event_loop)
-            future.result()
+        
+        # Insert song into model immediately (even if metadata isn't loaded yet)
+        insert_index = len(self.queue) if index == -1 else index
+        self.queueModel.insertRows(insert_index, 1)
+        self.queueModel.setData(self.queueModel.index(insert_index), s, Qt.ItemDataRole.EditRole)
+        self.queueIds.insert(insert_index, s.id)
 
-        if index == -1:
-            self.queueModel.insertRows(len(self.queue), 1)
-            self.queueModel.setData(self.queueModel.index(len(self.queue) - 1), s, Qt.ItemDataRole.EditRole)
-            self.queueIds.append(s.id)  # type: ignore
-        else:
-            self.queueModel.insertRows(index, 1)
-            self.queueModel.setData(self.queueModel.index(index), s, Qt.ItemDataRole.EditRole)
-            self.queueIds.insert(index, s.id)  # type: ignore
+        # If metadata needs to be fetched, do it asynchronously
+        if s.source is None:
+            def on_info_fetched():
+                # When metadata arrives, notify the model that this row changed
+                try:
+                    row_index = self.queueIds.index(s.id)
+                    model_index = self.queueModel.index(row_index)
+                    self.queueModel.dataChanged.emit(model_index, model_index)
+                    self.logger.debug(f"Song metadata loaded: {s.title}")
+                except ValueError:
+                    # Song was removed from queue before metadata loaded
+                    pass
+            
+            # Connect to signal before starting async fetch
+            s.songInfoFetched.connect(on_info_fetched)
+            
+            # Submit async task without blocking
+            coro = s.get_info(universal.asyncBgworker.API)
+            if hasattr(universal.asyncBgworker, 'run_coroutine_threadsafe'):
+                universal.asyncBgworker.run_coroutine_threadsafe(coro)
+            else:
+                import asyncio
+                asyncio.run_coroutine_threadsafe(coro, universal.asyncBgworker.event_loop)
 
         if goto:
-            self.pointer = len(self.queue) - 1 if index == -1 else index
+            self.pointer = insert_index
             self.play()
 
         s.playbackReadyChanged.connect(lambda: self.songMrlChanged(s))
+    
+    def gotoOrAdd(self, id: str):
+        if id in self.queueIds: # type: ignore[operator]
+            self.pointer = self.queueIds.index(id)  # type: ignore[attr-defined]
+            self.play()
+        else:
+            self.add(id, goto=False)
+            self.pointer = len(self.queue) - 1
+            # Use QTimer to defer play() to next event loop iteration
+            # This allows Song.__init__ file I/O to complete before playback attempt
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(0, self.play)
 
     @Slot(int)
     def seek(self, time: int):

@@ -1,9 +1,5 @@
-# Version 0.44
+# Version 0.45
 
 ## New Features
 
-- rename downloaded to downloadState and improve initialization -- kaneryu on 2025-10-04
-
-## Bugfixes
-
-- add Qt signals and proper change notifications to AppUrl -- kaneryu on 2025-10-04
+- add async song insertion, goto/gotoOrAdd, and improve player backend fallback -- kaneryu on 2025-10-04
