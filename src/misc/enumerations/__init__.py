@@ -2,7 +2,7 @@
 # from .NetworkingEnums import *
 import enum
 
-class DataStatus(enum.Enum):
+class DataStatus(enum.IntEnum):
     """ The status of the data for this class. Used in various classes, typically in ones fetched from youtube
     
     NOTLOADED: The data hasn't been downloaded or set at all \n
