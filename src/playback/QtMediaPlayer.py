@@ -18,11 +18,13 @@ class QtMediaPlayer(QObject):
     Audio-only: No VideoOutput connected. Works best with FFmpeg backend (WebM/Opus).
     Falls back gracefully when MRL not yet available (NOT_READY state and async fetch).
     """
+    
+    NAME = "qt"
 
     playingStatusChanged = Signal(int)
     durationChanged = Signal()
     timeChanged = Signal(int)
-    songChanged = Signal()
+    songChanged = Signal(int)
 
     endReached = Signal()
     errorOccurred = Signal(object)
@@ -96,7 +98,7 @@ class QtMediaPlayer(QObject):
             )
             self.set_playing_status(PlayingStatus.NOT_READY)
             self._noMrl = True
-            self.songChanged.emit()
+            self.songChanged.emit(-1)
             self.durationChanged.emit()
             universal.bgworker.add_job(func=song.get_playback)
             return
@@ -104,7 +106,7 @@ class QtMediaPlayer(QObject):
         self._noMrl = False
         self._set_source(url)
         self._player.play()
-        self.songChanged.emit()
+        self.songChanged.emit(-1)
         self.durationChanged.emit()
 
     def onSongMrlChanged(self, song: Song) -> None:

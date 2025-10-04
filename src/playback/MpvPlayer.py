@@ -26,12 +26,14 @@ class MpvMediaPlayer(QObject):
     - All mpv callbacks are dispatched back to the Qt main thread via QTimer.singleShot.
     - Mirrors VLC backend behavior for MRL resolution and signal semantics.
     """
+    
+    NAME = "mpv"
 
     # Signal shapes must match Queue expectations
     playingStatusChanged = Signal(int)
     durationChanged = Signal()
     timeChanged = Signal(int)
-    songChanged = Signal()
+    songChanged = Signal(int)
 
     endReached = Signal()
     errorOccurred = Signal(object)
@@ -127,7 +129,7 @@ class MpvMediaPlayer(QObject):
             )
             self.set_playing_status(PlayingStatus.NOT_READY)
             self._noMrl = True
-            self.songChanged.emit()
+            self.songChanged.emit(-1)
             self.durationChanged.emit()
             universal.bgworker.add_job(func=song.get_playback)
             return
@@ -137,7 +139,7 @@ class MpvMediaPlayer(QObject):
         self._mpv.pause = False
         # Initial load is considered local buffering until playback restarts
         self.set_playing_status(PlayingStatus.BUFFERING_LOCAL)
-        self.songChanged.emit()
+        self.songChanged.emit(-1)
         self.durationChanged.emit()
 
     def onSongMrlChanged(self, song: Song) -> None:

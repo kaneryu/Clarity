@@ -26,12 +26,14 @@ class VLCMediaPlayer(QObject):
     - Emit playback-related signals
     - Handle MRL fetching and retry flow
     """
+    
+    NAME = "vlc"
 
     # Reuse signal shapes used by Queue so Queue can re-emit them unchanged
     playingStatusChanged = Signal(int)
     durationChanged = Signal()
     timeChanged = Signal(int)
-    songChanged = Signal()
+    songChanged = Signal(int)
 
     # Lifecycle/control signals for the queue to react
     endReached = Signal()
@@ -145,7 +147,7 @@ class VLCMediaPlayer(QObject):
             )
             self.set_playing_status(PlayingStatus.NOT_READY)
             self._noMrl = True
-            self.songChanged.emit()
+            self.songChanged.emit(-1)
             self.durationChanged.emit()
             universal.bgworker.add_job(func=song.get_playback)
             return
@@ -153,7 +155,7 @@ class VLCMediaPlayer(QObject):
         self._noMrl = False
         self.player.set_media(Media(url))
         self.player.play()
-        self.songChanged.emit()
+        self.songChanged.emit(-1)
         self.durationChanged.emit()
 
     def onSongMrlChanged(self, song: Song):

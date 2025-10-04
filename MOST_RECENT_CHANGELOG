@@ -1,5 +1,5 @@
-# Version 0.42
+# Version 0.43
 
 ## New Features
 
-- add configurable starting interval for dynamic interval tasks -- kaneryu on 2025-10-04
+- standardize MediaPlayer with NAME constant and songChanged(int) signal -- kaneryu on 2025-10-04

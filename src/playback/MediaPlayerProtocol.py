@@ -93,11 +93,14 @@ class MediaPlayer(Protocol):
         This is a structural protocol; concrete implementations still inherit QObject
         for signal plumbing. Keep this spec updated if VLCMediaPlayer behavior evolves.
     """
+    
+    NAME: str # the internal name of the mediaplayer
+    
     # Signal attribute annotations only (no Signal() construction here). Use Any for MyPy friendliness.
     playingStatusChanged: Any
     durationChanged: Any
     timeChanged: Any
-    songChanged: Any
+    songChanged: Any # MUST accept an int
 
     endReached: Any
     errorOccurred: Any

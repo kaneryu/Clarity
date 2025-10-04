@@ -27,12 +27,14 @@ class FFPlayMediaPlayer(QObject):
     - Emit playback-related signals
     - Handle MRL fetching and retry flow
     """
+    
+    NAME = "ffplay"
 
     # Reuse signal shapes used by Queue so Queue can re-emit them unchanged
     playingStatusChanged = Signal(int)
     durationChanged = Signal()
     timeChanged = Signal(int)
-    songChanged = Signal()
+    songChanged = Signal(int)
 
     # Lifecycle/control signals for the queue to react
     endReached = Signal()
@@ -195,7 +197,7 @@ class FFPlayMediaPlayer(QObject):
             self.logger.info("No MRL for song (%s - %s), fetching...", song.id, song.title)
             self._noMrl = True
             self._emit_status(PlayingStatus.NOT_READY)
-            self.songChanged.emit()
+            self.songChanged.emit(-1)
             self.durationChanged.emit()
             universal.bgworker.add_job(func=song.get_playback)
             return
@@ -206,7 +208,7 @@ class FFPlayMediaPlayer(QObject):
         self._dispose_player()
         # Create and start new player
         self._ensure_player(url)
-        self.songChanged.emit()
+        self.songChanged.emit(-1)
         # Duration will be emitted when metadata becomes available
 
     def onSongMrlChanged(self, song: Song) -> None:
