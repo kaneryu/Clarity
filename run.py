@@ -8,14 +8,15 @@
 # nuitka-project: --include-data-dir=src/app/qml=qml
 # nuitka-project: --include-data-dir=src/app/assets=assets
 # nuitka-project: --include-data-file=./version.txt=./version.txt
+# nuitka-project: --include-data-file=./version.txt=./compiled.txt
 # nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
 
 # nuitka-project: --file-description="Clarity -- A music player."
 # nuitka-project: --copyright="This is free and open-source software -- GNU GPL v3"
 # nuitka-project: --windows-product-name="Clarity"
 
-# nuitka-project: --product-version=0.47.3
-# nuitka-project: --file-version=0.47.3
+# nuitka-project: --product-version=0.47.4
+# nuitka-project: --file-version=0.47.4
 
 # nuitka-project: --output-filename=Clarity
 # nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml 
@@ -32,8 +33,7 @@
 
 import src.universal
 from src.app import main
-
-__compiled__ = None # set to true by nuitka
+from src.misc.compiled import __compiled__
 
 if __compiled__ is not None:
     main.main()

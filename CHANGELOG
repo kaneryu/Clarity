@@ -1,3 +1,10 @@
+# Version 0.47.4
+
+## Bugfixes
+
+- fix bug where run.py and main.py still used the old (broken) method to detect if they're compiled -- kaneryu on 2025-10-04
+
+
 # Version 0.47.3
 
 

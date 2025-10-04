@@ -39,8 +39,7 @@ import src.app.materialInterface as materialInterface
 import src.universal as universal
 from . import Backend, Interactions, fonts
 from src.misc import cleanup
-
-__compiled__ = None # set to true when packaged
+from src.misc.compiled import __compiled__
 
 def generateRandomHexColor():
     return random.randint(0, 0xFFFFFF)
