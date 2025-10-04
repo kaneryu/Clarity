@@ -94,12 +94,13 @@ class BackgroundWorker(QThread):
         For a dynamic interval, the function must return a boolean indicating success (True) or failure (False).
         If the function returns True, the interval doubles until it reaches the maximum specified by dynamic_interval_max.
         If the function returns False, the interval resets to the maximum (set in BackgroundWorker.min_interval).
-        To enable dynamic interval, set dynamic_interval_max and omit interval.
+        To enable dynamic interval, set dynamic_interval_max.
+        You can set the starting interval with interval
         \n
         
         Args:
             func (Callable[..., Any]): The function to run.
-            interval (Optional[int], optional): The interval in seconds to run the task. Defaults to None.
+            interval (Optional[int], optional): The interval in seconds to run the task. If dynamic interval is supplied, it's the growth rate and first interval. Defaults to None.
             dynamic_interval_max (Optional[int], optional): The maximum dynamic interval in seconds. Defaults to None.
 
         Raises:
@@ -112,8 +113,6 @@ class BackgroundWorker(QThread):
         """
         if interval is None and dynamic_interval_max is None:
             raise TypeError("add_occasional_task() requires at least one of 'interval' or 'dynamic_interval_max'")
-        if interval is not None and dynamic_interval_max is not None:
-            raise TypeError("add_occasional_task() accepts only one of 'interval' or 'dynamic_interval_max', not both")
         
         task = {
             "func": func, 
@@ -130,8 +129,11 @@ class BackgroundWorker(QThread):
             return_annotation = function_signature.return_annotation
             if return_annotation is inspect.Signature.empty or return_annotation is not bool:
                 raise TypeError("When using 'dynamic_interval_max', the function must have a return type of 'bool'")
-            task["interval"] = self.min_interval  # Start with minimum interval
+            task["start_interval"] = task["interval"]
+            base_interval = self.min_interval if task["start_interval"] is not 0 else task["start_interval"] 
+            task["interval"] = base_interval  # Start with minimum interval
             def dynamic_task_wrapper():
+                base_interval = self.min_interval if task["start_interval"] is not 0 else task["start_interval"] 
                 task["isRunning"] = True
                 try:
                     result = func(*args, **kwargs)
@@ -145,7 +147,7 @@ class BackgroundWorker(QThread):
                         if task["interval"] > dynamic_interval_max:
                             task["interval"] = dynamic_interval_max  # Cap at max interval
                     else:
-                        task["interval"] = self.min_interval  # If not, revert to min interval
+                        task["interval"] = base_interval  # If not, revert to min interval
                 task["isRunning"] = False
                 return result
             task["func"] = dynamic_task_wrapper
@@ -161,6 +163,10 @@ class BackgroundWorker(QThread):
             None
         """
         self.occasionalTasks = [task for task in self.occasionalTasks if task["func"] != func]
+    
+    def runnow(self, func) -> None:
+        runnable = JobRunnable(func, (), {}, self.logger)
+        self.threadpool.start(runnable, priority=1500)
 
 class Async_BackgroundWorker(QThread):
     def __init__(self):

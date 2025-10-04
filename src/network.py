@@ -62,7 +62,7 @@ class NetworkManager(QObject):
         NetworkManager._instance = self
         self.onlineStatus: OnlineStatus = OnlineStatus.ONLINE
         
-        bgworker.add_occasional_task(self.occasionally_test_onlinemode, dynamic_interval_max=60)  # Max interval of 5 minutes
+        bgworker.add_occasional_task(self.occasionally_test_onlinemode, interval=10, dynamic_interval_max=60)  # Max interval of 1 minute, run every 10 seconds to start
     
     def occasionally_test_onlinemode(self) -> bool:
         self.test_onlinemode()
