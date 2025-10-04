@@ -128,7 +128,6 @@ def ghash(thing):
 globalCache = cacheManager_module.CacheManager(name="cache", directory=os.path.join(Paths.DATAPATH, "cache"))
 songCache = cacheManager_module.CacheManager(name="songs_cache", directory=os.path.join(Paths.DATAPATH, "songs_cache"))
 imageCache = cacheManager_module.CacheManager(name="images_cache", directory=os.path.join(Paths.DATAPATH, "images_cache"))
-queueCache = cacheManager_module.CacheManager(name="queue_cache", directory=os.path.join(Paths.DATAPATH, "queue_cache"))
 albumCache = cacheManager_module.CacheManager(name="albums_cache", directory=os.path.join(Paths.DATAPATH, "album_cache"))
 songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(Paths.DATAPATH, "song_datastore"))
 
@@ -147,6 +146,7 @@ mainThread: QThread = QThread.currentThread()
 
 
 async def search_shorthand(query: str, ignore_spelling: bool = False) -> Union[innertube_module.BasicSearchResultsModel, None]:
+    searchModel.resetModel()
     return await innertube_module.search(query, filter = None, ignore_spelling = ignore_spelling, model = searchModel)
 
 oldprint = builtins.print

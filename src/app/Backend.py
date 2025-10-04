@@ -75,6 +75,8 @@ class Backend(QObject):
             
             self.settingChanged.connect(universal.settings.settingChanged)
             universal.queueInstance.songChanged.connect(self.updateMaterialColors)
+            
+            universal.appUrl.urlChanged.connect(self.urlChanged)
     
     # @Property(bool, notify=onlineChanged)
     
@@ -104,7 +106,6 @@ class Backend(QObject):
             print("Set URL failed, invalid URL", value)
             return
         universal.appUrl.setUrl(value)
-        self.urlChanged.emit()
     
     @Slot(str)
     def setUrl(self, value):
@@ -112,6 +113,11 @@ class Backend(QObject):
     
     @Property(dict, notify=urlChanged)
     def currentQuery(self):
+        return universal.appUrl.getQuery()
+    
+    @Slot(result=dict)
+    def getCurrentQuery(self) -> dict:
+        # Some things might want to get the query once, instead of binding to it and listening for changes
         return universal.appUrl.getQuery()
     
     @Property(str, notify=urlChanged)
@@ -172,11 +178,6 @@ class Backend(QObject):
     @Slot(str, result=QObject)
     def getSettingsObjectByName(self, name: str) -> QObject:
         return settings.QmlSettingsInterface.instance().getSettingsObjectByName(name)
-    
-    @Slot(str, result=bool)
-    def search(self, query: str) -> bool:
-        universal.asyncBgworker.add_job_sync(func = universal.search_shorthand, usestar = False, a = [], kw = {"query": query})
-        return True
     
     @Property(QObject, constant=True)
     def queue(self):

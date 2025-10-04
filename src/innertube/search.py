@@ -205,7 +205,7 @@ async def search_suggestions(query: str, detailed = True) -> list | dict:
     
     return await universal.asyncBgworker.API.get_search_suggestions(query, detailed_runs = detailed)
 
-async def search(query: str, filter: SearchFilters | None = None, limit: int = 20, ignore_spelling: bool = False, model: BasicSearchResultsModel = BasicSearchResultsModel()) -> Union[BasicSearchResultsModel, None]:
+async def search(query: str, filter: SearchFilters | None = None, limit: int = 20, ignore_spelling: bool = False, model: Union[BasicSearchResultsModel, None] = None) -> Union[BasicSearchResultsModel, None]:
     """Searches youtube music
 
     Args:
@@ -217,7 +217,8 @@ async def search(query: str, filter: SearchFilters | None = None, limit: int = 2
         searchResult: A class that contains the results.
     """
     API = universal.asyncBgworker.API
-    async def parseSong(item: dict):
+    model = BasicSearchResultsModel() if model is None else model
+    def parseSong(item: dict):
         try:
             type_ = "song"
             title = item.get("title", "")
@@ -232,7 +233,7 @@ async def search(query: str, filter: SearchFilters | None = None, limit: int = 2
             duration = item["duration_seconds"]
             explicit = item["isExplicit"]
             song = universal.createSongMainThread(id)
-            await song.get_info(universal.asyncBgworker.API)
+            universal.asyncBgworker.add_job_sync(song.get_info)
         except KeyError:
             return None
         return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "duration": duration, "object": universal.song_module.Song(id)}
@@ -257,17 +258,21 @@ async def search(query: str, filter: SearchFilters | None = None, limit: int = 2
         
     # print(json.dumps(s))
     try:
-        for result in await API.search(query, filter = filter, limit = limit, ignore_spelling = ignore_spelling):
-            if result["category"] is None:
+        search_ = await API.search(query, filter = filter, limit = limit, ignore_spelling = ignore_spelling)
+        if search_ == []:
+            logging.getLogger("SearchLogger").info(f"No results found for {query}", {"notifying": True})
+            return model
+        for result in search_:
+            if result["resultType"] is None:
                 continue # TEMPORARY BEHAVIOR
             else:
-                category = result["category"].lower()
-            if category == "songs":
-                p = await parseSong(result)
+                resultType = result["resultType"].lower()
+            if resultType == "song":
+                p = parseSong(result)
                 if p == None:
                     continue
                 model._newResult(p)
-            if category == "albums":
+            if resultType == "album":
                 p = parseAlbum(result)
                 if p == None:
                     continue
