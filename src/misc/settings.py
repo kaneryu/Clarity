@@ -10,13 +10,11 @@ from PySide6.QtCore import QObject, Qt, Property, Signal, Slot, QModelIndex, QPe
 
 ModelIndex = typing.Union[QModelIndex, QPersistentModelIndex]
 
-f = open(Paths.VERSIONPATH, "r")
-version = f.read().strip()
-f.close()
+with open(Paths.VERSIONPATH, "r") as f:
+    version = f.read().strip()
 
-default_settings_file = open(os.path.join(Paths.ASSETSPATH, "DEFAULTSETTINGS.json"))
-defaultSettings: dict[str, str | dict] = json.loads(default_settings_file.read())
-default_settings_file.close()
+with open(os.path.join(Paths.ASSETSPATH, "DEFAULTSETTINGS.json")) as default_settings_file:
+    defaultSettings: dict[str, str | dict] = json.loads(default_settings_file.read())
 
 defaultSettings["for"] = version
 
@@ -297,26 +295,7 @@ class SettingsModel(QAbstractItemModel):
 class Settings(QObject):
     _instance: typing.Union["Settings", None] = None
     
-    settingChanged = Signal()  # Signal to notify that a setting has changed'
-    
-    
-    @staticmethod
-    def cleanSettingsForSaving(settings: dict) -> dict:
-        # for now, resolve all types to their string names
-        
-        cleaned_settings = settings.copy()
-        for setting in cleaned_settings:
-            setting[type] = get_type(setting["type"]).__name__
-        
-        return cleaned_settings
-        
-    @staticmethod
-    def unpackSettingsForLoading(settings: dict) -> dict:
-        # for now, resolve string types to their actual types
-        unpacked_settings = settings.copy()
-        for setting in unpacked_settings:
-            setting["type"] = get_type(setting["type"])
-        return unpacked_settings
+    settingChanged = Signal()  # Signal to notify that a setting has changed
     
     @classmethod
     def instance(cls) -> "Settings":
@@ -395,9 +374,20 @@ class Settings(QObject):
             if base_type is bool and isinstance(value_, int):
                 value_ = value_ == 1
 
-            # Enforce dropdown membership
+            # Enforce dropdown membership and validate visual options
             if declared_type == "dropdown":
                 options = value.get("dropdownOptions") or []
+                visual_options = value.get("visualDropdownOptions") or []
+                
+                # Validate that visual options match regular options length
+                if visual_options and len(visual_options) != len(options):
+                    self.logger.warning(
+                        f"'{name}' has mismatched dropdown options: "
+                        f"{len(options)} options but {len(visual_options)} visual labels. "
+                        f"Visual labels will be ignored."
+                    )
+                    value["visualDropdownOptions"] = []
+                
                 if value_ not in options and options:
                     self.logger.warning(f"'{name}' value '{value_}' not in {options}, defaulting to first option.")
                     value_ = options[0]
@@ -419,7 +409,7 @@ class Settings(QObject):
     
     def createModel(self) -> TreeItem:
         rootItem = TreeItem(Setting(data=default_rootItem))
-        x = 0
+        group_idx = 0
         for group, keys in self.groupKeyMap.items():
             groupItem = TreeItem(Setting(data={
                 "key": group + "_group",
@@ -434,11 +424,13 @@ class Settings(QObject):
             groupIndex = self.settingsModel.index(0, 0, QModelIndex())
             keyIndexMap.update({group + "_group": groupIndex})
             
+            setting_row = 0
             for key in keys:
                 item = TreeItem(self.settingObjects[key], parent=groupItem)
                 groupItem.child_items.append(item)
-                keyIndexMap[key] = self.settingsModel.index(x, 0, groupIndex)
-            x += 1
+                keyIndexMap[key] = self.settingsModel.index(setting_row, 0, groupIndex)
+                setting_row += 1
+            group_idx += 1
             rootItem.child_items.append(groupItem)
         return rootItem
     
@@ -490,8 +482,9 @@ class Settings(QObject):
         if not setting:
             return
         
-        if not isinstance(value, setting.type):
-            self.logger.error(f"Setting {setting.name} is supposed to be of type {setting.type}, but it is {type(value)}, skipping...")
+        base_type = get_type(setting.type)
+        if not isinstance(value, base_type):
+            self.logger.error(f"Setting {setting.name} is supposed to be of type {base_type}, but it is {type(value)}, skipping...")
             return
         
         setting.value = value
@@ -530,26 +523,27 @@ class QmlSettingsInterface(QObject):
         self.settings.set(key, value)
     
     @Slot(str, result=QObject)
-    def getSettingsObjectByKey(self, key: str) -> QObject:
-        """Get a setting object by key."""
-        setting = self.settings.settingObjects.get(key, QObject())
-        return setting
+    def getSettingsObjectByKey(self, key: str) -> typing.Optional[QObject]:
+        """Get a setting object by key, returns None if not found."""
+        return self.settings.settingObjects.get(key, None)
     
     @Slot(str, result=QObject)
-    def getSettingsObjectByName(self, name: str) -> QObject:
-        """Get a setting object by name."""
+    def getSettingsObjectByName(self, name: str) -> typing.Optional[QObject]:
+        """Get a setting object by name, returns None if not found."""
         for setting in self.settings.settingObjects.values():
             if setting.name == name:
                 return setting
-        raise KeyError(f"No setting found with name: {name}")
+        self.settings.logger.warning(f"No setting found with name: {name}")
+        return None
 
     @Slot(str, result=str)
     def nameToKey(self, name: str) -> str:
-        """Convert a setting name to its key."""
+        """Convert a setting name to its key, returns empty string if not found."""
         for key, setting in self.settings.settingObjects.items():
             if setting.name == name:
                 return key
-        raise KeyError(f"No setting found with name: {name}")
+        self.settings.logger.warning(f"No setting found with name: {name}")
+        return ""
 
 class Setting(QObject):
     dataChanged = Signal(str, object)
@@ -624,21 +618,20 @@ class Setting(QObject):
         Settings.instance().save()
     
     def setValue(self, value):
-        """Set the value of the setting."""
+        """Set the value of the setting and notify the model."""
+        # First update the value
+        self.set("value", value)
+        
+        # Emit the global settings changed signal
         Settings.instance().settingChanged.emit()
-                # find the index of the 'value' column in the model
+        
+        # Notify the model about the change
         model = Settings.instance().getModel()
         index = keyIndexMap.get(self.key)
         if index:
-            value_col_idx = 0 # value isn't a display field, just say the first column was changed
+            value_col_idx = 0  # value isn't a display field, use first column
             value_index = model.index(index.row(), value_col_idx, model.parent(index))
             model.dataChanged.emit(value_index, value_index, [Qt.ItemDataRole.EditRole, model.ValueRole])
-        self.set("value", value)
-    
-    def setValue_model(self, value):
-        """Set the value of the setting in the model."""
-        self.set("value", value)
-        
 
 
 def getSetting(key: str) -> Setting:

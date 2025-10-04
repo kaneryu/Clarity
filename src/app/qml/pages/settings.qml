@@ -79,18 +79,10 @@ Item {
                 height: 30
 
                 // Keep the control inline with the setting title; description sits below
-                Connections{
-                    target: Backend
-                    function onSettingChanged() {
-                        // Reload the control when the model data changes
-                        console.log("Setting changed for", model.display);
-                        controlLoader.modelValue = model.value;
-                    }
-                }
                 Loader {
                     id: controlLoader
                     // Set properties on the loader that will be passed to the loaded item
-                    property var modelValue: value
+                    property var modelValue: model.value
                     property var model_: model
 
                     anchors.fill: parent
@@ -110,11 +102,6 @@ Item {
                         default:
                             return textComponent;
                         }
-                    }
-
-                    function reload() {
-                        controlLoader.sourceComponent = null;
-                        controlLoader.sourceComponent = getComponentType();
                     }
 
                     sourceComponent: getComponentType()

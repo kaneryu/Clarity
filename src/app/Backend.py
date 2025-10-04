@@ -73,7 +73,8 @@ class Backend(QObject):
             self._queueModel = universal.queueInstance.queueModel
             self._queueVisible = False
             
-            self.settingChanged.connect(universal.settings.settingChanged)
+            # Forward settings changes from Settings to Backend for QML
+            universal.settings.settingChanged.connect(self.settingChanged)
             universal.queueInstance.songChanged.connect(self.updateMaterialColors)
             
             universal.appUrl.urlChanged.connect(self.urlChanged)
