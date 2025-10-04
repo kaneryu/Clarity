@@ -19,7 +19,6 @@ from src.innertube.song import Song, PlayingStatus
 from src.innertube.album import Album
 from playback.MediaPlayerProtocol import MediaPlayer
 from src.playback.VlcPlayer import VLCMediaPlayer
-from src.playback.FFPlayPlayer import FFPlayMediaPlayer
 from src.playback.MpvPlayer import MpvMediaPlayer
 from src.playback.QtMediaPlayer import QtMediaPlayer
 
@@ -205,16 +204,7 @@ class Queue(QObject):
             except Exception as e:
                 self.logger.exception("Failed to initialize vlc backend: %s", e)
                 if fallback and self._player is None:
-                    self.swapPlayers(MpvMediaPlayer())        
-        elif backend == "ffplay" and not isinstance(self._player, FFPlayMediaPlayer):
-            try:
-                self.swapPlayers(FFPlayMediaPlayer())
-                setting.value = "ffplay"
-                
-            except Exception as e:
-                self.logger.exception("Failed to initialize ffplay backend: %s", e)
-                if fallback and self._player is None:
-                    self.swapPlayers(MpvMediaPlayer()) 
+                    self.swapPlayers(MpvMediaPlayer())
         elif backend == "mpv":
             try:
                 if not isinstance(self._player, MpvMediaPlayer):
