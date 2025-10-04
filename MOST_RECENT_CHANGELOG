@@ -1,5 +1,5 @@
-# Version 0.45
+# Version 0.46
 
 ## New Features
 
-- add async song insertion, goto/gotoOrAdd, and improve player backend fallback -- kaneryu on 2025-10-04
+- add album page with SongListModel and SongProxyListModel -- kaneryu on 2025-10-04
