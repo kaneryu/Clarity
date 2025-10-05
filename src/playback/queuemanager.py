@@ -144,8 +144,7 @@ class Queue(QObject):
         self.queueModel = QueueModel()
 
         # Media player engine: start with VLC to satisfy type expectations, then swap if needed
-        self._player = cast(MediaPlayer, VLCMediaPlayer())
-        self.setupPlayer(self._player)
+        self._player: MediaPlayer = None  # type: ignore[assignment]
         self.updateMediaPlayer()  # Initialize based on current setting
         self.logger.info(f"Media player backend set to: {getSetting('mediaPlayerBackend').value}")
         print(f"Media player backend set to: {getSetting('mediaPlayerBackend').value}")
@@ -248,7 +247,11 @@ class Queue(QObject):
             raise TypeError("new_player must satisfy the MediaPlayer protocol")
         
         old_player = self._player
-
+        
+        if old_player is None:
+            self.setupPlayer(new_player)
+            return
+        
         # Disconnect old player's signals
         old_player.songChanged.disconnect(self.songChanged)
         old_player.durationChanged.disconnect(self.durationChanged)
