@@ -14,10 +14,13 @@
 - Fix bug where workers would be started up twice
   ([`fc84e28`](https://github.com/kaneryu/Clarity/commit/fc84e281a758d622475f56c12c364c3644cc82a4))
 
+- Update type annotations for bgworker and asyncBgworker variables
+  ([`abc8c1a`](https://github.com/kaneryu/Clarity/commit/abc8c1a2c9e9bdb45e94beb83710f9febaf84f38))
+
 ### Chores
 
 - Re-enable git hooks for local version updates
-  ([`21a26c4`](https://github.com/kaneryu/Clarity/commit/21a26c4cc3cb6381375a8b0c7e0f8b090dadfce4))
+  ([`0fa3ff4`](https://github.com/kaneryu/Clarity/commit/0fa3ff42a95f5f87068d457b084f095007830e88))
 
 ### Continuous Integration
 

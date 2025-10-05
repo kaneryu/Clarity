@@ -273,8 +273,8 @@ class Async_BackgroundWorker(QThread):
         self.quit()
         
 
-bgworker: Union[BackgroundWorker | None] = None
-asyncBgworker: Union[Async_BackgroundWorker | None] = None
+bgworker: BackgroundWorker = None # type: ignore
+asyncBgworker: Async_BackgroundWorker = None # type: ignore
 
 def setup_workers():
     global bgworker, asyncBgworker
