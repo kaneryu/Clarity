@@ -140,7 +140,7 @@ def debug():
     
 if __name__ == "__main__":
     print("Please use run.py to run this application, but we'll try anyway:")
-    if __compiled__ is not None:
+    if __compiled__:
         main()
     else:
         debug()

@@ -35,7 +35,7 @@ import src.universal
 from src.app import main
 from src.misc.compiled import __compiled__
 
-if __compiled__ is not None:
+if __compiled__:
     main.main()
 else:
     main.debug()

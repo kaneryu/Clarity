@@ -5,6 +5,9 @@
 
 ### Bug Fixes
 
+- Fix bug where app would run in debugging mode even when not compiled
+  ([`b15f862`](https://github.com/kaneryu/Clarity/commit/b15f86299fd6b7cdd00e6b800eca0f3c9c9e6f10))
+
 - Fix bug where run.py and main.py still used the old (broken) method to detect if they're compiled
   ([`f639484`](https://github.com/kaneryu/Clarity/commit/f639484fbe2962b80234d523c73913268d906ab0))
 
@@ -15,7 +18,7 @@
   ([`fc84e28`](https://github.com/kaneryu/Clarity/commit/fc84e281a758d622475f56c12c364c3644cc82a4))
 
 - Update type annotations for bgworker and asyncBgworker variables
-  ([`abc8c1a`](https://github.com/kaneryu/Clarity/commit/abc8c1a2c9e9bdb45e94beb83710f9febaf84f38))
+  ([`6ad3d51`](https://github.com/kaneryu/Clarity/commit/6ad3d510bbf24306894fc3825eac84047383525e))
 
 ### Chores
 
