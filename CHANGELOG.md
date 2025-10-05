@@ -1,932 +1,619 @@
-# Version 0.47.4
+# CHANGELOG
 
-## Bugfixes
 
-- fix bug where run.py and main.py still used the old (broken) method to detect if they're compiled -- kaneryu on 2025-10-04
+## Unreleased
 
+### Bug Fixes
 
-# Version 0.47.3
+- Fix bug where run.py and main.py still used the old (broken) method to detect if they're compiled
+  ([`f639484`](https://github.com/kaneryu/Clarity/commit/f639484fbe2962b80234d523c73913268d906ab0))
 
+- Fix bug where Vlc would always be loaded first regardless of user's choice
+  ([`f8f05f6`](https://github.com/kaneryu/Clarity/commit/f8f05f6df45ede764b389952acfb93a4b2433c20))
 
-# Version 0.47.2
+- Fix bug where workers would be started up twice
+  ([`fc84e28`](https://github.com/kaneryu/Clarity/commit/fc84e281a758d622475f56c12c364c3644cc82a4))
 
+### Chores
 
-# Version 0.47.1
+- Re-enable git hooks for local version updates
+  ([`21a26c4`](https://github.com/kaneryu/Clarity/commit/21a26c4cc3cb6381375a8b0c7e0f8b090dadfce4))
 
+### Continuous Integration
 
-# Version 0.47.0
+- Migrate to python-semantic-release for automated versioning
+  ([`e4d729f`](https://github.com/kaneryu/Clarity/commit/e4d729fa2a49ea4b0904182bca4d84ff0c0099c0))
 
-## New Features
 
-- improve QML components with particles, blur effects, and visual feedback -- kaneryu on 2025-10-04
+## v0.47.3 (2025-10-04)
 
+### Bug Fixes
 
-# Version 0.46.0
+- Allow album type to include singles in _set_info validation
+  ([`7d5f3dd`](https://github.com/kaneryu/Clarity/commit/7d5f3ddeb31496acf9af0f800c490b044e36f357))
 
-## New Features
+- Don't spam online checks when we're offline
+  ([`813457c`](https://github.com/kaneryu/Clarity/commit/813457cf2fb12bd58f65d0a2bee1c9f12c2ef433))
 
-- add album page with SongListModel and SongProxyListModel -- kaneryu on 2025-10-04
+- Ensure multiple instances of interval tasks can't be started at the same time
+  ([`ea509ba`](https://github.com/kaneryu/Clarity/commit/ea509baa6648f09e68e27ba802addf08323f6381))
 
+- Improvements to notifying logs
+  ([`0c1c84c`](https://github.com/kaneryu/Clarity/commit/0c1c84cf90d937255ca8485e276f7d3ea195aa4b))
 
-# Version 0.45.0
+- Made it so the albumtype is displayed in UI
+  ([`f2ded95`](https://github.com/kaneryu/Clarity/commit/f2ded955ccac17d560e1e4deb65f18d3932e3109))
 
-## New Features
+- Update _set_info validation to include EP type
+  ([`1caf955`](https://github.com/kaneryu/Clarity/commit/1caf9555456c00b55a3413084f3e26123c8c5af1))
 
-- add async song insertion, goto/gotoOrAdd, and improve player backend fallback -- kaneryu on 2025-10-04
+- **navigation**: Add Qt signals and proper change notifications to AppUrl
+  ([`9d8f9b4`](https://github.com/kaneryu/Clarity/commit/9d8f9b4f9a0e561cd6ef4990f50aecd02677d797))
 
+### Chores
 
-# Version 0.44.2
+- Clean up commit 0c1c84
+  ([`011f37a`](https://github.com/kaneryu/Clarity/commit/011f37afae851205e61dec2ab455d60e22ab2ecc))
 
+- Remove some debug code
+  ([`e6b3697`](https://github.com/kaneryu/Clarity/commit/e6b3697ad153cb73acdcdcad3bff7416e8cb12c4))
 
-# Version 0.44.1
+- Remove unused hatch requirement
+  ([`eb2eac7`](https://github.com/kaneryu/Clarity/commit/eb2eac7796cb0821732974549569f152b0052777))
 
-## Bugfixes
+- Update developer tooling and gitignore
+  ([`ba50ca7`](https://github.com/kaneryu/Clarity/commit/ba50ca7feaa0a67b5e2bc392f437d84a46422a66))
 
-- add Qt signals and proper change notifications to AppUrl -- kaneryu on 2025-10-04
+### Documentation
 
+- Update README to include instructions for enabling MPV backend during development
+  ([`f2676d0`](https://github.com/kaneryu/Clarity/commit/f2676d0a2a80f8f8d88192e4ba924813ceca66f7))
 
-# Version 0.44.0
+### Features
 
-## New Features
+- Add Albums. Currently available in search.
+  ([`659871a`](https://github.com/kaneryu/Clarity/commit/659871a1ebcb8c310630de57dedf6294b770abe2))
 
-- rename downloaded to downloadState and improve initialization -- kaneryu on 2025-10-04
+- Add occasional task management to BackgroundWorker for dynamic interval tasks, Added occasional
+  offlinecheck and occasional discord recconect attempts (closes: 13)
+  ([`179f846`](https://github.com/kaneryu/Clarity/commit/179f846573af9c3fce9b9e70d4e565f23071d6cd))
 
+- Add support for multiple media player backends; Implement FFPlay Backend
+  ([`847684d`](https://github.com/kaneryu/Clarity/commit/847684d60bfacf121dcd673f11e8f34669c96240))
 
-# Version 0.43.0
+- Implement multiple media player backends
+  ([`d45c2bb`](https://github.com/kaneryu/Clarity/commit/d45c2bb5ad8b333d4f5c84dc1fff8f17191a0820))
 
-## New Features
+- **album**: Add album page with SongListModel and SongProxyListModel
+  ([`cef9689`](https://github.com/kaneryu/Clarity/commit/cef96897f629fb48485c6e8ae4d26b1bc30c5675))
 
-- standardize MediaPlayer with NAME constant and songChanged(int) signal -- kaneryu on 2025-10-04
+- **player**: Standardize MediaPlayer with NAME constant and songChanged(int) signal
+  ([`fb66f76`](https://github.com/kaneryu/Clarity/commit/fb66f7628f2a65a537d4ed5630cc91d80c34f83c))
 
+- **queue**: Add async song insertion, goto/gotoOrAdd, and improve player backend fallback
+  ([`a6e7f98`](https://github.com/kaneryu/Clarity/commit/a6e7f98a24aaca55fe25b359c9e1f3fc89276a49))
 
-# Version 0.42.1
+- **song**: Rename downloaded to downloadState and improve initialization
+  ([`f3f1295`](https://github.com/kaneryu/Clarity/commit/f3f12958d7928996bd4eead134cc0b94c0bc31bf))
 
+- **ui**: Improve QML components with particles, blur effects, and visual feedback
+  ([`1ad6b87`](https://github.com/kaneryu/Clarity/commit/1ad6b87d086beeb47f5e4d6043f4aa3d302b9223))
 
-# Version 0.42.0
+- **workers**: Add configurable starting interval for dynamic interval tasks
+  ([`3a26907`](https://github.com/kaneryu/Clarity/commit/3a26907d7483b5bc38c1af50704a33fd536136c6))
 
-## New Features
+### Refactoring
 
-- add configurable starting interval for dynamic interval tasks -- kaneryu on 2025-10-04
+- **enums**: Change DataStatus from Enum to IntEnum
+  ([`e770086`](https://github.com/kaneryu/Clarity/commit/e770086997e2e7a8b7c84751a90f2f13f23e0842))
 
+- **playback**: Remove FFPlayPlayer
+  ([`bc45ca0`](https://github.com/kaneryu/Clarity/commit/bc45ca0b4c63673c9a7acd5c63c00fff9d6853e3))
 
-# Version 0.41.4
+- **search**: Move search() to Interactions and reset model before new search
+  ([`42d505a`](https://github.com/kaneryu/Clarity/commit/42d505a304c360057210bc66bc3c130f8c908f50))
 
-## Bugfixes
+- **settings**: Streamline signal connections and improve file handling
+  ([`64eed79`](https://github.com/kaneryu/Clarity/commit/64eed79c800b15cb99ee8b64b8772124caaa8ec9))
 
-- ensure multiple instances of interval tasks can't be started at the same time -- kaneryu on 2025-09-23
+- **tests**: Simplify CacheManager tests by removing async calls
+  ([`3e78011`](https://github.com/kaneryu/Clarity/commit/3e7801125d31065fd637d28cf70a933520d15262))
 
+- **versioning**: Consolidate and improve autover and autochangelog scripts
+  ([`b13432b`](https://github.com/kaneryu/Clarity/commit/b13432b2b2b98178175e548e68ffe6faee4c6659))
 
-# Version 0.41.3
 
-## Bugfixes
+## v0.37.6 (2025-09-14)
 
-- improvements to notifying logs -- kaneryu on 2025-09-23
+### Bug Fixes
 
+- Add ability for downloader to retry downloading song if chunking doesn't work
+  ([`14e7909`](https://github.com/kaneryu/Clarity/commit/14e790914b300347dbcacfbcaa7b1d0796bb03ce))
 
-# Version 0.41.2
+- Add active song playing check
+  ([`695672a`](https://github.com/kaneryu/Clarity/commit/695672a65a85915125ade4611ce50f90023e27f2))
 
-## Bugfixes
+- Add error catching for search, and add hot reload plugin for development
+  ([`889937e`](https://github.com/kaneryu/Clarity/commit/889937eb406f22e50c58510c4a6433bef20b794f))
 
-- don't spam online checks when we're offline -- kaneryu on 2025-09-23
+- Add mouseblocker on queue view so clicks and scrolls don't pass through it
+  ([`fcb0641`](https://github.com/kaneryu/Clarity/commit/fcb0641ad3c4ff13eb33f670d2d57222b5ba9dd5))
 
+- Add ratelimit to discord presence
+  ([`ef913a3`](https://github.com/kaneryu/Clarity/commit/ef913a3d8cb9682db9a3c8ff0c43bdf4b484f653))
 
-# Version 0.41.1
+- Add some extra resiliency to search
+  ([`f283ec2`](https://github.com/kaneryu/Clarity/commit/f283ec253fee145f71ec6553c56fd6fbb963932a))
 
-## Bugfixes
+- Add some things to cleanup
+  ([`9526b27`](https://github.com/kaneryu/Clarity/commit/9526b27ce507ee98a707679c004dd81027ac02f7))
 
-- made it so the albumtype is displayed in UI -- kaneryu on 2025-09-21
+- Allow for use of video as a playback MRL
+  ([`3415439`](https://github.com/kaneryu/Clarity/commit/3415439b276de1501d34e68715ce6dadd8fa41b3))
 
+- Bug in cacheManager that didn't use asyncio.lock on deleting a key, and also integrity check
+  having incorrect implementation.
+  ([`4b796fe`](https://github.com/kaneryu/Clarity/commit/4b796fea17c8a6986e2b7c2834782c93f6939c48))
 
-# Version 0.41.0
+- Bug where incorrect offline check led to infinite recursion
+  ([`2f73216`](https://github.com/kaneryu/Clarity/commit/2f73216bb901d40d0be52a7a20c8a97a287e91ec))
 
-## New Features
+- Bug where search used the wrong ID in searchpress
+  ([`fe922ae`](https://github.com/kaneryu/Clarity/commit/fe922aec4fe0e205d4e70574b2ebc8ad3043e060))
 
-- Add occasional task management to BackgroundWorker for dynamic interval tasks, Added occasional offlinecheck and occasional discord recconect attempts (closes: 13) -- kaneryu on 2025-09-21
+- Bump dependencies, swap out ytmusicapi for my own version (still async)
+  ([`58aae68`](https://github.com/kaneryu/Clarity/commit/58aae689b458947db62d3176164aa6c49cb69d28))
 
+- Codebase now passes mypy check (not in strict mode, with some changes made in mypy.ini)
+  ([`1e08f1c`](https://github.com/kaneryu/Clarity/commit/1e08f1c19ce4846c4700edc519f1f0103e22fbf0))
 
-# Version 0.40.1
+- Decrease offline mode timeout check for faster offline startup
+  ([`732248a`](https://github.com/kaneryu/Clarity/commit/732248a8c091050f1c223d26b2963ad642f315d1))
 
-## Bugfixes
+- Emit endReached signal immediately on song finish instead of using QTimer
+  ([`17a6887`](https://github.com/kaneryu/Clarity/commit/17a6887542c6a900fb8bfa36157c17698d6052ef))
 
-- Update _set_info validation to include EP type -- kaneryu on 2025-09-21
+- Fix bug in cachemanger caused by using async lock in non-async functions
+  ([`aadb42b`](https://github.com/kaneryu/Clarity/commit/aadb42b50dab23f87b90bdf664a6821c8d4aff47))
 
+- Fix bug in kimage that wouldn't initialize a variable before downlading the image
+  ([`2557b04`](https://github.com/kaneryu/Clarity/commit/2557b043a10f249b639272717bad2a8b1cedd88f))
 
-# Version 0.40.0
+- Fix bug in song where playback info was never downloaded in the first place
+  ([`28f4b93`](https://github.com/kaneryu/Clarity/commit/28f4b93f07b1673226dc6dc6275fe6de05b5239b))
 
-## New Features
+- Fix bug in workers that didn't call the callback if using putcoverconvert, and fix bug that didn't
+  convert coverconvert key into path before returing it to the UI
+  ([`f7adf6e`](https://github.com/kaneryu/Clarity/commit/f7adf6e3cc8402772fa044adcb9e4286fa2c28a2))
 
-- Implement multiple media player backends -- kaneryu on 2025-09-21
+- Fix bug where going to the next song would hang the application; also improve job handling in
+  background workers & split queue class up for easier managment
+  ([`8a30248`](https://github.com/kaneryu/Clarity/commit/8a30248c46d74e6c64c2d2abc08d82b43a1fd2b7))
 
+- Fix bug where non-rounded cover would be returned when retrieveing cover from cache
+  ([`191dbaf`](https://github.com/kaneryu/Clarity/commit/191dbafba0010101f30e649ba725c592b7466c1e))
 
-# Version 0.39.2
+- Fix bug where notifying log model wouldn't add logs based on error level, and disable song
+  fetching if we're offline
+  ([`9a680ea`](https://github.com/kaneryu/Clarity/commit/9a680eace74fc8fd672b63c87db22c02157f70d2))
 
+- Fix bug where orphaned items would never actually be deleted in intergrity check
+  ([`c131c97`](https://github.com/kaneryu/Clarity/commit/c131c97d8651c93d7b721976bfd3737c88ae918e))
 
-# Version 0.39.1
+- Fix bug where settings would not save to disk
+  ([`d4e973f`](https://github.com/kaneryu/Clarity/commit/d4e973faa8024f2fcce965329858f7d71b69a92f))
 
-## Bugfixes
+- Fix bug where status wasn't updated when fetching image from cache
+  ([`984b6ac`](https://github.com/kaneryu/Clarity/commit/984b6acdd9cae01ac6f72392862625a2a873c30b))
 
-- Allow album type to include singles in _set_info validation -- kaneryu on 2025-09-16
+- Fix various bugs in cacheManager, while working on the Song tile
+  ([`a87caa9`](https://github.com/kaneryu/Clarity/commit/a87caa9eba29e22403934de70e7ea0088396100c))
 
+- Fixed a few startup bugs, made queueview use the Song object
+  ([`c74751b`](https://github.com/kaneryu/Clarity/commit/c74751bbbf6cfdb938c6bb944585a09219eecfe0))
 
-# Version 0.39.0
+- If expiration isn't set, ignore it
+  ([`41aafc2`](https://github.com/kaneryu/Clarity/commit/41aafc238d5f7e30c46714b30293160be5fb2999))
 
-## New Features
+- Made duration available from song object
+  ([`bdd4a41`](https://github.com/kaneryu/Clarity/commit/bdd4a41a5b27eaa4d3609e9ca2e639a9ca5f3d49))
 
-- Add support for multiple media player backends; Implement FFPlay Backend -- kaneryu on 2025-09-16
+- Make presence use artist instead of song title
+  ([`d9fee30`](https://github.com/kaneryu/Clarity/commit/d9fee3055d69355d68624ccd129af51b4e78ccc2))
 
+- Make progressbar a bit larger
+  ([`ddbcdd9`](https://github.com/kaneryu/Clarity/commit/ddbcdd9c4684cbdb2317a5bf78137beb23f7f6e2))
 
-# Version 0.38.0
+- Make search use the default song thing
+  ([`d59c30c`](https://github.com/kaneryu/Clarity/commit/d59c30c412bb7318246d57b3228e6e5bc2ea89ff))
 
-## New Features
+- Make sure presence is stopped and the thread is properly deleted when the app is closed
+  ([`f2bc0f1`](https://github.com/kaneryu/Clarity/commit/f2bc0f1da229c7ed300600aa3d063eea9c5caace))
 
-- Add Albums. Currently available in search. -- kaneryu on 2025-09-16
+- Make various bugfixes so the app now compiles again
+  ([`4e384fb`](https://github.com/kaneryu/Clarity/commit/4e384fb633fccbb6ac4868207153d4be6c3064f7))
 
+- Move default settings out of code, and make sure that the active settings file updates itself to
+  the default setting's file schema
+  ([`7853cb0`](https://github.com/kaneryu/Clarity/commit/7853cb054dee90588fc842e815dd0f075e29fbea))
 
-# Version 0.37.6
+- Remove KImage (closes #4)
+  ([`7e5ba16`](https://github.com/kaneryu/Clarity/commit/7e5ba16f863924fbf13499d0468a805d005530f1))
 
+- Remove kimage from interactions
+  ([`65528e2`](https://github.com/kaneryu/Clarity/commit/65528e22040f9091c5ddb5b979fc41612c960162))
 
-# Version 0.37.5
+- Skipping forwards in progressbar not functioning
+  ([`f8e7077`](https://github.com/kaneryu/Clarity/commit/f8e707725dd5b06e890f55c133dd308adde3f7dd))
 
-## Bugfixes
+- Songs can now be in the queue without a MRL ready
+  ([`c84764b`](https://github.com/kaneryu/Clarity/commit/c84764b7b7cc4a7190f121860c5117b4076cb654))
 
-- add error catching for search, and add hot reload plugin for development -- kaneryu on 2025-09-14
+- Update path constants to use uppercase naming convention and add online status management in
+  NetworkManager
+  ([`a9942e6`](https://github.com/kaneryu/Clarity/commit/a9942e60a83658c442bffb4378f4659a878e9ab1))
 
+- Update search function to allow None as a filter, add copilot Instructions
+  ([`9c89287`](https://github.com/kaneryu/Clarity/commit/9c892877dee23b61b8c7027aa89ac4ed29922b81))
 
-# Version 0.37.4
+- Use logging in both datastore and cache, and make cache more resilient to being moved.
+  ([`352ecb0`](https://github.com/kaneryu/Clarity/commit/352ecb02c6f972287c4176e93056ef4173d2adc3))
 
-## Bugfixes
+### Chores
 
-- make various bugfixes so the app now compiles again -- kaneryu on 2025-09-13
+- Add .idea/ to gitignore
+  ([`5ecfd02`](https://github.com/kaneryu/Clarity/commit/5ecfd021bf7a9a9cd260103a282ae5357afb3f05))
 
+- Cleanup
+  ([`5aae1f7`](https://github.com/kaneryu/Clarity/commit/5aae1f74fb57a902782a1ecab94466d8c2c6f36e))
 
-# Version 0.37.3
+- Consolidate dependencies into pyproject.toml and remove requirements.txt
+  ([`f9fe692`](https://github.com/kaneryu/Clarity/commit/f9fe6929dc9a97d5fc5daf817474ea7ded57289f))
 
-## Bugfixes
+- Remove diabled line in run.py
+  ([`1f1abf5`](https://github.com/kaneryu/Clarity/commit/1f1abf5dac0a2be1b2117f701da458c2b184f145))
 
-- decrease offline mode timeout check for faster offline startup -- kaneryu on 2025-09-09
+- Remove some debug prints
+  ([`6e45aa6`](https://github.com/kaneryu/Clarity/commit/6e45aa6eee8289232938cbc1ccf7d57142444227))
 
+- Remove some logging from interactions
+  ([`6d89fc5`](https://github.com/kaneryu/Clarity/commit/6d89fc5965ba1b89b872968726c397de651a1044))
 
-# Version 0.37.2
+- Remove some misc prints
+  ([`b4c104d`](https://github.com/kaneryu/Clarity/commit/b4c104d82e357b9cfeffd7a79c1b5db3ea9cc2ec))
 
-## Bugfixes
+- Rename
+  ([`8b39826`](https://github.com/kaneryu/Clarity/commit/8b39826d7f35a5385c283fc919a7ca4aa92af193))
 
-- bug where incorrect offline check led to infinite recursion -- kaneryu on 2025-09-09
+- Seperate song and queue into seperate files
+  ([`f18979d`](https://github.com/kaneryu/Clarity/commit/f18979dac1cb397ede0a366ed20cb2cd27483e5e))
 
+- Some refactoring
+  ([`8989d0b`](https://github.com/kaneryu/Clarity/commit/8989d0bd3d433ecd6b465ad1b860707b082bf417))
 
-# Version 0.37.1
+- Split queue and player
+  ([`2e2da0d`](https://github.com/kaneryu/Clarity/commit/2e2da0d0a19659e1fcb9c83fecc93bbb504fe7cf))
 
-## Bugfixes
+- Update actions and gitignore
+  ([`567d517`](https://github.com/kaneryu/Clarity/commit/567d51784b8fc4de311e51a01990e89349036408))
 
-- fix bug where notifying log model wouldn't add logs based on error level, and disable song fetching if we're offline -- kaneryu on 2025-09-08
+- Update actions and gitignore
+  ([`e7b1e3d`](https://github.com/kaneryu/Clarity/commit/e7b1e3d9461e8d455071be8ea23d673b87367b12))
 
+- Update gitignore to not include sensitive info.
+  ([`afcaf55`](https://github.com/kaneryu/Clarity/commit/afcaf55f979693f923f9b2516d2bf156c28fc6d7))
 
-# Version 0.37.0
+- Update post-commit to fix pyproject too
+  ([`91f93de`](https://github.com/kaneryu/Clarity/commit/91f93de65afdb039dbf274d53e44ce78ad7a4147))
 
-## New Features
+### Features
 
-- implement debounce logic for Next and Prev song controls -- kaneryu on 2025-09-07
+- Add basic integration with windows SMTC
+  ([`76eb732`](https://github.com/kaneryu/Clarity/commit/76eb73260cbe996d8b09763aeccff9a80cb6da6f))
 
+- Add dynamic color based on current song cover
+  ([`65b04cc`](https://github.com/kaneryu/Clarity/commit/65b04cce0ae26f908d09bf902837103c51c5441f))
 
-# Version 0.36.1
+- Add functioning marquee to text elements
+  ([`3f6e2a7`](https://github.com/kaneryu/Clarity/commit/3f6e2a768b08c2c4c6b1ed8fcc46402d1d14a280))
 
-## Bugfixes
+- Add new discord RPC feature
+  ([`7b470c8`](https://github.com/kaneryu/Clarity/commit/7b470c8e1800de432215b2a7afc031ddf9041719))
 
-- Emit endReached signal immediately on song finish instead of using QTimer -- kaneryu on 2025-09-07
+- Add settings page
+  ([`c73a5f2`](https://github.com/kaneryu/Clarity/commit/c73a5f238a46ec0c5275394111aa69085976e86f))
 
+- Add song image provider, to start moving away from KImage
+  ([#4](https://github.com/kaneryu/Clarity/pull/4),
+  [`e25e73b`](https://github.com/kaneryu/Clarity/commit/e25e73b4e2a65dc65332870e8e03c249a8ee4ccb))
 
-# Version 0.36.0
+- Added base for settings
+  ([`3cff250`](https://github.com/kaneryu/Clarity/commit/3cff25096d359aa3014bd8b0c1490f8e97bdd6c6))
 
-## New Features
+- Added busyindicators to image to show when the image is loading
+  ([`627b786`](https://github.com/kaneryu/Clarity/commit/627b7867aeb4ee062d1f55b9abb5417afca857a0))
 
-- add dynamic color based on current song cover -- kaneryu on 2025-09-07
+- Assosiate song kimages with songs #3
+  ([`7f5ff7e`](https://github.com/kaneryu/Clarity/commit/7f5ff7ed14f8bb2cb22977d5d9b887429d62ca33))
 
+- Begin work on login
+  ([`fb38983`](https://github.com/kaneryu/Clarity/commit/fb3898373c3dc7b20a8bfbb1708323d80d8a01db))
 
-# Version 0.35.3
+- Implement dataStore integrity restoration in integrityCheck method
+  ([`3addfbc`](https://github.com/kaneryu/Clarity/commit/3addfbc379113c3931e364d5815b97b0a619f9f3))
 
-## Bugfixes
+- Implement debounce logic for Next and Prev song controls
+  ([`cd7e027`](https://github.com/kaneryu/Clarity/commit/cd7e02715591c77d52b23f9b12bd2ea98002d22f))
 
-- Fix bug where orphaned items would never actually be deleted in intergrity check -- kaneryu on 2025-09-04
+- Implement logging system with notification support and structured log history
+  ([`ae12027`](https://github.com/kaneryu/Clarity/commit/ae120273366f856450ca8c75a868e9fe8b9dffda))
 
+- Implement part of reworked networking
+  ([`59c67cf`](https://github.com/kaneryu/Clarity/commit/59c67cfb54d45f5e4c571ac0d2ebdc82e83195ff))
 
-# Version 0.35.2
+- Improve queueview visuals
+  ([`2cf1821`](https://github.com/kaneryu/Clarity/commit/2cf1821fed8139030e495b7119b9b228f8f865af))
 
-## Bugfixes
+- Intergrate with winsmtc play, pause, next and prev buttons
+  ([`b0965fc`](https://github.com/kaneryu/Clarity/commit/b0965fc4834f509ff0b3b872b0b44358689c28f3))
 
-- Update path constants to use uppercase naming convention and add online status management in NetworkManager -- kaneryu on 2025-09-04
+- **discotube**: Add rich presence support
+  ([`74ce8c3`](https://github.com/kaneryu/Clarity/commit/74ce8c3900524ce4522db55c7b59edb2a09585dd))
 
+### Refactoring
 
-# Version 0.35.1
+- Reorganize imports and move enumerations to dedicated files for better structure
+  ([`8c55b58`](https://github.com/kaneryu/Clarity/commit/8c55b58190318f4e38bd559a085a942c83ef21ab))
 
-## Bugfixes
 
-- Move default settings out of code, and make sure that the active settings file updates itself to the default setting's file schema -- kaneryu on 2025-09-03
+## v0.20.0 (2025-01-26)
 
+### Bug Fixes
 
-# Version 0.35.0
+- Add mutexes to increase thread safety
+  ([`8dccca2`](https://github.com/kaneryu/Clarity/commit/8dccca2f65d641c8c6f423827cf82c53d69fa679))
 
-## New Features
+- Added fault tolerance to convertocover by making sure that cache is always set to a real cache
+  instead of None
+  ([`b9de236`](https://github.com/kaneryu/Clarity/commit/b9de23630cc87684098004564392f788e6989a71))
 
-- intergrate with winsmtc play, pause, next and prev buttons -- kaneryu on 2025-09-01
+- Fix bug where seeking would cause the play button to show buffering indef
+  ([`ea6df18`](https://github.com/kaneryu/Clarity/commit/ea6df180a0dfb73a1a2cf43ed67384901938ce8b))
 
+- Fix bug where songs could not be played if the download was corrupted
+  ([`4c7d0ed`](https://github.com/kaneryu/Clarity/commit/4c7d0ed578102577c4ba94252cd08f093e041e88))
 
-# Version 0.34.4
+- Fix multiple bugs related to downloading songs
+  ([`825480e`](https://github.com/kaneryu/Clarity/commit/825480ec3976a121bfa893dc8dbd49b5aa7c7088))
 
-## Bugfixes
+- Fix None in coverconvert caused by imageCache being set too early
+  ([`9cf9976`](https://github.com/kaneryu/Clarity/commit/9cf99762eb4b3409ba4900f1bc0d0c7b664dc37a))
 
-- Skipping forwards in progressbar not functioning -- kaneryu on 2025-09-01
+- Fix searchModel returning KImage living in different thread
+  ([`15f932b`](https://github.com/kaneryu/Clarity/commit/15f932b0de9d2081650f0cb9760214947527cc90))
 
+- Fix spacing and icon height
+  ([`ddc86e7`](https://github.com/kaneryu/Clarity/commit/ddc86e784ae39e1252b313c2f68f5a9140c6f42d))
 
-# Version 0.34.3
+- Fix title in queue, fix overlapping issue in song results
+  ([`3ffda25`](https://github.com/kaneryu/Clarity/commit/3ffda2587e890dddbed6ac0a36efbca4e3e25106))
 
-## Bugfixes
+- Song duration not updating
+  ([`47673d9`](https://github.com/kaneryu/Clarity/commit/47673d99e9ca16d4cad700d40a3ee93bac58a5d4))
 
-- add some extra resiliency to search -- kaneryu on 2025-09-01
+- Speed up setqueue by a bit
+  ([`79a6945`](https://github.com/kaneryu/Clarity/commit/79a6945cac5a35ec0113fcd7539e65af5659f3c4))
 
+- Try a fix for no corner radius showing in the songbar image
+  ([`a54b8ee`](https://github.com/kaneryu/Clarity/commit/a54b8ee8282cf5b42d8e27159f2fd190cd1af9b8))
 
-# Version 0.34.2
+- Try another fix for random application crashes because trying to access Song in different thread
+  ([`0a5c03d`](https://github.com/kaneryu/Clarity/commit/0a5c03d80dcc68ed662f4ca4b529342aacbd38df))
 
-## Bugfixes
+- Yet another try to fix random application crashes, using an interface to access KImage living in
+  different thread
+  ([`28d4561`](https://github.com/kaneryu/Clarity/commit/28d4561791055d3b5604f9622959fb3e524f1fab))
 
-- add ratelimit to discord presence -- kaneryu on 2025-08-24
+- **qml, interactions, song**: Fix random application crash by not directly accessing song object
+  that lives in a different thread using QML.
+  ([`f62cd6c`](https://github.com/kaneryu/Clarity/commit/f62cd6c40e28f35e32355dd66c7f52151af6a3f4))
 
+- **song, queue**: Added fault tolerance to the queue by allowing it to ask for a song's data to be
+  refetched.
+  ([`76e2f49`](https://github.com/kaneryu/Clarity/commit/76e2f49375e342fb86a16f1901dc4a6c8ed5ce1f))
 
-# Version 0.34.1
+- **UI, song, interactions, interfaces**: Fix bug where QML didn't recive the song object properly
+  ([`c15f31d`](https://github.com/kaneryu/Clarity/commit/c15f31ded4544eeda63b5ac62df9dc66585ba480))
 
-## Bugfixes
+### Chores
 
-- update search function to allow None as a filter, add copilot Instructions -- kaneryu on 2025-08-24
+- Add new workflow
+  ([`192dd64`](https://github.com/kaneryu/Clarity/commit/192dd645d888ad4b273268988e469017d6e0a1a5))
 
+- Added an alternate way to bump the version in autover
+  ([`a3e203c`](https://github.com/kaneryu/Clarity/commit/a3e203ca186a3fac561dec189dd8cef8fccd94bf))
 
-# Version 0.34.0
+- Added downloaded songs to debug queue
+  ([`f9b3efe`](https://github.com/kaneryu/Clarity/commit/f9b3efe759303552797c7ff067bef092cdb315a9))
 
-## New Features
+- Copy over autochangelog from dev branch
+  ([`bd509b5`](https://github.com/kaneryu/Clarity/commit/bd509b54c906286053a4c6c4b951b6ed701950dd))
 
-- implement dataStore integrity restoration in integrityCheck method -- kaneryu on 2025-08-23
+- Copy over commit hooks from dev branch
+  ([`1b71ae2`](https://github.com/kaneryu/Clarity/commit/1b71ae2931434f26dabac6498540016e566b5cab))
 
+- Fix bug in hooks caused by move
+  ([`b5aad73`](https://github.com/kaneryu/Clarity/commit/b5aad7317e4e761fc6f4ec49b185e9b29a2630d2))
 
-# Version 0.33.0
+- Re-lock dependencies, add the new dependencies
+  ([`42d22ef`](https://github.com/kaneryu/Clarity/commit/42d22ef7d5acc37a98b24f8f21e55b8fdcaf3d59))
 
-## New Features
+- Update workflow
+  ([`2ea0baa`](https://github.com/kaneryu/Clarity/commit/2ea0baa9183e4ea14ef0fe6d3cdfab53e37f859b))
 
-- add basic integration with windows SMTC -- kaneryu on 2025-08-23
+- **build**: Update action to only run on push to main branch
+  ([`26ca202`](https://github.com/kaneryu/Clarity/commit/26ca202865e1f431a5c1967c9eb536bf4dfde4d4))
 
+### Features
 
-# Version 0.32.2
+- Add font files to the application with a test on the homepage
+  ([`bab8d00`](https://github.com/kaneryu/Clarity/commit/bab8d0009c15b8524e4ba107a0a33fb18091fab9))
 
-## Bugfixes
+- Add functionality to the queueview
+  ([`bc8b687`](https://github.com/kaneryu/Clarity/commit/bc8b6874b2925ef0e9cda9e91f1802e89e1e43b2))
 
-- make presence use artist instead of song title -- kaneryu on 2025-08-23
+- Add prerequisite for queuePanel
+  ([`e66e1a5`](https://github.com/kaneryu/Clarity/commit/e66e1a5f37b6960fcbe34145d27311299f9dcc24))
 
+- Improve semantics around the play/pasue button, and fix a bug where it wouldn't update sometimes
+  ([`1fe292b`](https://github.com/kaneryu/Clarity/commit/1fe292bd03034e17fbbb39428d30ebd01f7c4bfc))
 
-# Version 0.32.1
+- Replace placeholder text on songbar to be icons
+  ([`6ede0c4`](https://github.com/kaneryu/Clarity/commit/6ede0c45b1d5d17d4f4d867058d72118fbe74d54))
 
-## Bugfixes
+- **song**: Song no longer downloads playback info from internet if it's already downloaded
+  ([`c73af7c`](https://github.com/kaneryu/Clarity/commit/c73af7cae610addc158024f01ff538277d99e251))
 
-- allow for use of video as a playback MRL -- kaneryu on 2025-08-13
+- **song, download**: Add song downloading
+  ([`4b6d0b8`](https://github.com/kaneryu/Clarity/commit/4b6d0b807c04528f238c3cc8f7dae01a047ba5d7))
 
+- **songBar**: Added song cover, song details to the songbar
+  ([`b7467aa`](https://github.com/kaneryu/Clarity/commit/b7467aae66eb42fe5f61b693f8565962528440e6))
 
-# Version 0.32.0
+- **songbar**: Complete alpha songbar
+  ([`7cdc978`](https://github.com/kaneryu/Clarity/commit/7cdc978feb15d548213b541e1299fba53a72bdbc))
 
-## New Features
+- **songbar, bgworkers**: Improve songbar, add threading to non-async bgworker, refactor some stuff
+  ([`655da11`](https://github.com/kaneryu/Clarity/commit/655da11de10990e76f98c678248b20d2df245ae9))
 
-- implement logging system with notification support and structured log history -- kaneryu on 2025-08-08
+### Refactoring
 
+- Fix some code, add phanthomjs, add material symbols
+  ([`0551a78`](https://github.com/kaneryu/Clarity/commit/0551a78ebcba08023abb0dd03879a4cd133b487c))
 
-# Version 0.31.1
+- Remove some debugging code
+  ([`a16bab8`](https://github.com/kaneryu/Clarity/commit/a16bab8520eefdc90561b5c814b71a11ff6abad7))
 
-## Bugfixes
+- Remove some print statements
+  ([`ef2b5a8`](https://github.com/kaneryu/Clarity/commit/ef2b5a8409903419fad26694318405cba7b13b27))
 
-- fix bug where settings would not save to disk -- kaneryu on 2025-08-01
+- Remove some print statements
+  ([`eddb39c`](https://github.com/kaneryu/Clarity/commit/eddb39c65944c50ed7480e824a4852a50006dd8f))
 
+- **cache**: Make cache non-async
+  ([`70bfb0a`](https://github.com/kaneryu/Clarity/commit/70bfb0a8c3b55c5a21c7d7478de99d808200bde9))
 
-# Version 0.31.0
+- **queue, song**: Combine queue and song classes into one file
+  ([`d9cf0a4`](https://github.com/kaneryu/Clarity/commit/d9cf0a4ec045d90edcbd00e593ed91d6c8ea368e))
 
-## New Features
+- **song**: Remove some debugging code
+  ([`392a89e`](https://github.com/kaneryu/Clarity/commit/392a89e823a119b288f932b1cecb89b1b5c881fc))
 
-- add settings page -- kaneryu on 2025-08-01
 
+## v0.10.0 (2025-01-25)
 
-# Version 0.30.1
+### Bug Fixes
 
-## Bugfixes
+- Made sure gitignore ignores cache files
+  ([`ea93fe2`](https://github.com/kaneryu/Clarity/commit/ea93fe234208c1d70cdb6a428ca4811ad16444da))
 
-- add ability for downloader to retry downloading song if chunking doesn't work -- kaneryu on 2025-07-27
+- **action, build**: Move yt_dlp fix (occured in untracked file, involved deleting a bunch of code)
+  into a config.yaml. Also included proper dependencies in the requirements.txt for the aciton.
+  ([`73d0526`](https://github.com/kaneryu/Clarity/commit/73d0526e9144b5db27fa33b625176bbf9bbe0450))
 
+- **actions**: Update action
+  ([`63509e6`](https://github.com/kaneryu/Clarity/commit/63509e69bc4f9fe812fac125913f8c8e10a57947))
 
-# Version 0.30.0
+- **actions**: Windows only
+  ([`f879ccd`](https://github.com/kaneryu/Clarity/commit/f879ccdcc1744837a8102579741e2dc2506dba94))
 
-## New Features
+- **autover**: Clean up autover.py for use in commit hooks
+  ([`5f9f383`](https://github.com/kaneryu/Clarity/commit/5f9f383320af0775a42cba37d31ef80b2fd571c5))
 
-- add new discord RPC feature -- kaneryu on 2025-07-27
+- **autover**: Fix bug in autover where commit history was reversed.
+  ([`99a2d6b`](https://github.com/kaneryu/Clarity/commit/99a2d6b2f0c716fd49141cf68c0e9731fd1a5630))
 
+- **build**: Add versions as datafiles, add app icon to app.
+  ([`8a3c4fd`](https://github.com/kaneryu/Clarity/commit/8a3c4fddf7db6ecf2f5102866997d2d3810cde94))
 
-# Version 0.29.8
+- **build**: Switched from using --standalone to --mode=app
+  ([`8b88c35`](https://github.com/kaneryu/Clarity/commit/8b88c354abf8d333a12a4d211524aaad3be6dadd))
 
-## Bugfixes
+- **build**: Update run.py
+  ([`fc72bdd`](https://github.com/kaneryu/Clarity/commit/fc72bddbe50478624218b5ba757d2aaa808271af))
 
-- Add active song playing check -- kaneryu on 2025-07-27
+- **cache**: Make cache more resistant when data is deleted but the reference is not
+  ([`1b5eec2`](https://github.com/kaneryu/Clarity/commit/1b5eec22418af64b216381e11dd209333ed5b475))
 
+- **freezing**: Make some changes to make freezing via nuitka work, and add the configuration to
+  run.py
+  ([`a036182`](https://github.com/kaneryu/Clarity/commit/a0361824b6bdca971e3a109871365104f11d2e26))
 
-# Version 0.29.7
+- **queue**: Fix issues caused queue module having a name conflict
+  ([`f09b4f1`](https://github.com/kaneryu/Clarity/commit/f09b4f110026434f6594ac620507a8b714403ea4))
 
-## Bugfixes
+- **version**: Fix version file not being found causing application crash
+  ([`1160727`](https://github.com/kaneryu/Clarity/commit/11607275346e97179698f7b92b87ecf4d14c4cb8))
 
-- If expiration isn't set, ignore it -- kaneryu on 2025-07-07
+### Chores
 
+- Edit.gitignore
+  ([`5602779`](https://github.com/kaneryu/Clarity/commit/560277990b79aeda445b49270773f9e977fde871))
 
-# Version 0.29.6
+- Fix for no tag
+  ([`b38396b`](https://github.com/kaneryu/Clarity/commit/b38396b3dc2466bbbb96ee0977da7a41444f3744))
 
-## Bugfixes
+- Remove build script, auto-create releases
+  ([`a12992f`](https://github.com/kaneryu/Clarity/commit/a12992fbbd6265e773f0bd2fad937296ab08ab8b))
 
-- songs can now be in the queue without a MRL ready -- kaneryu on 2025-07-07
+- Undo last commit
+  ([`3c5da9a`](https://github.com/kaneryu/Clarity/commit/3c5da9a6c63dac82f4b80330ebd813642fa1c029))
 
+- **build**: Added caching to dependencies
+  ([`0a2b72b`](https://github.com/kaneryu/Clarity/commit/0a2b72b4fae75409b4426a82e68015534c9021f6))
 
-# Version 0.29.5
+- **build**: Decided to remove file version from build config
+  ([`db2c882`](https://github.com/kaneryu/Clarity/commit/db2c88239ce4673a6171a193268b69c0e9f36cc8))
 
-## Bugfixes
+- **build**: Remove anti-bloat from pluginlist
+  ([`961082b`](https://github.com/kaneryu/Clarity/commit/961082b303a92df3e4e06c839d2f16baef04238d))
 
-- codebase now passes mypy check (not in strict mode, with some changes made in mypy.ini) -- kaneryu on 2025-07-05
+- **queue**: Remove old queue file
+  ([`50186e3`](https://github.com/kaneryu/Clarity/commit/50186e320b1472a4ec8998431a229538daecff55))
 
+### Features
 
-# Version 0.29.4
+- **actions**: Add requirements so workflow functions
+  ([`070b9b5`](https://github.com/kaneryu/Clarity/commit/070b9b5a31ebaf049476bb4c488784649f4c0f49))
 
-## Bugfixes
+- **autover**: Added autoversioning using conventional commits
+  ([`34a5ca2`](https://github.com/kaneryu/Clarity/commit/34a5ca2e03170677d8a8529828826c3a0651ccdb))
 
-- Make sure presence is stopped and the thread is properly deleted when the app is closed -- kaneryu on 2025-07-03
+- **build**: Try a fix for build failing
+  ([`7f2c526`](https://github.com/kaneryu/Clarity/commit/7f2c526915eeda30109beb7a37a9e68af0557038))
 
+- **cache**: Enhance cache integrity checks and cleanup process via new integrityCheck function
+  ([`2076b09`](https://github.com/kaneryu/Clarity/commit/2076b09b484a40fb1bf1a38616b4fb72b7eef647))
 
-# Version 0.29.3
+- **pages, protocol**: Add pages to the app using a URL scheme, with innertune:// as the protocol
+  ([`7621cba`](https://github.com/kaneryu/Clarity/commit/7621cba8338d94c3436ae049a032dc73758e40d2))
 
-## Bugfixes
+- **queue, gui**: Added the QueueModel, and connected it to the QML.
+  ([`80e346a`](https://github.com/kaneryu/Clarity/commit/80e346a4dbeec28e7af7caa36d8559a038fb99c3))
 
-- Bump dependencies, swap out ytmusicapi for my own version (still async) -- kaneryu on 2025-07-02
+- **queue, player, gui**: Added the basic queue and player, and made the connection from it to the
+  GUI
+  ([`ca241a4`](https://github.com/kaneryu/Clarity/commit/ca241a43e9cd5f1c18e15859cd3786b43acce2df))
 
+- **search**: Added images to search results in QML, also refactored a few things to do so.
+  ([`fd0a870`](https://github.com/kaneryu/Clarity/commit/fd0a870d01a50175d6e9101e276fcc76f2eea2fb))
 
-# Version 0.29.2
+- **search**: Added preliminary version of search, and made connection the the UI. it can also play
+  songs from the results.
+  ([`ad22754`](https://github.com/kaneryu/Clarity/commit/ad2275478444f14ce77a2870c82c78640b84ea22))
 
-## Bugfixes
+- **songbar**: Add prelim stuff for songbar
+  ([`fd8bcd4`](https://github.com/kaneryu/Clarity/commit/fd8bcd49ac9bf4ac564487bb6ef0d4d603b3bf7e))
 
-- add some things to cleanup -- kaneryu on 2025-03-14
 
-
-# Version 0.29.1
-
-## Bugfixes
-
-- make progressbar a bit larger -- kaneryu on 2025-03-12
-
-
-# Version 0.29.0
-
-## New Features
-
-- begin work on login -- kaneryu on 2025-03-09
-
-
-# Version 0.28.0
-
-## New Features
-
-- implement part of reworked networking -- kaneryu on 2025-03-08
-
-
-# Version 0.27.0
-
-## New Features
-
-- Add functioning marquee to text elements -- kaneryu on 2025-03-04
-
-
-# Version 0.26.3
-
-## Bugfixes
-
-- Fix bug where going to the next song would hang the application; also improve job handling in background workers & split queue class up for easier managment -- kaneryu on 2025-03-03
-
-
-# Version 0.26.2
-
-## Bugfixes
-
-- use logging in both datastore and cache, and make cache more resilient to being moved. -- kaneryu on 2025-03-02
-
-
-# Version 0.26.1
-
-## Bugfixes
-
-- remove KImage (closes #4) -- kaneryu on 2025-03-01
-
-
-# Version 0.26.0
-
-## New Features
-
-- added base for settings -- kaneryu on 2025-03-01
-
-
-# Version 0.25.0
-
-## New Features
-
-- add rich presence support -- kaneryu on 2025-02-28
-
-
-# Version 0.24.4
-
-## Bugfixes
-
-- remove kimage from interactions -- kaneryu on 2025-02-25
-
-
-# Version 0.24.3
-
-## Bugfixes
-
-- bug where search used the wrong ID in searchpress -- kaneryu on 2025-02-23
-
-
-# Version 0.24.2
-
-## Bugfixes
-
-- make search use the default song thing -- kaneryu on 2025-02-22
-
-
-# Version 0.24.1
-
-## Bugfixes
-
-- add mouseblocker on queue view so clicks and scrolls don't pass through it -- kaneryu on 2025-02-21
-
-
-# Version 0.24.0
-
-## New Features
-
-- improve queueview visuals -- kaneryu on 2025-02-21
-
-
-# Version 0.23.2
-
-## Bugfixes
-
-- made duration available from song object -- kaneryu on 2025-02-21
-
-
-# Version 0.23.1
-
-## Bugfixes
-
-- fixed a few startup bugs, made queueview use the Song object -- kaneryu on 2025-02-21
-
-
-# Version 0.23.0
-
-## New Features
-
-- Added busyindicators to image to show when the image is loading -- kaneryu on 2025-02-21
-
-
-# Version 0.22.0
-
-## New Features
-
-- add song image provider, to start moving away from KImage (#4) -- kaneryu on 2025-02-20
-
-
-# Version 0.21.0
-
-## New Features
-
-- assosiate song kimages with songs #3 -- kaneryu on 2025-02-18
-
-
-# Version 0.20.8
-
-## Bugfixes
-
-- fix bug where status wasn't updated when fetching image from cache -- kaneryu on 2025-02-17
-
-
-# Version 0.20.7
-
-## Bugfixes
-
-- fix various bugs in cacheManager, while working on the Song tile -- kaneryu on 2025-02-17
-
-
-# Version 0.20.6
-
-## Bugfixes
-
-- fix bug in song where playback info was never downloaded in the first place -- kaneryu on 2025-02-03
-
-
-# Version 0.20.5
-
-## Bugfixes
-
-- fix bug in kimage that wouldn't initialize a variable before downlading the image -- kaneryu on 2025-02-03
-
-
-# Version 0.20.4
-
-## Bugfixes
-
-- fix bug where non-rounded cover would be returned when retrieveing cover from cache -- kaneryu on 2025-02-02
-
-
-# Version 0.20.3
-
-## Bugfixes
-
-- fix bug in workers that didn't call the callback if using putcoverconvert, and fix bug that didn't convert coverconvert key into path before returing it to the UI -- kaneryu on 2025-02-02
-
-
-# Version 0.20.2
-
-## Bugfixes
-
-- fix bug in cachemanger caused by using async lock in non-async functions -- kaneryu on 2025-02-02
-
-
-# Version 0.20.1
-
-## Bugfixes
-
-- bug in cacheManager that didn't use asyncio.lock on deleting a key, and also integrity check having incorrect implementation. -- kaneryu on 2025-02-02
-
-
-# Version 0.20.0
-
-## New Features
-
-- Add font files to the application with a test on the homepage -- kaneryu on 2025-01-25
-
-
-# Version 0.19.4
-
-## Bugfixes
-
-- song duration not updating -- kaneryu on 2025-01-24
-
-
-# Version 0.19.3
-
-## Bugfixes
-
-- fix bug where seeking would cause the play button to show buffering indef -- kaneryu on 2025-01-24
-
-
-# Version 0.19.2
-
-## Bugfixes
-
-- fix title in queue, fix overlapping issue in song results -- kaneryu on 2025-01-23
-
-
-# Version 0.19.1
-
-
-# Version 0.19.0
-
-## New Features
-
-- Add functionality to the queueview -- kaneryu on 2025-01-23
-
-
-# Version 0.18.0
-
-## New Features
-
-- Add prerequisite for queuePanel -- kaneryu on 2025-01-23
-
-
-# Version 0.17.0
-
-## New Features
-
-- Improve semantics around the play/pasue button, and fix a bug where it wouldn't update sometimes -- kaneryu on 2025-01-22
-
-
-# Version 0.16.1
-
-## Bugfixes
-
-- fix spacing and icon height -- kaneryu on 2025-01-22
-
-
-# Version 0.16.0
-
-## New Features
-
-- replace placeholder text on songbar to be icons -- kaneryu on 2025-01-21
-
-
-# Version 0.15.6
-
-## Bugfixes
-
-- Add mutexes to increase thread safety -- kaneryu on 2025-01-21
-
-
-# Version 0.15.5
-
-## Bugfixes
-
-- fix bug where songs could not be played if the download was corrupted -- kaneryu on 2025-01-19
-
-
-# Version 0.15.4
-
-
-# Version 0.15.3
-
-## Bugfixes
-
-- fix multiple bugs related to downloading songs -- kaneryu on 2025-01-19
-
-
-# Version 0.15.2
-
-## Bugfixes
-
-- Fix searchModel returning KImage living in different thread -- kaneryu on 2025-01-11
-
-
-# Version 0.15.1
-
-
-# Version 0.15.0
-
-## New Features
-
-- Song no longer downloads playback info from internet if it's already downloaded -- kaneryu on 2025-01-11
-
-
-# Version 0.14.7
-
-## Bugfixes
-
-- Yet another try to fix random application crashes, using an interface to access KImage living in different thread -- kaneryu on 2025-01-11
-
-
-# Version 0.14.6
-
-## Bugfixes
-
-- Speed up setqueue by a bit -- kaneryu on 2025-01-11
-
-
-# Version 0.14.5
-
-## Bugfixes
-
-- Try another fix for random application crashes because trying to access Song in different thread -- kaneryu on 2025-01-08
-
-
-# Version 0.14.4
-
-## Bugfixes
-
-- fix bug where QML didn't recive the song object properly -- kaneryu on 2025-01-08
-
-
-# Version 0.14.3
-
-## Bugfixes
-
-- Fix random application crash by not directly accessing song object that lives in a different thread using QML. -- kaneryu on 2025-01-07
-
-
-# Version 0.14.2
-
-## Bugfixes
-
-- try a fix for no corner radius showing in the songbar image -- kaneryu on 2025-01-06
-
-
-# Version 0.14.1
-
-## Bugfixes
-
-- fix None in coverconvert caused by imageCache being set too early -- kaneryu on 2025-01-06
-
-
-# Version 0.14.0
-
-## New Features
-
-- Add song downloading -- kaneryu on 2025-01-06
-
-
-# Version 0.13.6
-
-
-# Version 0.13.5
-
-## Bugfixes
-
-- added fault tolerance to the queue by allowing it to ask for a song's data to be refetched. -- kaneryu on 2025-01-04
-
-
-# Version 0.13.4
-
-
-# Version 0.13.3
-
-## Bugfixes
-
-- added fault tolerance to convertocover by making sure that cache is always set to a real cache instead of None -- kaneryu on 2025-01-03
-
-
-# Version 0.13.2
-
-
-# Version 0.13.1
-
-
-# Version 0.13.0
-
-## New Features
-
-- Improve songbar, add threading to non-async bgworker, refactor some stuff -- kaneryu on 2025-01-02
-
-
-# Version 0.12.0
-
-## New Features
-
-- complete alpha songbar -- kaneryu on 2024-12-26
-
-
-# Version 0.11.0
-
-## New Features
-
-- Added song cover, song details to the songbar -- kaneryu on 2024-12-25
-
-
-# Version 0.10.0
-
-## New Features
-
-- add prelim stuff for songbar -- kaneryu on 2024-12-23
-
-
-# Version 0.9.1
-
-## Bugfixes
-
-- add versions as datafiles, add app icon to app. -- kaneryu on 2024-12-22
-
-
-# Version 0.9.0
-
-## New Features
-
-- add pages to the app using a URL scheme, with innertune:// as the protocol -- kaneryu on 2024-12-21
-
-
-# Version 0.8.1
-
-## Bugfixes
-
-- fix version file not being found causing application crash -- kaneryu on 2024-12-21
-
-
-# Version 0.8.0
-
-## New Features
-
-- added images to search results in QML, also refactored a few things to do so. -- kaneryu on 2024-12-21
-
-
-# Version 0.7.2
-
-## Bugfixes
-
-- fix bug in autover where commit history was reversed. -- kaneryu on 2024-12-19
-
-
-# Version 0.7.1
-
-## Bugfixes
-
-- clean up autover.py for use in commit hooks -- kaneryu on 2024-12-19
-
-
-# Version 0.7.0
-
-## New Features
-
-- added autoversioning using conventional commits -- kaneryu on 2024-12-19
-
-
-# Version 0.6.0
-
-## New Features
-
-- Added preliminary version of search, and made connection the the UI. it can also play songs from the results. -- kaneryu on 2024-12-19
-
-
-# Version 0.5.3
-
-## Bugfixes
-
-- fix issues caused queue module having a name conflict -- kaneryu on 2024-12-19
-
-
-# Version 0.5.2
-
-## Bugfixes
-
-- switched from using --standalone to --mode=app -- kaneryu on 2024-12-19
-
-
-# Version 0.5.1
-
-## Bugfixes
-
-- Update run.py -- kaneryu on 2024-12-19
-
-
-# Version 0.5.0
-
-## New Features
-
-- try a fix for build failing -- kaneryu on 2024-12-18
-
-
-# Version 0.4.3
-
-## Bugfixes
-
-- windows only -- kaneryu on 2024-12-18
-
-
-# Version 0.4.2
-
-## Bugfixes
-
-- Move yt_dlp fix (occured in untracked file, involved deleting a bunch of code) into a config.yaml. Also included proper dependencies in the requirements.txt for the aciton. -- kaneryu on 2024-12-18
-
-
-# Version 0.4.1
-
-## Bugfixes
-
-- update action -- kaneryu on 2024-12-18
-
-
-# Version 0.4.0
-
-## New Features
-
-- add requirements so workflow functions -- kaneryu on 2024-12-18
-
-
-# Version 0.3.2
-
-## Bugfixes
-
-- make some changes to make freezing via nuitka work, and add the configuration to run.py -- kaneryu on 2024-12-18
-
-
-# Version 0.3.1
-
-## Bugfixes
-
-- made sure gitignore ignores cache files -- kaneryu on 2024-12-18
-
-
-# Version 0.3.0
-
-## New Features
-
-- enhance cache integrity checks and cleanup process via new integrityCheck function -- kaneryu on 2024-12-18
-
-
-# Version 0.2.1
-
-## Bugfixes
-
-- make cache more resistant when data is deleted but the reference is not -- kaneryu on 2024-12-18
-
-
-# Version 0.2.0
-
-## New Features
-
-- added the QueueModel, and connected it to the QML. -- kaneryu on 2024-12-18
-
-
-# Version 0.1.0
-
-## New Features
-
-- added the basic queue and player, and made the connection from it to the GUI -- kaneryu on 2024-12-17
-
-
-# Version 0.0.0
+## v0.0.0 (2024-02-03)
