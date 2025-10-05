@@ -210,7 +210,6 @@ class Queue(QObject):
                 if not isinstance(self._player, MpvMediaPlayer):
                     self.swapPlayers(MpvMediaPlayer())
                 setting.value = "mpv"
-                
             except Exception as e:
                 self.logger.exception("Failed to initialize mpv backend: %s", e)
                 traceback.print_exc()

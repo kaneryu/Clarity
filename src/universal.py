@@ -1,7 +1,8 @@
 import versions
 try:
-    with open("version.txt") as f:
-        version = versions.Version(f.read().strip())
+    with open("version.txt", encoding="utf-8") as f:
+        # We might have a BOM marker, so let's handle that
+        version = versions.Version(f.read().replace("\ufeff", "").strip())
 except FileNotFoundError:
     print("version.txt not found, using 0.0.0")
     version = versions.Version("0.0.0")
@@ -89,6 +90,10 @@ from .paths import Paths
 
 os.environ["PATH"] = (os.path.abspath(os.path.join(Paths.ASSETSPATH, "libs"))) + os.pathsep + os.environ["PATH"]
 
+from .workers import setup_workers
+setup_workers()
+from .workers import bgworker, asyncBgworker
+
 from .misc import settings as settings_module
 settings = settings_module.Settings()
 
@@ -104,8 +109,6 @@ from playback import queuemanager as queue_module
 from src.network import NetworkManager, networkManager, OnlineStatus
 
 from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG, QResource
-
-from .workers import BackgroundWorker, bgworker, asyncBgworker, Async_BackgroundWorker
 
 from .AppUrl import AppUrl, appUrl
 

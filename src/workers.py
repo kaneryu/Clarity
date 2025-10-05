@@ -38,7 +38,18 @@ class JobRunnable(QRunnable):
             traceback.print_exc()
 
 class BackgroundWorker(QThread):
+    _instance: Union["BackgroundWorker", None] = None
+    
+    def __new__(self, /, *, max_threads: int = 10) -> "BackgroundWorker":
+        if not hasattr(BackgroundWorker, '_instance') or BackgroundWorker._instance is None:
+            BackgroundWorker._instance = super(BackgroundWorker, BackgroundWorker).__new__(BackgroundWorker)
+        return BackgroundWorker._instance
+    
     def __init__(self, max_threads=10):
+        if hasattr(self, 'initialized') and self.initialized:
+            return
+        self.initialized = True
+        
         QThread.__init__(self)
         self.daemon = True
         self.stopped = False
@@ -130,10 +141,10 @@ class BackgroundWorker(QThread):
             if return_annotation is inspect.Signature.empty or return_annotation is not bool:
                 raise TypeError("When using 'dynamic_interval_max', the function must have a return type of 'bool'")
             task["start_interval"] = task["interval"]
-            base_interval = self.min_interval if task["start_interval"] is not 0 else task["start_interval"] 
+            base_interval = self.min_interval if task["start_interval"] != 0 else task["start_interval"]
             task["interval"] = base_interval  # Start with minimum interval
             def dynamic_task_wrapper():
-                base_interval = self.min_interval if task["start_interval"] is not 0 else task["start_interval"] 
+                base_interval = self.min_interval if task["start_interval"] != 0 else task["start_interval"]
                 task["isRunning"] = True
                 try:
                     result = func(*args, **kwargs)
@@ -169,7 +180,18 @@ class BackgroundWorker(QThread):
         self.threadpool.start(runnable, priority=1500)
 
 class Async_BackgroundWorker(QThread):
+
+    _instance: Union["Async_BackgroundWorker", None] = None
+
+    def __new__(cls, /, *, max_threads: int = 10) -> "Async_BackgroundWorker":
+        if not hasattr(Async_BackgroundWorker, '_instance') or Async_BackgroundWorker._instance is None:
+            Async_BackgroundWorker._instance = super(Async_BackgroundWorker, cls).__new__(cls)
+        return Async_BackgroundWorker._instance
+
     def __init__(self):
+        if hasattr(self, 'initialized') and self.initialized:
+            return
+        self.initialized = True
         QThread.__init__(self)
         self.daemon = True
         self.stopped = False
@@ -249,11 +271,15 @@ class Async_BackgroundWorker(QThread):
         
         self.logger.info("Async_BackgroundWorker stopped")
         self.quit()
-
         
-      
-bgworker = BackgroundWorker()
-bgworker.start()
 
-asyncBgworker = Async_BackgroundWorker()
-asyncBgworker.start()
+bgworker: Union[BackgroundWorker | None] = None
+asyncBgworker: Union[Async_BackgroundWorker | None] = None
+
+def setup_workers():
+    global bgworker, asyncBgworker
+    bgworker = BackgroundWorker()
+    bgworker.start()
+
+    asyncBgworker = Async_BackgroundWorker()
+    asyncBgworker.start()
