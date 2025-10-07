@@ -5,7 +5,7 @@ and validating commit message formats.
 """
 
 import logging
-from version_utils import (
+from .version_utils import (
     get_version_string,
     check_commit_format,
     is_git_repository

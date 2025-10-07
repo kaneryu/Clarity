@@ -24,6 +24,8 @@ from semantic_release.hvcs.github import Github
 
 import semantic_release.cli.changelog_writer as semverChangelogWriter
 
+from legacy_versioning import autover
+
 changelogPath = os.path.join(os.getcwd(), "CHANGELOG.md")
 
 def getChangelog():
@@ -56,7 +58,8 @@ def main():
         return
     os.environ["POST_COMMIT_RUNNING"] = "1"
 
-    version = getVersion().__str__()
+    version = autover.getVer()
+    print(f"Calculated version: {version}")
     open("./version.txt", "w").write(version)
     open("./src/version.txt", "w").write(version)
     

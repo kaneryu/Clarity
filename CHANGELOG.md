@@ -20,8 +20,11 @@
 - Refactor presence management and improve status handling
   ([`b3505b3`](https://github.com/kaneryu/Clarity/commit/b3505b37e2e1d7c86901ac133d8f0f0ef312aed0))
 
+- Restore previous versioning behavior (not previous changlog behavior, though)
+  ([`04e4539`](https://github.com/kaneryu/Clarity/commit/04e453940df7eb60ffd42648a0c99f9d550017b7))
+
 - Update DownloadStatus references to DownloadState in album and song modules
-  ([`fd419d5`](https://github.com/kaneryu/Clarity/commit/fd419d5926f12fbc86241c770a309c60a7fa59b2))
+  ([`2ae8cfc`](https://github.com/kaneryu/Clarity/commit/2ae8cfcb7b067307135bc3a31b087b58bc51e8bf))
 
 - Update type annotations for bgworker and asyncBgworker variables
   ([`6ad3d51`](https://github.com/kaneryu/Clarity/commit/6ad3d510bbf24306894fc3825eac84047383525e))
