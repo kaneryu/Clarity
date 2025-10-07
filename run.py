@@ -15,8 +15,8 @@
 # nuitka-project: --copyright="This is free and open-source software -- GNU GPL v3"
 # nuitka-project: --windows-product-name="Clarity"
 
-# nuitka-project: --product-version=0.47.4
-# nuitka-project: --file-version=0.47.4
+# nuitka-project: --product-version=0.48.0
+# nuitka-project: --file-version=0.48.0
 
 # nuitka-project: --output-filename=Clarity
 # nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml 

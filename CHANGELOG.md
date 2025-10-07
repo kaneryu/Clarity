@@ -18,7 +18,7 @@
   ([`fc84e28`](https://github.com/kaneryu/Clarity/commit/fc84e281a758d622475f56c12c364c3644cc82a4))
 
 - Refactor presence management and improve status handling
-  ([`9b37dc2`](https://github.com/kaneryu/Clarity/commit/9b37dc2559deee2099582d9aef252a2f2cb366b5))
+  ([`b3505b3`](https://github.com/kaneryu/Clarity/commit/b3505b37e2e1d7c86901ac133d8f0f0ef312aed0))
 
 - Update type annotations for bgworker and asyncBgworker variables
   ([`6ad3d51`](https://github.com/kaneryu/Clarity/commit/6ad3d510bbf24306894fc3825eac84047383525e))
@@ -32,6 +32,11 @@
 
 - Migrate to python-semantic-release for automated versioning
   ([`e4d729f`](https://github.com/kaneryu/Clarity/commit/e4d729fa2a49ea4b0904182bca4d84ff0c0099c0))
+
+### Features
+
+- Add version.py, contains version information. Also add Release information
+  ([`ce556f5`](https://github.com/kaneryu/Clarity/commit/ce556f5c82c00b66903bb6faf747cdcd52758dc4))
 
 
 ## v0.47.3 (2025-10-04)

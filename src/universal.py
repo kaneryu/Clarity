@@ -1,15 +1,5 @@
-import versions
-try:
-    with open("version.txt", encoding="utf-8") as f:
-        # We might have a BOM marker, so let's handle that
-        version = versions.Version(f.read().replace("\ufeff", "").strip())
-except FileNotFoundError:
-    print("version.txt not found, using 0.0.0")
-    version = versions.Version("0.0.0")
-    
-print("Clarity", repr(version))
-
 from src.misc.compiled import __compiled__, compiled
+from src.misc.version import version, release
 
 import threading
 import concurrent.futures
