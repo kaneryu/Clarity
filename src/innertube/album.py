@@ -20,7 +20,7 @@ from src import universal as universal
 from src import cacheManager
 from src.innertube import song
 from src.misc.enumerations.Album import DownloadStatus
-from src.misc.enumerations.Song import DownloadStatus as SongDownloadStatus
+from src.misc.enumerations.Song import DownloadState as SongDownloadState
 from src.misc.enumerations import DataStatus
 
 from src.innertube.models.songListModel import SongListModel, SongProxyListModel
@@ -201,20 +201,20 @@ class Album(QObject):
             self.logger.error("Tried to fetch album's songs, but there is no data available")
             return
 
-        downloadStatuses: dict[Literal["id"], SongDownloadStatus] = {}
+        downloadStatuses: dict[Literal["id"], SongDownloadState] = {}
         for track in self.songs:
             downloadStatuses[track.id] = track.downloadState
 
         downloadStatus = DownloadStatus.FULLY_DOWNLOADED
         for status in downloadStatuses.values():
             match status:
-                case SongDownloadStatus.DOWNLOADING:
+                case SongDownloadState.DOWNLOADING:
                     downloadStatus = DownloadStatus.DOWNLOAD_IN_PROGRESS
                     break
-                case SongDownloadStatus.NOT_DOWNLOADED:
+                case SongDownloadState.NOT_DOWNLOADED:
                     downloadStatus = DownloadStatus.PARTIALLY_DOWNLOADED
                     break
-                case SongDownloadStatus.DOWNLOADED:
+                case SongDownloadState.DOWNLOADED:
                     continue
 
         self.downloadStatus = downloadStatus

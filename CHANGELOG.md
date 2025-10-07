@@ -20,6 +20,9 @@
 - Refactor presence management and improve status handling
   ([`b3505b3`](https://github.com/kaneryu/Clarity/commit/b3505b37e2e1d7c86901ac133d8f0f0ef312aed0))
 
+- Update DownloadStatus references to DownloadState in album and song modules
+  ([`fd419d5`](https://github.com/kaneryu/Clarity/commit/fd419d5926f12fbc86241c770a309c60a7fa59b2))
+
 - Update type annotations for bgworker and asyncBgworker variables
   ([`6ad3d51`](https://github.com/kaneryu/Clarity/commit/6ad3d510bbf24306894fc3825eac84047383525e))
 
@@ -39,7 +42,7 @@
   ([`68dc98b`](https://github.com/kaneryu/Clarity/commit/68dc98b8c72bd0335f3cb95572d5c626cc11f1f1))
 
 - Display the current song title and playing status in window title
-  ([`c6b49a6`](https://github.com/kaneryu/Clarity/commit/c6b49a6825c5387eb23c980bed790af3111bd136))
+  ([`5015f37`](https://github.com/kaneryu/Clarity/commit/5015f37e24eb9e619f99170525e624470532a230))
 
 
 ## v0.47.3 (2025-10-04)
