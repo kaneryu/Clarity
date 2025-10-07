@@ -71,8 +71,8 @@ class Interactions(QObject):
     
     @Property(str, notify=songChanged)
     def currentSongTitle(self):
-        with QMutexLocker(universal.queueInstance._mutex):
-            return universal.queueInstance.currentSongTitle
+        # with QMutexLocker(universal.queueInstance._mutex):
+        return universal.queueInstance.currentSongTitle
     
     @Property(str, notify=songChanged)
     def currentSongChannel(self):
@@ -111,7 +111,10 @@ class Interactions(QObject):
     @Property(int, notify=playingStatusChanged)
     def playingStatus(self):
         return int(universal.queueInstance.playingStatus) # type: ignore[call-overload]
-    
+
+    @Property(str, notify=playingStatusChanged)
+    def playingStatusString(self):
+        return song_enums.ReadablePlayingStatuses.get(universal.queueInstance.playingStatus, "Unknown")
 
     
     @Slot(int)

@@ -25,9 +25,22 @@ class PlayingStatus(enum.IntEnum):
     
     NOT_PLAYING = 5  # Only for songproxy class; Returned when the current song is not currently playing
 
-class DownloadStatus(enum.IntEnum):
-    """ Download Status. Used to indicate the download status of a song.
+ReadablePlayingStatuses = {
+    PlayingStatus.NOT_READY: "Not Ready",
+    PlayingStatus.PLAYING: "Playing",
+    PlayingStatus.PAUSED: "Paused",
+    PlayingStatus.BUFFERING: "Buffering",
+    PlayingStatus.BUFFERING_NETWORK: "Buffering (Network)",
+    PlayingStatus.BUFFERING_LOCAL: "Buffering (Local)",
+    PlayingStatus.STOPPED: "Stopped",
+    PlayingStatus.ERROR: "Error",
+    PlayingStatus.NOT_PLAYING: "Not Playing",
+}
     
+
+class DownloadState(enum.IntEnum):
+    """ Download State. Used to indicate the download state of a song.
+
     NOT_DOWNLOADED: The song is not downloaded \n
     DOWNLOADING: The song is currently downloading \n
     DOWNLOADED: The song is fully downloaded \n

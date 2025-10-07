@@ -21,7 +21,7 @@ ApplicationWindow {
     minimumWidth: 840 // The application should be comfortable to use at this size
     minimumHeight: 480
 
-    title: "Clarity"
+    title: "Clarity" + " | " + Interactions.currentSongTitle + " (" + Interactions.playingStatusString + ")"
 
     Shortcut {
         sequence: "Ctrl+Shift+R"

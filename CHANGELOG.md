@@ -36,7 +36,10 @@
 ### Features
 
 - Add version.py, contains version information. Also add Release information
-  ([`ce556f5`](https://github.com/kaneryu/Clarity/commit/ce556f5c82c00b66903bb6faf747cdcd52758dc4))
+  ([`68dc98b`](https://github.com/kaneryu/Clarity/commit/68dc98b8c72bd0335f3cb95572d5c626cc11f1f1))
+
+- Display the current song title and playing status in window title
+  ([`c6b49a6`](https://github.com/kaneryu/Clarity/commit/c6b49a6825c5387eb23c980bed790af3111bd136))
 
 
 ## v0.47.3 (2025-10-04)
