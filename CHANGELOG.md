@@ -6,7 +6,7 @@
 ### Bug Fixes
 
 - Fix bug where app would run in debugging mode even when not compiled
-  ([`b15f862`](https://github.com/kaneryu/Clarity/commit/b15f86299fd6b7cdd00e6b800eca0f3c9c9e6f10))
+  ([`7e4d42f`](https://github.com/kaneryu/Clarity/commit/7e4d42f2715246c899084100fae4fefc277f00ca))
 
 - Fix bug where run.py and main.py still used the old (broken) method to detect if they're compiled
   ([`f639484`](https://github.com/kaneryu/Clarity/commit/f639484fbe2962b80234d523c73913268d906ab0))
@@ -16,6 +16,9 @@
 
 - Fix bug where workers would be started up twice
   ([`fc84e28`](https://github.com/kaneryu/Clarity/commit/fc84e281a758d622475f56c12c364c3644cc82a4))
+
+- Refactor presence management and improve status handling
+  ([`9b37dc2`](https://github.com/kaneryu/Clarity/commit/9b37dc2559deee2099582d9aef252a2f2cb366b5))
 
 - Update type annotations for bgworker and asyncBgworker variables
   ([`6ad3d51`](https://github.com/kaneryu/Clarity/commit/6ad3d510bbf24306894fc3825eac84047383525e))

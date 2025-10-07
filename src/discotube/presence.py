@@ -2,8 +2,10 @@ import time
 import logging
 import traceback
 import queue
+import typing
 
 from src.misc import cleanup, settings
+from src.misc.enumerations.Song import PlayingStatus
 from PySide6.QtCore import QThread, Slot
 from pypresence import Presence, ActivityType, StatusDisplayType, DiscordNotFound
 from workers import bgworker
@@ -14,9 +16,7 @@ class PresenceManagerThread(QThread):
         self.queue_instance = queue_instance
         self._running = True
         self.jobs: queue.Queue = queue.Queue()
-        self.queue_instance.songChanged.connect(self.putnewsong)
-        self.queue_instance.playingStatusChanged.connect(self.playingStatusChanged)
-
+        
         self.logger = logging.getLogger("DiscordPresence")
         self.PresenceEnabledSetting = settings.getSetting("discordPresenceEnabled")
         self.PresenceEnabledSetting.valueChanged.connect(self.enabledChanged)
@@ -28,10 +28,11 @@ class PresenceManagerThread(QThread):
 
         self.newPresence: Presence | None = None
 
-        self._rate_limit_seconds = 3
+        self._rate_limit_seconds = 0.5
         self._last_rpc_ts = 0.0
-        self._pending_update = False
-        self._pending_clear = False
+        self._pending_action = False
+        
+        self.currentDetails = None
 
     def clientIdChanged(self):
         if self.clientIdSetting.value == self.client_id:
@@ -70,16 +71,15 @@ class PresenceManagerThread(QThread):
             self.newPresence = Presence(self.client_id)
             self.newPresence.connect()
         self.rpc = self.newPresence
-        self.playingStatusChanged()
         self.logger.info("Discord RPC reloaded with new client ID")
         # After reconnect, allow immediate update
         self._last_rpc_ts = 0.0
 
-    def putnewsong(self):
-        self.jobs.put(self.onNewSong)
+    # def putnewsong(self):
+    #     self.jobs.put(self.onNewSong)
 
-    def playingStatusChanged(self):
-        self.jobs.put(self.onPlayingStatusChanged)
+    # def playingStatusChanged(self):
+    #     self.jobs.put(self.onPlayingStatusChanged)
     
     def occasional_reconnect_try(self):
         try:
@@ -108,26 +108,26 @@ class PresenceManagerThread(QThread):
             self.onNewSong()
 
         while self._running:
-            time.sleep(1/60)  # Run at ~60Hz
-            try:
-                while True:
-                    job = self.jobs.get_nowait()
-                    try:
-                        job()
-                    except Exception as je:
-                        self.logger.error(f"Error in presence job: {je}")
-                        traceback.print_exc()
-                    self.jobs.task_done()
-            except queue.Empty:
-                pass
-
-            # If something was throttled, perform it once window opens
+            # time.sleep(1/60)  # Run at ~60Hz
+            # try:
+            #     while True:
+            #         job = self.jobs.get_nowait()
+            #         try:
+            #             job()
+            #         except Exception as je:
+            #             self.logger.error(f"Error in presence job: {je}")
+            #             traceback.print_exc()
+            #         self.jobs.task_done()
+            # except queue.Empty:
+            #     pass
             now = time.time()
             if (now - self._last_rpc_ts) >= self._rate_limit_seconds:
-                if self._pending_update and self.queue_instance.isPlaying:
-                    self.onNewSong()
-                elif self._pending_clear and not self.queue_instance.isPlaying:
-                    self.clearPresence()
+                if self.queue_instance.playingStatus == PlayingStatus.PLAYING or self.queue_instance.playingStatus == PlayingStatus.BUFFERING_LOCAL:
+                    if not self.comparePresenceWithQueue():
+                        self.onNewSong()
+                elif self.queue_instance.playingStatus == PlayingStatus.STOPPED or self.queue_instance.playingStatus == PlayingStatus.PAUSED or self.queue_instance.playingStatus == PlayingStatus.BUFFERING:
+                    if not self.checkPresenceCleared():
+                        self.clearPresence()
 
         # Shutdown RPC connection when stopping
         try:
@@ -136,6 +136,27 @@ class PresenceManagerThread(QThread):
         except Exception as e:
             self.logger.error(f"Error closing Discord RPC: {e}")
 
+    def comparePresenceWithQueue(self):
+        if not hasattr(self, "rpc") or not self.queue_instance.currentSongObject:
+            return False
+        title = self.queue_instance.currentSongTitle
+        channel = self.queue_instance.currentSongChannel
+        cover = self.queue_instance.currentSongObject.largestThumbnailUrl
+
+        if not self.currentDetails:
+            return False
+
+        if (self.currentDetails['title'] == (title) and
+            self.currentDetails['channel'] == (channel) and
+            self.currentDetails['state'] == (self.queue_instance.playingStatus.name)):
+            return True
+        return False
+
+    def checkPresenceCleared(self):
+        if not hasattr(self, "rpc"):
+            return True
+        return self.currentDetails is None
+    
     def onNewSong(self):
         if not self.enabled:
             return
@@ -144,7 +165,6 @@ class PresenceManagerThread(QThread):
         try:
             now = time.time()
             if (now - self._last_rpc_ts) < self._rate_limit_seconds:
-                self._pending_update = True
                 self.logger.debug(
                     "Presence update throttled; will retry when window opens"
                 )
@@ -156,28 +176,48 @@ class PresenceManagerThread(QThread):
             duration = self.queue_instance.currentSongDuration
             song_id = self.queue_instance.currentSongId
             cover = self.queue_instance.currentSongObject.largestThumbnailUrl
+            
+            self.currentDetails = {
+                "title": title,
+                "channel": channel,
+                "song_time": song_time,
+                "duration": duration,
+                "song_id": song_id,
+                "cover": cover,
+                "state": self.queue_instance.playingStatus.name
+            }
 
             buttons = [
                 {"label": "Listen on YouTube", "url": f"https://www.youtube.com/watch?v={song_id}"}
             ]
 
-            current_time = int(time.time())
-            start = current_time - song_time if song_time else current_time
-            end = start + duration if duration else None
+            if not self.queue_instance.playingStatus == PlayingStatus.BUFFERING_LOCAL:
+                current_time = int(time.time())
+                start = current_time - song_time if song_time else current_time
+                end = start + duration if duration else None
 
-            self.rpc.update(
-                activity_type=ActivityType.LISTENING,
-                status_display_type=StatusDisplayType.STATE,
-                details=title[:128] if title else "Unknown Title",
-                state=channel[:128] if channel else "Unknown Artist",
-                start=start,
-                end=end,
-                large_image=cover,
-                large_text="Clarity",
-                buttons=buttons
-            )
+                self.rpc.update(
+                    activity_type=ActivityType.LISTENING,
+                    status_display_type=StatusDisplayType.STATE,
+                    details=title[:128] if title else "Unknown Title",
+                    state=channel[:128] if channel else "Unknown Artist",
+                    start=start,
+                    end=end,
+                    large_image=cover,
+                    large_text="Clarity",
+                    buttons=buttons
+                )
+            else:
+                self.rpc.update(
+                    activity_type=ActivityType.LISTENING,
+                    status_display_type=StatusDisplayType.STATE,
+                    details=title[:128] if title else "Unknown Title",
+                    state=channel[:128] if channel else "Unknown Artist",
+                    large_image=cover,
+                    large_text="Clarity (Buffering...)",
+                    buttons=buttons
+                )
             self._last_rpc_ts = now
-            self._pending_update = False
             self.logger.info(f"Updated presence: {title} - {channel}")
         except Exception as e:
             self.logger.error(f"Failed to update presence: {e}")
@@ -197,15 +237,14 @@ class PresenceManagerThread(QThread):
         try:
             now = time.time()
             if (now - self._last_rpc_ts) < self._rate_limit_seconds:
-                self._pending_clear = True
                 self.logger.debug(
-                    "Presence clear throttled; will retry when window opens"
+                    "Presence update throttled; will retry when window opens"
                 )
                 return
 
             self.rpc.clear()
+            self.currentDetails = None
             self._last_rpc_ts = now
-            self._pending_clear = False
             self.logger.info("Cleared Discord presence")
         except Exception as e:
             self.logger.error(f"Failed to clear presence: {e}")
