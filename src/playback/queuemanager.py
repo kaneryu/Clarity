@@ -2,7 +2,7 @@ import time
 import logging
 import traceback
 
-from typing import Union, Any, cast
+from typing import TYPE_CHECKING, Union, Any, cast
 
 from PySide6.QtCore import (
     Property as QProperty,
@@ -160,8 +160,10 @@ class Queue(QObject):
         self._queueAccessMutex = QMutex()
 
         self.loop: LoopType = LoopType.NONE
+
         self.queue: list[Song]
         self.queueIds: list[str]
+        self.currentSongObject: Song
         self.queueModel = QueueModel()
 
         # Media player engine: start with VLC to satisfy type expectations, then swap if needed

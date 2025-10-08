@@ -1,3 +1,10 @@
+# 0.49.6
+
+## Bugfixes
+
+- streamline presence recconect, and potentially fix bug with it. -- kaneryu on 2025-10-08
+
+
 # 0.49.5
 
 ## Bugfixes

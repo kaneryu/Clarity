@@ -4,6 +4,9 @@ import traceback
 import queue
 import typing
 
+if typing.TYPE_CHECKING:
+    from src.playback.queuemanager import Queue
+
 from src.misc import cleanup, settings
 from src.misc.enumerations.Song import PlayingStatus
 from PySide6.QtCore import QThread, Slot
@@ -12,7 +15,7 @@ from workers import bgworker
 
 
 class PresenceManagerThread(QThread):
-    def __init__(self, queue_instance, parent=None):
+    def __init__(self, queue_instance: "Queue", parent=None):
         super().__init__(parent)
         self.queue_instance = queue_instance
         self._running = True
@@ -33,7 +36,7 @@ class PresenceManagerThread(QThread):
         self._last_rpc_ts = 0.0
         self._pending_action = False
 
-        self.currentDetails = None
+        self.currentDetails: dict[str, typing.Any] | None = None
 
     def clientIdChanged(self):
         if self.clientIdSetting.value == self.client_id:
@@ -70,13 +73,20 @@ class PresenceManagerThread(QThread):
 
     def reloadRPC(self):
         if not self.newPresence:
-            self.logger.info(
-                "Reload RPC called without newPresence set, creating new one."
-            )
-            self.newPresence = Presence(self.client_id)
-            self.newPresence.connect()
-        self.rpc = self.newPresence
-        self.logger.info("Discord RPC reloaded with new client ID")
+            self.rpc = Presence(self.client_id)
+        else:
+            self.rpc = self.newPresence
+            self.newPresence = None
+        try:
+            self.rpc.connect()
+            self.logger.info("Discord RPC connected")
+        except Exception as e:
+            self.logger.error(f"Failed to connect to Discord: {e}")
+            if isinstance(e, DiscordNotFound):
+                bgworker.add_occasional_task(
+                    self.occasional_reconnect_try, interval=30
+                )  # Try reconnecting every 30 seconds
+            return
         # After reconnect, allow immediate update
         self._last_rpc_ts = 0.0
 
@@ -97,18 +107,7 @@ class PresenceManagerThread(QThread):
             self.logger.warning(f"Reconnection to Discord RPC failed: {e}")
 
     def run(self):
-        self.rpc = Presence(self.client_id)
-        try:
-            self.rpc.connect()
-            self.logger.info("Discord RPC connected")
-        except Exception as e:
-            self.logger.error(f"Failed to connect to Discord: {e}")
-            if isinstance(e, DiscordNotFound):
-                bgworker.add_occasional_task(
-                    self.occasional_reconnect_try, interval=30
-                )  # Try reconnecting every 30 seconds
-            return
-
+        self.reloadRPC()
         # Run an update once if a song is playing
         if self.queue_instance.isPlaying and self.queue_instance.currentSongObject:
             self.onNewSong()
@@ -185,12 +184,12 @@ class PresenceManagerThread(QThread):
                 )
                 return
 
-            title = self.queue_instance.currentSongTitle
-            channel = self.queue_instance.currentSongChannel
-            song_time = self.queue_instance.currentSongTime
-            duration = self.queue_instance.currentSongDuration
-            song_id = self.queue_instance.currentSongId
-            cover = self.queue_instance.currentSongObject.largestThumbnailUrl
+            title: str = self.queue_instance.currentSongTitle  # type: ignore
+            channel: str = self.queue_instance.currentSongChannel  # type: ignore
+            song_time: int = self.queue_instance.currentSongTime  # type: ignore
+            duration: int = self.queue_instance.currentSongDuration  # type: ignore
+            song_id: str = self.queue_instance.currentSongId  # type: ignore
+            cover: str = self.queue_instance.currentSongObject.largestThumbnailUrl  # type: ignore
 
             self.currentDetails = {
                 "title": title,
