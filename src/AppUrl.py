@@ -3,6 +3,7 @@ import typing
 
 from PySide6.QtCore import QObject, Signal, Slot, Property
 
+
 class AppUrl(QObject):
     # Signals (no payload; properties will be re-read by bindings)
     urlChanged = Signal()
@@ -13,7 +14,7 @@ class AppUrl(QObject):
     canGoBackChanged = Signal()
     canGoForwardChanged = Signal()
 
-    _instance: typing.Union["AppUrl", None] = None 
+    _instance: typing.Union["AppUrl", None] = None
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
@@ -21,24 +22,24 @@ class AppUrl(QObject):
         return cls._instance
 
     def __init__(self):
-        if not hasattr(self, 'initialized'):
+        if not hasattr(self, "initialized"):
             super().__init__()
             self.history = ["clarity:///page/home?firstlauch=true"]
             self.pointer = 0
             self.initialized = True
-    
+
     def getParsedUrl(self):
         return urllib.parse.urlparse(self.history[self.pointer])
 
     def getUrl(self):
         return self.history[self.pointer]
-    
+
     def getPath(self) -> list:
         p = self.getParsedUrl().path
         if p == "":
             return []
         return p.lstrip("/").split("/")
-    
+
     def getQuery(self) -> dict:
         return urllib.parse.parse_qs(self.getParsedUrl().query)
 
@@ -87,7 +88,7 @@ class AppUrl(QObject):
     def setUrl(self, url: str):
         # remove all history after the current pointer
         if self.pointer < len(self.history) - 1:
-            self.history = self.history[:self.pointer + 1]
+            self.history = self.history[: self.pointer + 1]
             self.historyChanged.emit()
         self.history.append(url)
         self.pointer += 1
@@ -101,6 +102,9 @@ class AppUrl(QObject):
     canGoBack = Property(bool, fget=_getCanGoBack, notify=canGoBackChanged)
     canGoForward = Property(bool, fget=_getCanGoForward, notify=canGoForwardChanged)
     pointerIndex = Property(int, fget=lambda self: self.pointer, notify=pointerChanged)
-    historyLength = Property(int, fget=lambda self: len(self.history), notify=historyChanged)
+    historyLength = Property(
+        int, fget=lambda self: len(self.history), notify=historyChanged
+    )
+
 
 appUrl = AppUrl()

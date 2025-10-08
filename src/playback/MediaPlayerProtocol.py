@@ -15,8 +15,7 @@ import vlc  # type: ignore[import-untyped]
 
 from src import universal as universal
 from src.innertube.song import Song
-from src.misc.enumerations.Song import PlayingStatus 
-
+from src.misc.enumerations.Song import PlayingStatus
 
 
 @runtime_checkable
@@ -93,14 +92,14 @@ class MediaPlayer(Protocol):
         This is a structural protocol; concrete implementations still inherit QObject
         for signal plumbing. Keep this spec updated if VLCMediaPlayer behavior evolves.
     """
-    
-    NAME: str # the internal name of the mediaplayer
-    
+
+    NAME: str  # the internal name of the mediaplayer
+
     # Signal attribute annotations only (no Signal() construction here). Use Any for MyPy friendliness.
     playingStatusChanged: Any
     durationChanged: Any
     timeChanged: Any
-    songChanged: Any # MUST accept an int
+    songChanged: Any  # MUST accept an int
 
     endReached: Any
     errorOccurred: Any
@@ -125,10 +124,11 @@ class MediaPlayer(Protocol):
         """Begin (or prepare) playback for the given Song.
         Must update current song reference immediately and emit songChanged().
         If media locator (MRL) absent, emit NOT_READY state and defer actual start."""
-    
+
     def onSongMrlChanged(self, song: Song) -> None:
         """Handle the current Song's MRL change event (e.g., from async resolution).
-        If the changed song is the current one and now has a valid MRL, resume playback."""
+        If the changed song is the current one and now has a valid MRL, resume playback.
+        """
 
     def destroy(self) -> None:
         """Clean up resources, stop playback, disconnect signals, prepare for deletion."""
@@ -163,4 +163,3 @@ class MediaPlayer(Protocol):
     @Slot(int)
     def pseek(self, percentage: int) -> None:
         """Seek to percentage (0-100) of total duration. Raises ValueError if outside range."""
-    

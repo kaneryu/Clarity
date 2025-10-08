@@ -7,13 +7,16 @@ import time
 DB_PATH = os.path.join(os.path.abspath("data"), "innerdb.db")
 DB = sqlite3.connect(DB_PATH)
 
+
 class Schema:
     def __init__(self, name, columns):
         self.name = name
         self.columns = columns
 
     def create(self):
-        DB.execute(f"CREATE TABLE IF NOT EXISTS {self.name} ({', '.join(self.columns)})")
+        DB.execute(
+            f"CREATE TABLE IF NOT EXISTS {self.name} ({', '.join(self.columns)})"
+        )
         DB.commit()
 
     def drop(self):
@@ -21,7 +24,9 @@ class Schema:
         DB.commit()
 
     def insert(self, **kwargs):
-        DB.execute(f"INSERT INTO {self.name} ({', '.join(kwargs.keys())}) VALUES ({', '.join([f'"{i}"' for i in kwargs.values()])})")
+        DB.execute(
+            f"INSERT INTO {self.name} ({', '.join(kwargs.keys())}) VALUES ({', '.join([f'"{i}"' for i in kwargs.values()])})"
+        )
         DB.commit()
 
     def select(self, *columns, where=None):
@@ -32,7 +37,9 @@ class Schema:
         return DB.cursor().fetchall()
 
     def update(self, where, **kwargs):
-        DB.execute(f"UPDATE {self.name} SET {', '.join([f'{k}="{v}"' for k, v in kwargs.items()])} WHERE {where}")
+        DB.execute(
+            f"UPDATE {self.name} SET {', '.join([f'{k}="{v}"' for k, v in kwargs.items()])} WHERE {where}"
+        )
         DB.commit()
 
     def delete(self, where):

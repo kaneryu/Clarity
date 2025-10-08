@@ -9,6 +9,7 @@
 # nuitka-project: --include-data-dir=src/app/assets=assets
 # nuitka-project: --include-data-file=./version.txt=./version.txt
 # nuitka-project: --include-data-file=./version.txt=./compiled.txt
+# nuitka-project: --include-data-file=./phanthomjs.exe=./phanthomjs.exe
 # nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
 
 # nuitka-project: --file-description="Clarity -- A music player."
@@ -19,7 +20,7 @@
 # nuitka-project: --file-version=0.49.2
 
 # nuitka-project: --output-filename=Clarity
-# nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml 
+# nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml
 
 # STARTUP FLOW
 
@@ -31,7 +32,7 @@
 # setup app
 # run app
 
-import src.universal
+import src.universal  # noqa: F401 (importing universal runs setup code)
 from src.app import main
 from src.misc.compiled import __compiled__
 

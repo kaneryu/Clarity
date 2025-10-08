@@ -189,3 +189,4 @@ test.py
 src/app/assets/libs/
 debug_album+*.json
 starthere.txt
+*.aprof

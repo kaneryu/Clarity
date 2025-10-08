@@ -21,7 +21,7 @@
   ([`b3505b3`](https://github.com/kaneryu/Clarity/commit/b3505b37e2e1d7c86901ac133d8f0f0ef312aed0))
 
 - Restore previous versioning behavior (not previous changlog behavior, though)
-  ([`04e4539`](https://github.com/kaneryu/Clarity/commit/04e453940df7eb60ffd42648a0c99f9d550017b7))
+  ([`c0e17f2`](https://github.com/kaneryu/Clarity/commit/c0e17f27e1ae06eae74d15f8526af449536353cc))
 
 - Update DownloadStatus references to DownloadState in album and song modules
   ([`2ae8cfc`](https://github.com/kaneryu/Clarity/commit/2ae8cfcb7b067307135bc3a31b087b58bc51e8bf))
@@ -33,6 +33,11 @@
 
 - Re-enable git hooks for local version updates
   ([`0fa3ff4`](https://github.com/kaneryu/Clarity/commit/0fa3ff42a95f5f87068d457b084f095007830e88))
+
+### Code Style
+
+- Format everything with Black
+  ([`0e64729`](https://github.com/kaneryu/Clarity/commit/0e64729a2b16b889b778023160b45325d059228f))
 
 ### Continuous Integration
 

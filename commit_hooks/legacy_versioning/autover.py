@@ -5,16 +5,11 @@ and validating commit message formats.
 """
 
 import logging
-from .version_utils import (
-    get_version_string,
-    check_commit_format,
-    is_git_repository
-)
+from .version_utils import get_version_string, check_commit_format, is_git_repository
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -27,7 +22,7 @@ def getVer() -> str:
     if not is_git_repository():
         logger.error("Not in a git repository")
         return "0.0.0"
-    
+
     try:
         return get_version_string()
     except Exception as e:

@@ -4,15 +4,29 @@ import traceback
 
 from typing import Union, Any, cast
 
-from PySide6.QtCore import Property as QProperty, Signal, Slot, Qt, QObject, QSize, QModelIndex, QPersistentModelIndex, QAbstractListModel, QMutex, QMutexLocker, QTimer
+from PySide6.QtCore import (
+    Property as QProperty,
+    Signal,
+    Slot,
+    Qt,
+    QObject,
+    QSize,
+    QModelIndex,
+    QPersistentModelIndex,
+    QAbstractListModel,
+    QMutex,
+    QMutexLocker,
+    QTimer,
+)
 
 from src import universal as universal
 
 from src.innertube.song import Song, SongProxy
 
+
 class SongListModel(QAbstractListModel):
-    songListChanged = Signal() 
-    
+    songListChanged = Signal()
+
     def __init__(self):
         super().__init__()
         self.__songList: list[Song] = []
@@ -21,13 +35,12 @@ class SongListModel(QAbstractListModel):
     @QProperty(list)
     def _songList(self) -> list[Song]:
         return self.__songList
-    
+
     @_songList.setter
     def _songList(self, value: list[Song]):
         self.__songList = value
         self.songListChanged.emit()
-        
-    
+
     def rowCount(self, parent=QModelIndex()):
         return len(self._songList)
 
@@ -88,33 +101,43 @@ class SongListModel(QAbstractListModel):
             self.endRemoveRows()
 
     def moveItem(self, from_index, to_index):
-        if 0 <= from_index < len(self._songList) and 0 <= to_index < len(self._songList):
-            self.beginMoveRows(QModelIndex(), from_index, from_index, QModelIndex(), to_index)
+        if 0 <= from_index < len(self._songList) and 0 <= to_index < len(
+            self._songList
+        ):
+            self.beginMoveRows(
+                QModelIndex(), from_index, from_index, QModelIndex(), to_index
+            )
             self._songList.insert(to_index, self._songList.pop(from_index))
             self.endMoveRows()
 
-    def insertRows(self, row: int, count: int = 1, parent: QModelIndex | QPersistentModelIndex = QModelIndex()):
+    def insertRows(
+        self,
+        row: int,
+        count: int = 1,
+        parent: QModelIndex | QPersistentModelIndex = QModelIndex(),
+    ):
         self.beginInsertRows(QModelIndex(), row, row + count - 1)
         self._songList.insert(row, [[] for _ in range(count)])  # type: ignore[arg-type]
         self.endInsertRows()
-    
+
     def append(self, song: Song):
         self.beginInsertRows(QModelIndex(), len(self._songList), len(self._songList))
         self._songList.append(song)
         self.endInsertRows()
 
+
 class SongProxyListModel(SongListModel):
     def __init__(self, parent: QObject | None = None):
         super().__init__()
-        
+
         self._parent = parent
         self._proxyList: list[SongProxy] = []
-        
+
         self.songListChanged.connect(self.updateProxyList)
-        
+
     def updateProxyList(self):
         self._proxyList = [SongProxy(song, self) for song in self._songList]
-        
+
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
@@ -131,4 +154,3 @@ class SongProxyListModel(SongListModel):
         if role == Qt.ItemDataRole.UserRole + 6:
             return self._proxyList[index.row()]
         return None
-    

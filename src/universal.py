@@ -1,9 +1,13 @@
-from src.misc.compiled import __compiled__, compiled
-from src.misc.version import version, release
-
+# flake8: noqa (Mostly just because of a lot of unused imports, imports not at the top, etc)
+from src.misc.compiled import (
+    __compiled__,
+    compiled,
+)
+from src.misc.version import (
+    version,
+    release,
+)
 import threading
-import concurrent.futures
-import types
 from hashlib import md5
 import time
 import builtins
@@ -16,6 +20,8 @@ import sys
 import json
 
 print("Running with GIL", "disabled" if not sys._is_gil_enabled() else "enabled")
+
+
 class JSONFormatter(logging.Formatter):
     def formatTime(self, record, datefmt=None):
         dt = datetime.fromtimestamp(record.created, timezone.utc)
@@ -34,7 +40,26 @@ class JSONFormatter(logging.Formatter):
             "line": record.lineno,
             "thread": record.threadName,
         }
-        skip = {"msg","levelname","levelno","pathname","filename","module","exc_info","exc_text","stack_info","lineno","funcName","created","msecs","relativeCreated","thread","threadName","processName","process"}
+        skip = {
+            "msg",
+            "levelname",
+            "levelno",
+            "pathname",
+            "filename",
+            "module",
+            "exc_info",
+            "exc_text",
+            "stack_info",
+            "lineno",
+            "funcName",
+            "created",
+            "msecs",
+            "relativeCreated",
+            "thread",
+            "threadName",
+            "processName",
+            "process",
+        }
         for k, v in record.__dict__.items():
             if k not in base and k not in skip:
                 try:
@@ -44,25 +69,29 @@ class JSONFormatter(logging.Formatter):
                     base[k] = repr(v)
         return json.dumps(base, ensure_ascii=False)
 
+
 class HumanReadableConsoleFormatter(logging.Formatter):
-    base_keys = {"ts","level","logger","msg","module","func","line","thread"}
+    base_keys = {"ts", "level", "logger", "msg", "module", "func", "line", "thread"}
+
     def __init__(self):
         super().__init__()
         self._json_formatter = JSONFormatter()
+
     def format(self, record: logging.LogRecord) -> str:
         try:
             data = json.loads(self._json_formatter.format(record))
         except Exception:
             return self._json_formatter.format(record)
-        ts = data.get("ts","?")
-        level = data.get("level","?")
-        logger_name = data.get("logger","?")
-        func = data.get("func","?")
-        line = data.get("line","?")
-        msg = data.get("msg","")
-        extras = [f"{k}={data[k]!r}" for k in data.keys() if k not in self.base_keys]
-        extras_str = (" " + " ".join(extras)) if extras else ""
+        ts = data.get("ts", "?")
+        level = data.get("level", "?")
+        logger_name = data.get("logger", "?")
+        func = data.get("func", "?")
+        line = data.get("line", "?")
+        msg = data.get("msg", "")
+        # extras = [f"{k}={data[k]!r}" for k in data.keys() if k not in self.base_keys]
+        # extras_str = (" " + " ".join(extras)) if extras else ""
         return f"[{ts}] {level:<8} {logger_name}.{func}:{line} | {msg}"
+
 
 def install_json_logging(level=logging.INFO):
     root = logging.getLogger()
@@ -75,25 +104,33 @@ def install_json_logging(level=logging.INFO):
     root.addHandler(handler)
     root.setLevel(level)
 
+
 install_json_logging()
 from .paths import Paths
 
-os.environ["PATH"] = (os.path.abspath(os.path.join(Paths.ASSETSPATH, "libs"))) + os.pathsep + os.environ["PATH"]
+os.environ["PATH"] = (
+    (os.path.abspath(os.path.join(Paths.ASSETSPATH, "libs")))
+    + os.pathsep
+    + os.environ["PATH"]
+)
 
 from .workers import setup_workers
+
 setup_workers()
 from .workers import bgworker, asyncBgworker
 
 from .misc import settings as settings_module
+
 settings = settings_module.Settings()
 
-from src.cacheManager import cacheManager as cacheManager_module, dataStore as dataStore_module
+from src.cacheManager import (
+    cacheManager as cacheManager_module,
+    dataStore as dataStore_module,
+)
 import src.innertube as innertube_module
 from src.innertube import song as song_module
 from src.innertube import album as album_module
 from playback import queuemanager as queue_module
-
-
 
 
 from src.network import NetworkManager, networkManager, OnlineStatus
@@ -118,11 +155,22 @@ def ghash(thing):
     # print("making hash for", thing, ":", md5(str(thing).encode()).hexdigest())
     return md5(str(thing).encode()).hexdigest()
 
-globalCache = cacheManager_module.CacheManager(name="cache", directory=os.path.join(Paths.DATAPATH, "cache"))
-songCache = cacheManager_module.CacheManager(name="songs_cache", directory=os.path.join(Paths.DATAPATH, "songs_cache"))
-imageCache = cacheManager_module.CacheManager(name="images_cache", directory=os.path.join(Paths.DATAPATH, "images_cache"))
-albumCache = cacheManager_module.CacheManager(name="albums_cache", directory=os.path.join(Paths.DATAPATH, "album_cache"))
-songDataStore = dataStore_module.DataStore(name="song_datastore", directory=os.path.join(Paths.DATAPATH, "song_datastore"))
+
+globalCache = cacheManager_module.CacheManager(
+    name="cache", directory=os.path.join(Paths.DATAPATH, "cache")
+)
+songCache = cacheManager_module.CacheManager(
+    name="songs_cache", directory=os.path.join(Paths.DATAPATH, "songs_cache")
+)
+imageCache = cacheManager_module.CacheManager(
+    name="images_cache", directory=os.path.join(Paths.DATAPATH, "images_cache")
+)
+albumCache = cacheManager_module.CacheManager(
+    name="albums_cache", directory=os.path.join(Paths.DATAPATH, "album_cache")
+)
+songDataStore = dataStore_module.DataStore(
+    name="song_datastore", directory=os.path.join(Paths.DATAPATH, "song_datastore")
+)
 
 songDataStore.integrityCheck(True)
 globalCache.integrityCheck()
@@ -138,37 +186,47 @@ searchModel = innertube_module.BasicSearchResultsModel()
 mainThread: QThread = QThread.currentThread()
 
 
-async def search_shorthand(query: str, ignore_spelling: bool = False) -> Union[innertube_module.BasicSearchResultsModel, None]:
+async def search_shorthand(
+    query: str, ignore_spelling: bool = False
+) -> Union[innertube_module.BasicSearchResultsModel, None]:
     searchModel.resetModel()
-    return await innertube_module.search(query, filter = None, ignore_spelling = ignore_spelling, model = searchModel)
+    return await innertube_module.search(
+        query, filter=None, ignore_spelling=ignore_spelling, model=searchModel
+    )
+
 
 oldprint = builtins.print
+
+
 def nprint(*args, **kwargs):
     mythread = threading.current_thread()
-    time_  = time.strftime("%H:%M:%S")
+    time_ = time.strftime("%H:%M:%S")
     oldprint(time_, mythread, *args, **kwargs)
     return args
+
+
 builtins.print = nprint
 
-startupQueue: list[str] = ["YPV676YeHNg", "a3mxLL7nX1E", "DimcNLjX50c", "r76AWibyDDQ", "fB8elptKFcQ"]
+startupQueue: list[str] = [
+    "YPV676YeHNg",
+    "a3mxLL7nX1E",
+    "DimcNLjX50c",
+    "r76AWibyDDQ",
+    "fB8elptKFcQ",
+]
+
+
 def getAllDownloadedSongs() -> list:
     l = list(songDataStore.getAll().keys())
     l = [i for i in l if not i.endswith("_downloadMeta")]
     return l
 
-# def runInMainThread(func, *args, **kwargs):
-#     if threading.current_thread() == mainThread:
-#         return func(*args, **kwargs)
-#     f = mainThreadExcecutor.submit(lambda: func(*args, **kwargs))
-#     return f.result()
 
 def createSongMainThread(songId: str) -> song_module.Song:
     song = song_module.Song(songId)
     song.moveToThread(mainThread)
     return song
 
+
 startupQueue.extend(i for i in getAllDownloadedSongs())
 queueInstance.setQueue(startupQueue, False)
-
-
-# is_internet_connected()

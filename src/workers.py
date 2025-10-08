@@ -1,20 +1,24 @@
-import threading
+import threading  # noqa: F401
 import os
 import inspect
 import traceback
 import time
-import asyncio, aiohttp
-from typing import Any, Callable, Optional, overload, Dict, Literal, Union, Tuple
+import asyncio
+import aiohttp
+import queue
+from typing import Any, Callable, Optional, overload, Dict, Literal, Union  # noqa: F401
 import logging
 
 import ytmusicapi
-from PySide6.QtCore import QThread, QThreadPool, QObject, Signal, QRunnable
+from PySide6.QtCore import QThread, QThreadPool, QRunnable
+
+from src.misc.compiled import __compiled__
 import src.misc.cleanup as cleanup
 from src.paths import Paths
 
+
 mainThread: QThread = QThread.currentThread()
 
-from src.misc.compiled import __compiled__
 
 class JobRunnable(QRunnable):
     def __init__(self, func, args, kwargs, logger):
@@ -23,7 +27,7 @@ class JobRunnable(QRunnable):
         self.args = args
         self.kwargs = kwargs
         self.logger = logger
-        
+
     def run(self):
         try:
             if inspect.iscoroutinefunction(self.func):
@@ -33,28 +37,57 @@ class JobRunnable(QRunnable):
                 # Handle synchronous functions
                 self.func(*self.args, **self.kwargs)
         except Exception as e:
-            self.logger.error("Error executing job: %s, function: %s, args: %s, kwargs: %s", 
-                             e, self.func, self.args, self.kwargs)
+            self.logger.error(
+                "Error executing job: %s, function: %s, args: %s, kwargs: %s",
+                e,
+                self.func,
+                self.args,
+                self.kwargs,
+            )
             traceback.print_exc()
+
+
+class ColockManager:
+    def __init__(self):
+        self.locks: Dict[Callable, queue.Queue[JobRunnable]] = {}
+
+    def __getitem__(self, func: Callable) -> queue.Queue[JobRunnable]:
+        if func not in self.locks:
+            self.locks[func] = queue.Queue()
+        return self.locks[func]
+
+    def __setitem__(self, func: Callable, value: queue.Queue) -> None:
+        self.locks[func] = value
+
 
 class BackgroundWorker(QThread):
     _instance: Union["BackgroundWorker", None] = None
-    
+
     def __new__(self, /, *, max_threads: int = 10) -> "BackgroundWorker":
-        if not hasattr(BackgroundWorker, '_instance') or BackgroundWorker._instance is None:
-            BackgroundWorker._instance = super(BackgroundWorker, BackgroundWorker).__new__(BackgroundWorker)
+        if (
+            not hasattr(BackgroundWorker, "_instance")
+            or BackgroundWorker._instance is None
+        ):
+            BackgroundWorker._instance = super(
+                BackgroundWorker, BackgroundWorker
+            ).__new__(BackgroundWorker)
         return BackgroundWorker._instance
-    
+
     def __init__(self, max_threads=10):
-        if hasattr(self, 'initialized') and self.initialized:
+        if hasattr(self, "initialized") and self.initialized:
             return
         self.initialized = True
-        
+
         QThread.__init__(self)
         self.daemon = True
         self.stopped = False
         self.jobs = []  # list of {"func": function, "args": args, "kwargs": kwargs}
-        self.occasionalTasks = []  # list of {"func": function, "args": args, "kwargs": kwargs, "interval": seconds, "dynamic_interval_max": seconds, "last_run": timestamp}
+        self.occasionalTasks = (
+            []
+        )  # list of {"func": function, "args": args, "kwargs": kwargs, "interval": seconds, "dynamic_interval_max": seconds, "last_run": timestamp}
+        self.colock: ColockManager = (
+            ColockManager()
+        )  # map of functions to their queues;
         self.min_interval = 1  # Minimum interval for dynamic tasks
         self.threadpool = QThreadPool.globalInstance()
         self.threadpool.setMaxThreadCount(max_threads)
@@ -63,22 +96,41 @@ class BackgroundWorker(QThread):
         cleanup.addCleanup(self.stop)
 
     def run(self):
-        self.logger.info("BackgroundWorker started, alive: %s, max threads: %s", 
-                        self.isRunning(), self.threadpool.maxThreadCount())
+        self.logger.info(
+            "BackgroundWorker started, alive: %s, max threads: %s",
+            self.isRunning(),
+            self.threadpool.maxThreadCount(),
+        )
         while not self.stopped:
-            time.sleep(1/15)  # 15hz
+            time.sleep(1 / 15)  # 15hz
             for i in self.jobs.copy():
                 # Create a runnable job and submit it to the thread pool
-                job_runnable = JobRunnable(i["func"], i["args"], i["kwargs"], self.logger)
+                job_runnable = JobRunnable(
+                    i["func"], i["args"], i["kwargs"], self.logger
+                )
+                if i["func"] in self.colock.locks:
+                    self.colock[i["func"]].put(job_runnable)
+
+                    def job_colock_runner(func=i["func"]):
+                        job = self.colock[func].get()
+                        job.run()
+                        self.colock[func].task_done()
+
+                    self.threadpool
+
                 self.threadpool.start(job_runnable)
                 self.jobs.remove(i)
             current_time = time.time()
             for task in self.occasionalTasks:
-                if current_time - task["last_run"] >= task["interval"] and not task["isRunning"]:
-                    job_runnable = JobRunnable(task["func"], task["args"], task["kwargs"], self.logger)
+                if (
+                    current_time - task["last_run"] >= task["interval"]
+                    and not task["isRunning"]
+                ):
+                    job_runnable = JobRunnable(
+                        task["func"], task["args"], task["kwargs"], self.logger
+                    )
                     self.threadpool.start(job_runnable)
                     task["last_run"] = current_time
-                        
 
     def stop(self):
         self.stopped = True
@@ -86,19 +138,34 @@ class BackgroundWorker(QThread):
         self.threadpool.waitForDone()
         self.quit()
 
-    def add_job(self, func, *args, **kwargs):
+    def add_job(self, func, colock: Optional[bool] = False, *args, **kwargs):
+        if colock:
+            self.colock[
+                func
+            ]  # will either create or get the queue (and do nothing with it)
         job = {"func": func, "args": args, "kwargs": kwargs}
         self.jobs.append(job)
 
     @overload
-    def add_occasional_task(self, func: Callable[..., Any], interval: int, *args, **kwargs): ...
-    
-    @overload
-    def add_occasional_task(self, func: Callable[..., bool], *, dynamic_interval_max: int, **kwargs): ...
+    def add_occasional_task(
+        self, func: Callable[..., Any], interval: int, *args, **kwargs
+    ): ...
 
-    def add_occasional_task(self, func: Callable[..., Any], interval: Optional[int] = None, dynamic_interval_max: Optional[int] = None, *args, **kwargs) -> None:
+    @overload
+    def add_occasional_task(
+        self, func: Callable[..., bool], *, dynamic_interval_max: int, **kwargs
+    ): ...
+
+    def add_occasional_task(
+        self,
+        func: Callable[..., Any],
+        interval: Optional[int] = None,
+        dynamic_interval_max: Optional[int] = None,
+        *args,
+        **kwargs,
+    ) -> None:
         """Add a task to be run occasionally in the background.
-        
+
         The task can be scheduled to run at a fixed interval or with a dynamic interval that adjusts based on the task's success.
         The task is not guaranteed to run at the exact interval, but will run as close to it as possible depending on system load and other factors.
         \n
@@ -108,7 +175,7 @@ class BackgroundWorker(QThread):
         To enable dynamic interval, set dynamic_interval_max.
         You can set the starting interval with interval
         \n
-        
+
         Args:
             func (Callable[..., Any]): The function to run.
             interval (Optional[int], optional): The interval in seconds to run the task. If dynamic interval is supplied, it's the growth rate and first interval. Defaults to None.
@@ -120,76 +187,105 @@ class BackgroundWorker(QThread):
 
         Returns:
             None
-            
+
         """
         if interval is None and dynamic_interval_max is None:
-            raise TypeError("add_occasional_task() requires at least one of 'interval' or 'dynamic_interval_max'")
-        
+            raise TypeError(
+                "add_occasional_task() requires at least one of 'interval' or 'dynamic_interval_max'"
+            )
+
         task = {
-            "func": func, 
-            "args": args, 
-            "kwargs": kwargs, 
-            "interval": interval or 0, 
-            "last_run": 0, 
+            "func": func,
+            "args": args,
+            "kwargs": kwargs,
+            "interval": interval or 0,
+            "last_run": 0,
             "dynamic_interval_max": dynamic_interval_max,
-            "isRunning": False
+            "isRunning": False,
         }
-        
+
         if dynamic_interval_max is not None:
             function_signature = inspect.signature(func)
             return_annotation = function_signature.return_annotation
-            if return_annotation is inspect.Signature.empty or return_annotation is not bool:
-                raise TypeError("When using 'dynamic_interval_max', the function must have a return type of 'bool'")
+            if (
+                return_annotation is inspect.Signature.empty
+                or return_annotation is not bool
+            ):
+                raise TypeError(
+                    "When using 'dynamic_interval_max', the function must have a return type of 'bool'"
+                )
             task["start_interval"] = task["interval"]
-            base_interval = self.min_interval if task["start_interval"] != 0 else task["start_interval"]
+            base_interval = (
+                self.min_interval
+                if task["start_interval"] != 0
+                else task["start_interval"]
+            )
             task["interval"] = base_interval  # Start with minimum interval
+
             def dynamic_task_wrapper():
-                base_interval = self.min_interval if task["start_interval"] != 0 else task["start_interval"]
+                base_interval = (
+                    self.min_interval
+                    if task["start_interval"] != 0
+                    else task["start_interval"]
+                )
                 task["isRunning"] = True
                 try:
                     result = func(*args, **kwargs)
                 except Exception as e:
                     self.logger.error(f"Error with job {func}, {e}")
                     traceback.print_exc()
-                    
+
                 if isinstance(result, bool):
                     if result:
                         task["interval"] *= 2  # Double the interval if successful
                         if task["interval"] > dynamic_interval_max:
-                            task["interval"] = dynamic_interval_max  # Cap at max interval
+                            task["interval"] = (
+                                dynamic_interval_max  # Cap at max interval
+                            )
                     else:
-                        task["interval"] = base_interval  # If not, revert to min interval
+                        task["interval"] = (
+                            base_interval  # If not, revert to min interval
+                        )
                 task["isRunning"] = False
                 return result
+
             task["func"] = dynamic_task_wrapper
         self.occasionalTasks.append(task)
-    
+
     def remove_occasional_task(self, func: Callable[..., Any]) -> None:
         """Remove a previously added occasional task.
-        
+
         Args:
             func (Callable[..., Any]): The function to remove from the occasional tasks.
 
         Returns:
             None
         """
-        self.occasionalTasks = [task for task in self.occasionalTasks if task["func"] != func]
-    
+        self.occasionalTasks = [
+            task for task in self.occasionalTasks if task["func"] != func
+        ]
+
     def runnow(self, func) -> None:
         runnable = JobRunnable(func, (), {}, self.logger)
         self.threadpool.start(runnable, priority=1500)
+
 
 class Async_BackgroundWorker(QThread):
 
     _instance: Union["Async_BackgroundWorker", None] = None
 
     def __new__(cls, /, *, max_threads: int = 10) -> "Async_BackgroundWorker":
-        if not hasattr(Async_BackgroundWorker, '_instance') or Async_BackgroundWorker._instance is None:
-            Async_BackgroundWorker._instance = super(Async_BackgroundWorker, cls).__new__(cls)
+        if (
+            not hasattr(Async_BackgroundWorker, "_instance")
+            or Async_BackgroundWorker._instance is None
+        ):
+            Async_BackgroundWorker._instance = super(
+                Async_BackgroundWorker, cls
+            ).__new__(cls)
         return Async_BackgroundWorker._instance
 
     def __init__(self):
-        if hasattr(self, 'initialized') and self.initialized:
+        if hasattr(self, "initialized") and self.initialized:
             return
         self.initialized = True
         QThread.__init__(self)
@@ -200,31 +296,45 @@ class Async_BackgroundWorker(QThread):
         self.setObjectName("Async_BackgroundWorker")
         self.logger = logging.getLogger("AsyncBackgroundWorker")
         cleanup.addCleanup(self.stop)
-        
+
     def run(self):
         self.event_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.event_loop)
         self.event_loop.run_until_complete(self.Arun())
-        
+
     async def Arun(self):
         self.logger.info("Async_BackgroundWorker started, alive: %s", self.isRunning())
         self.session = aiohttp.ClientSession()
         if not __compiled__:
             self.API = ytmusicapi.YTMusic(requests_session=self.session)
         else:
-            print("Compiled mode detected, using locale dir for ytmusicapi at:", os.path.abspath(os.path.join(Paths.ASSETSPATH, os.path.join("ytmusicapi", "locales"))))
-            self.API = ytmusicapi.YTMusic(requests_session=self.session, locale_dir=os.path.abspath(os.path.join(Paths.ASSETSPATH, os.path.join("ytmusicapi", "locales"))))
-        
+            print(
+                "Compiled mode detected, using locale dir for ytmusicapi at:",
+                os.path.abspath(
+                    os.path.join(
+                        Paths.ASSETSPATH, os.path.join("ytmusicapi", "locales")
+                    )
+                ),
+            )
+            self.API = ytmusicapi.YTMusic(
+                requests_session=self.session,
+                locale_dir=os.path.abspath(
+                    os.path.join(
+                        Paths.ASSETSPATH, os.path.join("ytmusicapi", "locales")
+                    )
+                ),
+            )
+
         try:
             while not self.stopped:
-                await asyncio.sleep(1/60)  # 60hz
+                await asyncio.sleep(1 / 60)  # 60hz
                 while not self.jobs.empty():
                     job = await self.jobs.get()
                     fun = job["func"]
                     args = job["args"]
                     kwargs = job["kwargs"]
                     callback = job.get("cb")
-    
+
                     try:
                         if asyncio.iscoroutinefunction(fun):
                             async with self.semaphore:
@@ -236,7 +346,13 @@ class Async_BackgroundWorker(QThread):
                             if callback:
                                 callback(res)
                     except Exception as e:
-                        self.logger.error("Error executing job: %s, function: %s, args: %s, kwargs: %s", e, fun, args, kwargs)
+                        self.logger.error(
+                            "Error executing job: %s, function: %s, args: %s, kwargs: %s",
+                            e,
+                            fun,
+                            args,
+                            kwargs,
+                        )
                         traceback.print_exc()
                     finally:
                         self.jobs.task_done()
@@ -244,14 +360,16 @@ class Async_BackgroundWorker(QThread):
         finally:
             await self.session.close()
             self.logger.info("Async_BackgroundWorker session closed")
-    
+
     async def add_job(self, func, callback=None, *args, **kwargs):
         job = {"func": func, "args": args, "kwargs": kwargs}
         if callback:
             job["cb"] = callback
         await self.jobs.put(job)
-    
-    def add_job_sync(self, func, callback = None, usestar = True, a = [], kw = {}, *args, **kwargs):
+
+    def add_job_sync(
+        self, func, callback=None, usestar=True, a=[], kw={}, *args, **kwargs
+    ):
         if usestar:
             job = {"func": func, "args": args, "kwargs": kwargs}
             if callback:
@@ -262,19 +380,20 @@ class Async_BackgroundWorker(QThread):
             if callback:
                 job["cb"] = callback
             self.jobs.put_nowait(job)
-    
+
     def stop(self):
         self.stopped = True
         # Wait for all pending jobs to complete
         while not self.event_loop.is_running():
-            time.sleep(1/15)
-        
+            time.sleep(1 / 15)
+
         self.logger.info("Async_BackgroundWorker stopped")
         self.quit()
-        
 
-bgworker: BackgroundWorker = None # type: ignore
-asyncBgworker: Async_BackgroundWorker = None # type: ignore
+
+bgworker: BackgroundWorker = None  # type: ignore
+asyncBgworker: Async_BackgroundWorker = None  # type: ignore
+
 
 def setup_workers():
     global bgworker, asyncBgworker

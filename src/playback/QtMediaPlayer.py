@@ -18,7 +18,7 @@ class QtMediaPlayer(QObject):
     Audio-only: No VideoOutput connected. Works best with FFmpeg backend (WebM/Opus).
     Falls back gracefully when MRL not yet available (NOT_READY state and async fetch).
     """
-    
+
     NAME = "qt"
 
     playingStatusChanged = Signal(int)
@@ -42,7 +42,9 @@ class QtMediaPlayer(QObject):
         # Qt multimedia objects
         self._audio = QAudioOutput(self)
         self._player = QMediaPlayer(self)
-        self._player.setAudioOutput(self._audio)  # no video output attached => audio-only
+        self._player.setAudioOutput(
+            self._audio
+        )  # no video output attached => audio-only
 
         # Wire events
         self._player.playbackStateChanged.connect(self._onPlaybackState)

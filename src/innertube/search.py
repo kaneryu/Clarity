@@ -11,8 +11,17 @@ import src.universal as universal
 import logging
 import traceback
 
-from PySide6.QtCore import QObject, Signal, QAbstractListModel, QModelIndex, QPersistentModelIndex, Qt, Property, QMetaObject, QMetaMethod
-
+from PySide6.QtCore import (
+    QObject,
+    Signal,
+    QAbstractListModel,
+    QModelIndex,
+    QPersistentModelIndex,
+    Qt,
+    Property,
+    QMetaObject,
+    QMetaMethod,
+)
 
 
 class BasicSearchResultsModel(QAbstractListModel):
@@ -26,22 +35,32 @@ class BasicSearchResultsModel(QAbstractListModel):
         # id: id
         # parentId: id of the parent (for songs its the album id, for albums its the artist id, for playlists its the creator id, for podcasts its the creator id, for episodes its the podcast id, for videos its the creator id)
         # duration: duration (for albums, playists its the number of songs, for podcasts, videos, episodes, songs its the duration)
-        
-        self._data = [{"type": "", "title": "", "creator": "", "id": "", "parentId": "", "duration": "", "object": None}]
+
+        self._data = [
+            {
+                "type": "",
+                "title": "",
+                "creator": "",
+                "id": "",
+                "parentId": "",
+                "duration": "",
+                "object": None,
+            }
+        ]
         # self.dataChanged.connect(self.log)
-    
-    def rowCount(self, parent = QModelIndex()):
+
+    def rowCount(self, parent=QModelIndex()):
         return len(self._data)
-    
-    def columnCount(self, parent = QModelIndex()):
+
+    def columnCount(self, parent=QModelIndex()):
         return 6
-    
-    def index(self, row: int, column: int = 0, parent = QModelIndex()) -> QModelIndex:
+
+    def index(self, row: int, column: int = 0, parent=QModelIndex()) -> QModelIndex:
         return self.createIndex(row, column)
-    
+
     # def parent(self, index: QModelIndex) -> QModelIndex:
     #     return QModelIndex()
-    
+
     def roleNames(self):
         return {
             Qt.ItemDataRole.DisplayRole: b"title",
@@ -50,10 +69,14 @@ class BasicSearchResultsModel(QAbstractListModel):
             Qt.ItemDataRole.UserRole + 3: b"ytid",
             Qt.ItemDataRole.UserRole + 4: b"duration",
             Qt.ItemDataRole.UserRole + 6: b"parentId",
-            Qt.ItemDataRole.UserRole + 7: b"object"
+            Qt.ItemDataRole.UserRole + 7: b"object",
         }
 
-    def data(self, index: (QModelIndex | QPersistentModelIndex), role: int = Qt.ItemDataRole.DisplayRole):
+    def data(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ):
         if not index.isValid():
             return None
         if index.row() >= len(self._data):
@@ -75,9 +98,17 @@ class BasicSearchResultsModel(QAbstractListModel):
             print(data["object"])
             return data["object"]
         return None
-    
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole):
-        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
+
+    def headerData(
+        self,
+        section: int,
+        orientation: Qt.Orientation,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ):
+        if (
+            orientation == Qt.Orientation.Horizontal
+            and role == Qt.ItemDataRole.DisplayRole
+        ):
             if section == 0:
                 return "Type"
             if section == 1:
@@ -92,7 +123,12 @@ class BasicSearchResultsModel(QAbstractListModel):
                 return "parentID"
         return None
 
-    def setData(self, index: (QModelIndex | QPersistentModelIndex), value, role: int = Qt.ItemDataRole.DisplayRole):
+    def setData(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        value,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ):
         if not index.isValid():
             return False
         if index.row() >= len(self._data):
@@ -114,62 +150,121 @@ class BasicSearchResultsModel(QAbstractListModel):
         self.dataChanged.emit(index, index)
         return True
 
-    def insertRow(self, row: int, parent: (QModelIndex | QPersistentModelIndex) = QModelIndex()):
+    def insertRow(
+        self, row: int, parent: QModelIndex | QPersistentModelIndex = QModelIndex()
+    ):
         self.beginInsertRows(parent, row, row)
-        self._data.insert(row, {"type": "", "title": "", "creator": "", "id": "", "parentId": "", "duration": "", "object": None})
+        self._data.insert(
+            row,
+            {
+                "type": "",
+                "title": "",
+                "creator": "",
+                "id": "",
+                "parentId": "",
+                "duration": "",
+                "object": None,
+            },
+        )
         self.endInsertRows()
         return True
 
     def _newResult(self, data: dict):
-        if not list(data.keys()).sort() == ["title", "type", "creator", "id", "duration", "parentId", "object"].sort():
-            logging.getLogger("SearchModel").error(f"Invalid data passed to search model: {data}")
+        if (
+            not list(data.keys()).sort()
+            == [
+                "title",
+                "type",
+                "creator",
+                "id",
+                "duration",
+                "parentId",
+                "object",
+            ].sort()
+        ):
+            logging.getLogger("SearchModel").error(
+                f"Invalid data passed to search model: {data}"
+            )
             return
         self.insertRow(len(self._data), QModelIndex())
-        self.setData(self.index(len(self._data) - 1, 0), data["title"], Qt.ItemDataRole.DisplayRole)
-        self.setData(self.index(len(self._data) - 1, 0), data["type"], Qt.ItemDataRole.UserRole + 1)
-        self.setData(self.index(len(self._data) - 1, 0), data["creator"], Qt.ItemDataRole.UserRole + 2)
-        self.setData(self.index(len(self._data) - 1, 0), data["id"], Qt.ItemDataRole.UserRole + 3)
-        self.setData(self.index(len(self._data) - 1, 0), data["duration"], Qt.ItemDataRole.UserRole + 4)
-        self.setData(self.index(len(self._data) - 1, 0), data["parentId"], Qt.ItemDataRole.UserRole + 6)
-        self.setData(self.index(len(self._data) - 1, 0), data["object"], Qt.ItemDataRole.UserRole + 7)
-    
+        self.setData(
+            self.index(len(self._data) - 1, 0),
+            data["title"],
+            Qt.ItemDataRole.DisplayRole,
+        )
+        self.setData(
+            self.index(len(self._data) - 1, 0),
+            data["type"],
+            Qt.ItemDataRole.UserRole + 1,
+        )
+        self.setData(
+            self.index(len(self._data) - 1, 0),
+            data["creator"],
+            Qt.ItemDataRole.UserRole + 2,
+        )
+        self.setData(
+            self.index(len(self._data) - 1, 0), data["id"], Qt.ItemDataRole.UserRole + 3
+        )
+        self.setData(
+            self.index(len(self._data) - 1, 0),
+            data["duration"],
+            Qt.ItemDataRole.UserRole + 4,
+        )
+        self.setData(
+            self.index(len(self._data) - 1, 0),
+            data["parentId"],
+            Qt.ItemDataRole.UserRole + 6,
+        )
+        self.setData(
+            self.index(len(self._data) - 1, 0),
+            data["object"],
+            Qt.ItemDataRole.UserRole + 7,
+        )
+
     def resetModel(self):
         self.beginResetModel()
         self._data = []
         self.endResetModel()
-    
+
     def log(self):
         print(self._data)
-        
+
 
 class Base:
     def __init__(self, item: dict):
         for key, value in item.items():
             setattr(self, key, value)
 
+
 class Video(Base):
     def __init__(self, item: dict):
         super().__init__(item)
+
 
 class Album(Base):
     def __init__(self, item: dict):
         super().__init__(item)
 
+
 class Artist(Base):
     def __init__(self, item: dict):
         super().__init__(item)
+
 
 class Playlist(Base):
     def __init__(self, item: dict):
         super().__init__(item)
 
+
 class Podcast(Base):
     def __init__(self, item: dict):
         super().__init__(item)
 
+
 class Episode(Base):
     def __init__(self, item: dict):
         super().__init__(item)
+
 
 # searchResultItem = Union[song.Song, Video, Album, Artist, Playlist, Podcast, Episode]
 
@@ -192,7 +287,8 @@ class Episode(Base):
 #     if category == "Videos":
 #         return Video(item)
 
-async def search_suggestions(query: str, detailed = True) -> list | dict:
+
+async def search_suggestions(query: str, detailed=True) -> list | dict:
     """Will return the text that shows up while you are typing a search query in youtube music.
 
     Args:
@@ -202,10 +298,19 @@ async def search_suggestions(query: str, detailed = True) -> list | dict:
         list: A list of suggestions.
         detailed: A dictionary of suggestions, with more details.
     """
-    
-    return await universal.asyncBgworker.API.get_search_suggestions(query, detailed_runs = detailed)
 
-async def search(query: str, filter: SearchFilters | None = None, limit: int = 20, ignore_spelling: bool = False, model: Union[BasicSearchResultsModel, None] = None) -> Union[BasicSearchResultsModel, None]:
+    return await universal.asyncBgworker.API.get_search_suggestions(
+        query, detailed_runs=detailed
+    )
+
+
+async def search(
+    query: str,
+    filter: SearchFilters | None = None,
+    limit: int = 20,
+    ignore_spelling: bool = False,
+    model: Union[BasicSearchResultsModel, None] = None,
+) -> Union[BasicSearchResultsModel, None]:
     """Searches youtube music
 
     Args:
@@ -218,25 +323,38 @@ async def search(query: str, filter: SearchFilters | None = None, limit: int = 2
     """
     API = universal.asyncBgworker.API
     model = BasicSearchResultsModel() if model is None else model
+
     def parseSong(item: dict):
         try:
             type_ = "song"
             title = item.get("title", "")
             creator = item["artists"][0]["id"] if item.get("artists", None) else ""
             id = item["videoId"] if item.get("videoId", None) else item["browseId"]
-            
+
             if item.get("album", None) is not None:
-                parentId = item["album"]["id"] if len(item.get("album", [])) > 0 else item["artists"][0]["id"] if item.get("artists", None) else ""
+                parentId = (
+                    item["album"]["id"]
+                    if len(item.get("album", [])) > 0
+                    else item["artists"][0]["id"] if item.get("artists", None) else ""
+                )
             else:
                 parentId = ""
-                
+
             duration = item["duration_seconds"]
             explicit = item["isExplicit"]
             song = universal.createSongMainThread(id)
             universal.asyncBgworker.add_job_sync(song.get_info)
         except KeyError:
             return None
-        return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "duration": duration, "object": universal.song_module.Song(id)}
+        return {
+            "type": type_,
+            "title": title,
+            "creator": creator,
+            "id": id,
+            "parentId": parentId,
+            "duration": duration,
+            "object": universal.song_module.Song(id),
+        }
 
     def parseVideo(item: dict):
         pass
@@ -251,20 +369,33 @@ async def search(query: str, filter: SearchFilters | None = None, limit: int = 2
         thumbnail = item["thumbnails"][0]["url"]
         explicit = ""
         album = universal.album_module.Album(item["browseId"])
-        return {"type": type_, "title": title, "creator": creator, "id": id, "parentId": parentId, "thumbnail": thumbnail, "duration": duration, "object": album}
+        return {
+            "type": type_,
+            "title": title,
+            "creator": creator,
+            "id": id,
+            "parentId": parentId,
+            "thumbnail": thumbnail,
+            "duration": duration,
+            "object": album,
+        }
 
     if model.rowCount(QModelIndex()) > 0:
         model.resetModel()
-        
+
     # print(json.dumps(s))
     try:
-        search_ = await API.search(query, filter = filter, limit = limit, ignore_spelling = ignore_spelling)
+        search_ = await API.search(
+            query, filter=filter, limit=limit, ignore_spelling=ignore_spelling
+        )
         if search_ == []:
-            logging.getLogger("SearchLogger").info(f"No results found for {query}", {"notifying": True})
+            logging.getLogger("SearchLogger").info(
+                f"No results found for {query}", {"notifying": True}
+            )
             return model
         for result in search_:
             if result["resultType"] is None:
-                continue # TEMPORARY BEHAVIOR
+                continue  # TEMPORARY BEHAVIOR
             else:
                 resultType = result["resultType"].lower()
             if resultType == "song":
@@ -278,7 +409,9 @@ async def search(query: str, filter: SearchFilters | None = None, limit: int = 2
                     continue
                 model._newResult(p)
     except Exception as e:
-        logging.getLogger("SearchLogger").error(f"Failed searching for {query}, Error: " + str(e))
+        logging.getLogger("SearchLogger").error(
+            f"Failed searching for {query}, Error: " + str(e)
+        )
         traceback.print_exc()
         return None
         # print("\n\n\n")

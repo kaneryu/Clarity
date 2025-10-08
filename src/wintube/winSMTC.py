@@ -9,6 +9,7 @@ from datetime import datetime, timezone, timedelta
 import enum
 import typing
 
+
 async def main():
     mgr = await wmctrl.GlobalSystemMediaTransportControlsSessionManager.request_async()
     session = mgr.get_current_session()
@@ -25,11 +26,13 @@ async def main():
     album = props.album_title or ""
     print(f"Now playing: {title} — {artist} ({album})")
 
+
 if __name__ == "__main__":
     asyncio.run(main())
 
 # --- SMTC publishing (create your own session) ---
 _player: wmp.MediaPlayer | None = None
+
 
 def _get_player():
     global _player
@@ -43,10 +46,12 @@ def _get_player():
     return _player
 
 
-def set_now_playing(title: str = "", artist: str = "", album_title: str = "", art_uri: str | None = None) -> None:
+def set_now_playing(
+    title: str = "", artist: str = "", album_title: str = "", art_uri: str | None = None
+) -> None:
     """Publish metadata for your own app's SMTC session. art_uri can be an http(s) or file URI."""
     p = _get_player()
-    
+
     smtc = p.system_media_transport_controls
     du = smtc.display_updater
     du.type = wmedia.MediaPlaybackType.MUSIC
@@ -63,6 +68,7 @@ def set_now_playing(title: str = "", artist: str = "", album_title: str = "", ar
 def set_album_art_file(path: str) -> None:
     """Set album art from a local file path."""
     from pathlib import Path
+
     p = _get_player()
     du = p.system_media_transport_controls.display_updater
     file_uri = wf.Uri(Path(path).resolve().as_uri())
@@ -71,15 +77,21 @@ def set_album_art_file(path: str) -> None:
 
 
 def playback_play() -> None:
-    _get_player().system_media_transport_controls.playback_status = wmedia.MediaPlaybackStatus.PLAYING
+    _get_player().system_media_transport_controls.playback_status = (
+        wmedia.MediaPlaybackStatus.PLAYING
+    )
 
 
 def playback_pause() -> None:
-    _get_player().system_media_transport_controls.playback_status = wmedia.MediaPlaybackStatus.PAUSED
+    _get_player().system_media_transport_controls.playback_status = (
+        wmedia.MediaPlaybackStatus.PAUSED
+    )
 
 
 def playback_stop() -> None:
-    _get_player().system_media_transport_controls.playback_status = wmedia.MediaPlaybackStatus.STOPPED
+    _get_player().system_media_transport_controls.playback_status = (
+        wmedia.MediaPlaybackStatus.STOPPED
+    )
 
 
 def clear_now_playing() -> None:
@@ -91,7 +103,18 @@ def clear_now_playing() -> None:
 
 # --- Extra SMTC publisher helpers (your own session) ---
 
-def set_transport_capabilities(*, play=True, pause=True, stop=True, next=True, previous=True, seek=True, fast_forward=False, rewind=False) -> None:
+
+def set_transport_capabilities(
+    *,
+    play=True,
+    pause=True,
+    stop=True,
+    next=True,
+    previous=True,
+    seek=True,
+    fast_forward=False,
+    rewind=False,
+) -> None:
     smtc = _get_player().system_media_transport_controls
     smtc.is_enabled = True
     smtc.is_play_enabled = bool(play)
@@ -103,15 +126,24 @@ def set_transport_capabilities(*, play=True, pause=True, stop=True, next=True, p
     smtc.is_fast_forward_enabled = bool(fast_forward)
     smtc.is_fast_rewind_enabled = bool(rewind)
 
+
 def set_next_enabled(enabled: bool) -> None:
     smtc = _get_player().system_media_transport_controls
     smtc.is_next_enabled = enabled
+
 
 def set_previous_enabled(enabled: bool) -> None:
     smtc = _get_player().system_media_transport_controls
     smtc.is_previous_enabled = enabled
 
-def update_timeline(duration_s: float | None = None, position_s: float | None = None, *, min_seek_s: float = 0.0, max_seek_s: float | None = None) -> None:
+
+def update_timeline(
+    duration_s: float | None = None,
+    position_s: float | None = None,
+    *,
+    min_seek_s: float = 0.0,
+    max_seek_s: float | None = None,
+) -> None:
     """Report timeline to SMTC so the OS shows duration/position. Call whenever things change."""
     smtc = _get_player().system_media_transport_controls
     tl = wmedia.SystemMediaTransportControlsTimelineProperties()
@@ -119,9 +151,15 @@ def update_timeline(duration_s: float | None = None, position_s: float | None = 
     tl.start_time = timedelta(seconds=0)
     tl.min_seek_time = timedelta(seconds=max(0.0, float(min_seek_s)))
     # End/max seek
-    end = timedelta(seconds=float(duration_s)) if duration_s is not None else timedelta(seconds=0)
+    end = (
+        timedelta(seconds=float(duration_s))
+        if duration_s is not None
+        else timedelta(seconds=0)
+    )
     tl.end_time = end
-    tl.max_seek_time = timedelta(seconds=float(max_seek_s)) if max_seek_s is not None else end
+    tl.max_seek_time = (
+        timedelta(seconds=float(max_seek_s)) if max_seek_s is not None else end
+    )
     # Position
     if position_s is not None:
         tl.position = timedelta(seconds=max(0.0, float(position_s)))
@@ -132,6 +170,7 @@ def update_timeline(duration_s: float | None = None, position_s: float | None = 
 
 # Optional: handle hardware/media key presses for your own session
 _button_token = None
+
 
 def set_button_handler(handler) -> None:
     """Register a callback(sender, args) for SMTC button presses. Replaces any existing handler."""
@@ -145,6 +184,7 @@ def set_button_handler(handler) -> None:
         _button_token = None
     _button_token = smtc.add_button_pressed(handler)
 
+
 class HandlerType(enum.Enum):
     PLAY = "play"
     PAUSE = "pause"
@@ -154,6 +194,7 @@ class HandlerType(enum.Enum):
     SEEK = "seek"
     FAST_FORWARD = "fast_forward"
     REWIND = "rewind"
+
 
 class Handlers:
     play: typing.Callable | None = None
@@ -186,7 +227,10 @@ class Handlers:
         elif type == HandlerType.REWIND:
             Handlers.rewind = function
 
-def default_button_handler(sender, args: wmedia.SystemMediaTransportControlsButtonPressedEventArgs) -> None:
+
+def default_button_handler(
+    sender, args: wmedia.SystemMediaTransportControlsButtonPressedEventArgs
+) -> None:
     """Default handler for SMTC button presses."""
     match args.button:
         case wmedia.SystemMediaTransportControlsButton.PLAY:
@@ -211,8 +255,8 @@ def default_button_handler(sender, args: wmedia.SystemMediaTransportControlsButt
             if Handlers.rewind:
                 Handlers.rewind(sender, args)
 
-set_button_handler(default_button_handler)
 
+set_button_handler(default_button_handler)
 
 
 # # --- Control other apps' system media sessions ---

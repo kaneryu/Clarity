@@ -1,4 +1,5 @@
 import versions
+
 try:
     with open("version.txt", encoding="utf-8") as f:
         # We might have a BOM marker, so let's handle that

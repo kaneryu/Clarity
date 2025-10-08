@@ -6,14 +6,29 @@ import os
 import typing
 
 # use dacite
-from PySide6.QtCore import QObject, Qt, Property, Signal, Slot, QModelIndex, QPersistentModelIndex, QAbstractItemModel, QMutex, QMutexLocker, QMetaObject, QByteArray
+from PySide6.QtCore import (
+    QObject,
+    Qt,
+    Property,
+    Signal,
+    Slot,
+    QModelIndex,
+    QPersistentModelIndex,
+    QAbstractItemModel,
+    QMutex,
+    QMutexLocker,
+    QMetaObject,
+    QByteArray,
+)
 
 ModelIndex = typing.Union[QModelIndex, QPersistentModelIndex]
 
 with open(Paths.VERSIONPATH, "r") as f:
     version = f.read().strip()
 
-with open(os.path.join(Paths.ASSETSPATH, "DEFAULTSETTINGS.json")) as default_settings_file:
+with open(
+    os.path.join(Paths.ASSETSPATH, "DEFAULTSETTINGS.json")
+) as default_settings_file:
     defaultSettings: dict[str, str | dict] = json.loads(default_settings_file.read())
 
 defaultSettings["for"] = version
@@ -26,10 +41,18 @@ default_rootItem = {
     "group": "",
     "type": "str",
     "hidden": True,
-    "secure": False
+    "secure": False,
 }
 
-settings_fields = {"value": str, "type": str, "description": str, "group": str, "hidden": bool, "name": str, "secure": bool}
+settings_fields = {
+    "value": str,
+    "type": str,
+    "description": str,
+    "group": str,
+    "hidden": bool,
+    "name": str,
+    "secure": bool,
+}
 
 type_map = {
     # UI/control types
@@ -43,41 +66,45 @@ type_map = {
     "float": float,
 }
 
+
 def get_type(type_: typing.Union[str, type]) -> type:
     if isinstance(type_, type):
         return type_
     if type_ in type_map:
         return type_map.get(type_, str)
-    raise TypeError(f"Invalid type: {type_}, must be one of {list(type_map.keys())} or a valid type")
-    
+    raise TypeError(
+        f"Invalid type: {type_}, must be one of {list(type_map.keys())} or a valid type"
+    )
+
 
 treeItemKeyMap: dict[str, "TreeItem"] = {}
 keyIndexMap: dict[str, ModelIndex] = {}
 
+
 class TreeItem(QObject):
-    def __init__(self, data: "Setting", parent: typing.Union['TreeItem', None] = None):
+    def __init__(self, data: "Setting", parent: typing.Union["TreeItem", None] = None):
         super().__init__()
-        
+
         if not isinstance(data, Setting):
             raise TypeError("Data must be an instance of Setting")
-        
+
         if not isinstance(parent, (TreeItem, type(None))):
             raise TypeError("Parent must be a TreeItem or None")
-        
+
         # Include ALL fields that the model will try to access
         self.fields = ["key", "name", "value", "description", "group", "hidden", "type"]
         self.fields += ["secure"] if hasattr(data, "secure") else []
-        
+
         # Define which fields are visible as columns
         self.display_fields = ["name"]
-        
+
         self.item_data = data
         self.parent_item = parent
-        self.child_items: list['TreeItem'] = []
-        
+        self.child_items: list["TreeItem"] = []
+
         treeItemKeyMap[data.key] = self
 
-    def child(self, number: int) -> typing.Union['TreeItem', None]:
+    def child(self, number: int) -> typing.Union["TreeItem", None]:
         if number < 0 or number >= len(self.child_items):
             return None
         return self.child_items[number]
@@ -100,12 +127,12 @@ class TreeItem(QObject):
         if isinstance(column, str):
             # Remove the strict validation - let it fail gracefully
             return self.item_data.get(column, None)
-        
+
         if column < 0 or column >= len(self.display_fields):
             return None
         field_name = self.display_fields[column]
         return self.item_data.get(field_name, None)
-    
+
     def setData(self, column: int, value):
         if column < 0 or column >= len(self.fields):
             return False
@@ -117,10 +144,9 @@ class TreeItem(QObject):
     def setValue(self, value):
         """Set the value of the setting."""
         self.item_data.set("value", value)
-    
+
     def parent(self):
         return self.parent_item
-
 
     def __repr__(self) -> str:
         result = f"<treeitem.TreeItem at 0x{id(self):x}"
@@ -128,7 +154,8 @@ class TreeItem(QObject):
             result += f' "{d}"' if d else " <None>"
         result += f", {len(self.child_items)} children>"
         return result
-    
+
+
 class SettingsModel(QAbstractItemModel):
     # Define role constants
     NameRole = Qt.ItemDataRole.UserRole + 1
@@ -142,27 +169,32 @@ class SettingsModel(QAbstractItemModel):
     DropdownOptionsRole = Qt.ItemDataRole.UserRole + 9
     VisualDropdownOptionsRole = Qt.ItemDataRole.UserRole + 10
 
-    def __init__(self, settings: "Settings", parent: typing.Union[QObject, None] = None):
+    def __init__(
+        self, settings: "Settings", parent: typing.Union[QObject, None] = None
+    ):
         super().__init__(parent)
         self.rootItem = TreeItem(Setting(data=default_rootItem))
-    
-    
+
     def get_item(self, index: ModelIndex) -> TreeItem:
         if index.isValid():
             item = index.internalPointer()
             if item:
                 return item
         return self.rootItem
-    
-    def index(self, row: int, column: int, parent: ModelIndex = QModelIndex()) -> QModelIndex:
+
+    def index(
+        self, row: int, column: int, parent: ModelIndex = QModelIndex()
+    ) -> QModelIndex:
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
-        
-        parent_item = self.get_item(parent)    
+
+        parent_item = self.get_item(parent)
         child_item = parent_item.child(row)
-        
-        return self.createIndex(row, column, child_item) if child_item else QModelIndex()
-    
+
+        return (
+            self.createIndex(row, column, child_item) if child_item else QModelIndex()
+        )
+
     def roleNames(self) -> dict[int, QByteArray]:
         roles = super().roleNames()
         roles[self.NameRole] = QByteArray(b"name")
@@ -176,15 +208,17 @@ class SettingsModel(QAbstractItemModel):
         roles[self.DropdownOptionsRole] = QByteArray(b"dropdownOptions")
         roles[self.VisualDropdownOptionsRole] = QByteArray(b"visualDropdownOptions")
         return roles
-    
-    def data(self, index: ModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> typing.Any:
+
+    def data(
+        self, index: ModelIndex, role: int = Qt.ItemDataRole.DisplayRole
+    ) -> typing.Any:
         if not index.isValid():
             return None
-            
+
         item = self.get_item(index)
         if not item:
             return None
-        
+
         if role == Qt.ItemDataRole.DisplayRole:
             return item.data(index.column())
         elif role == self.NameRole:
@@ -208,55 +242,67 @@ class SettingsModel(QAbstractItemModel):
             return item.data("dropdownOptions") or []
         elif role == self.VisualDropdownOptionsRole:
             # Fallback to dropdownOptions for display if visual labels aren't provided
-            return item.data("visualDropdownOptions") or item.data("dropdownOptions") or []
+            return (
+                item.data("visualDropdownOptions") or item.data("dropdownOptions") or []
+            )
         return None
 
     def flags(self, index: ModelIndex) -> Qt.ItemFlag:
         if not index.isValid():
             return Qt.ItemFlag.NoItemFlags
-        
+
         return Qt.ItemFlag.ItemIsEditable | QAbstractItemModel.flags(self, index)
-    
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> typing.Any:
-        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
+
+    def headerData(
+        self,
+        section: int,
+        orientation: Qt.Orientation,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> typing.Any:
+        if (
+            orientation == Qt.Orientation.Horizontal
+            and role == Qt.ItemDataRole.DisplayRole
+        ):
             if section < self.rootItem.columnCount():
                 return self.rootItem.display_fields[section].capitalize()
-        
+
         return None
-    
-    def parent(self, child: ModelIndex) -> QModelIndex: # type: ignore
+
+    def parent(self, child: ModelIndex) -> QModelIndex:  # type: ignore
         if not child.isValid():
             return QModelIndex()
-        
+
         item = self.get_item(child)
         parent_item = item.parent()
-        
+
         if parent_item == self.rootItem or not parent_item:
             return QModelIndex()
-        
+
         return self.createIndex(parent_item.childNumber(), 0, parent_item)
-    
+
     def rootIndex(self) -> QModelIndex:
         return self.createIndex(0, 0, self.rootItem) if self.rootItem else QModelIndex()
-    
+
     def rowCount(self, parent: ModelIndex = QModelIndex()) -> int:
         if parent.isValid() and parent.column() != 0:
             return 0
         parent_item = self.get_item(parent)
         if parent_item:
             return parent_item.childCount()
-        
+
         return 0
-    
+
     def columnCount(self, parent: ModelIndex = QModelIndex()) -> int:
         return self.rootItem.columnCount()
-    
-    def setData(self, index: ModelIndex, value: typing.Any, role: int = Qt.ItemDataRole.EditRole) -> bool:
+
+    def setData(
+        self, index: ModelIndex, value: typing.Any, role: int = Qt.ItemDataRole.EditRole
+    ) -> bool:
         if not index.isValid():
             return False
 
         item = self.get_item(index)
-        
+
         # Convert to the underlying value type
         try:
             declared_type = item.data("type")  # "switch", "textEdit", "dropdown"
@@ -264,20 +310,26 @@ class SettingsModel(QAbstractItemModel):
             if declared_type == "dropdown":
                 options = item.data("dropdownOptions") or []
                 if value not in options:
-                    logging.error(f"Dropdown value '{value}' not in allowed options {options}")
+                    logging.error(
+                        f"Dropdown value '{value}' not in allowed options {options}"
+                    )
                     return False
             if isinstance(value, str) and py_type is not str:
                 # Cast only if needed; checkbox sends bool already, combo sends str
                 value = py_type(value)
         except Exception as e:
-            logging.error(f"Failed to convert value {value} for type {item.data('type')}: {e}")
+            logging.error(
+                f"Failed to convert value {value} for type {item.data('type')}: {e}"
+            )
 
         if role in (Qt.ItemDataRole.EditRole, self.ValueRole):
             if not item.setValue(value):
                 return False
-            self.dataChanged.emit(index, index, [Qt.ItemDataRole.EditRole, self.ValueRole])
+            self.dataChanged.emit(
+                index, index, [Qt.ItemDataRole.EditRole, self.ValueRole]
+            )
             return True
-        
+
         child = self.get_item(index)
         if not child:
             return False
@@ -286,49 +338,51 @@ class SettingsModel(QAbstractItemModel):
             return False
         self.dataChanged.emit(index, index, [Qt.ItemDataRole.EditRole])
         return True
-    
+
     def resetModel(self, rootItem: typing.Optional[TreeItem] = None) -> None:
         self.beginResetModel()
-        self.rootItem = rootItem if rootItem else TreeItem(Setting(data=default_rootItem))
+        self.rootItem = (
+            rootItem if rootItem else TreeItem(Setting(data=default_rootItem))
+        )
         self.endResetModel()
-            
+
+
 class Settings(QObject):
     _instance: typing.Union["Settings", None] = None
-    
+
     settingChanged = Signal()  # Signal to notify that a setting has changed
-    
+
     @classmethod
     def instance(cls) -> "Settings":
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
-    
+
     def __new__(cls) -> "Settings":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     def __init__(self, settings_file: str = Paths.SETTINGSPATH):
         if not isinstance(settings_file, str):
             raise TypeError("Settings file must be a string")
-        
-        if hasattr(self, 'initialized'):
+
+        if hasattr(self, "initialized"):
             return  # Prevent re-initialization
-        
+
         super().__init__()
         self.initialized = True
-        
+
         self.logger = logging.getLogger("Settings")
         self.settings_file = settings_file
         self.settingsDict: dict[str, typing.Any] = {}
         self.settingObjects: dict[str, Setting] = {}
         self.groupKeyMap: dict[str, list[str]] = {}
-        
+
         self.settingsModel = SettingsModel(self)
-        
-        
+
         self.load()
-    
+
     def load(self) -> None:
         try:
             with open(self.settings_file, "r") as f:
@@ -338,8 +392,12 @@ class Settings(QObject):
             self.settingsDict = {}
 
         # Always start from defaults to preserve metadata like dropdownOptions
-        defaultSettingsDictSettings: dict = typing.cast(dict, defaultSettings.get("settings", {}))
-        savedSettings: dict = typing.cast(dict, (self.settingsDict or {}).get("settings", {}))
+        defaultSettingsDictSettings: dict = typing.cast(
+            dict, defaultSettings.get("settings", {})
+        )
+        savedSettings: dict = typing.cast(
+            dict, (self.settingsDict or {}).get("settings", {})
+        )
 
         merged_settings: dict[str, dict] = {}
         for key, default_entry in defaultSettingsDictSettings.items():
@@ -365,7 +423,9 @@ class Settings(QObject):
             try:
                 base_type = get_type(declared_type)
             except Exception as e:
-                self.logger.error(f"Setting {name} has invalid type '{declared_type}': {e}, inferring from current value...")
+                self.logger.error(
+                    f"Setting {name} has invalid type '{declared_type}': {e}, inferring from current value..."
+                )
                 base_type = type(value_)
 
             # Coerce some common mismatches
@@ -378,7 +438,7 @@ class Settings(QObject):
             if declared_type == "dropdown":
                 options = value.get("dropdownOptions") or []
                 visual_options = value.get("visualDropdownOptions") or []
-                
+
                 # Validate that visual options match regular options length
                 if visual_options and len(visual_options) != len(options):
                     self.logger.warning(
@@ -387,9 +447,11 @@ class Settings(QObject):
                         f"Visual labels will be ignored."
                     )
                     value["visualDropdownOptions"] = []
-                
+
                 if value_ not in options and options:
-                    self.logger.warning(f"'{name}' value '{value_}' not in {options}, defaulting to first option.")
+                    self.logger.warning(
+                        f"'{name}' value '{value_}' not in {options}, defaulting to first option."
+                    )
                     value_ = options[0]
                 value["value"] = value_
 
@@ -406,24 +468,29 @@ class Settings(QObject):
         self.settingsModel.resetModel(newroot)
         self.logger.info("Settings loaded successfully")
         self.save()
-    
+
     def createModel(self) -> TreeItem:
         rootItem = TreeItem(Setting(data=default_rootItem))
         group_idx = 0
         for group, keys in self.groupKeyMap.items():
-            groupItem = TreeItem(Setting(data={
-                "key": group + "_group",
-                "name": group + "_group",
-                "value": "",
-                "description": f"Settings for {group}",
-                "group": "isGroup",
-                "type": "str",
-                "hidden": True,
-                "secure": False
-            }), parent=rootItem)
+            groupItem = TreeItem(
+                Setting(
+                    data={
+                        "key": group + "_group",
+                        "name": group + "_group",
+                        "value": "",
+                        "description": f"Settings for {group}",
+                        "group": "isGroup",
+                        "type": "str",
+                        "hidden": True,
+                        "secure": False,
+                    }
+                ),
+                parent=rootItem,
+            )
             groupIndex = self.settingsModel.index(0, 0, QModelIndex())
             keyIndexMap.update({group + "_group": groupIndex})
-            
+
             setting_row = 0
             for key in keys:
                 item = TreeItem(self.settingObjects[key], parent=groupItem)
@@ -433,10 +500,10 @@ class Settings(QObject):
             group_idx += 1
             rootItem.child_items.append(groupItem)
         return rootItem
-    
+
     def getModel(self) -> SettingsModel:
-        return self.settingsModel            
-    
+        return self.settingsModel
+
     def save(self):
         settings_to_save = {"for": version, "settings": {}}
         for key, setting in self.settingObjects.items():
@@ -462,38 +529,40 @@ class Settings(QObject):
                 json.dump(settings_to_save, f, indent=4)
         except Exception as e:
             self.logger.error(f"Failed to save settings file: {e}")
-    
+
     def get(self, key: str, default=None) -> typing.Any:
         setting = self.getSettingObject(key)
         if not setting:
             return default
-        
+
         return setting.value
-    
+
     def getSettingObject(self, key: str) -> typing.Union["Setting", None]:
         setting = self.settingObjects.get(key)
         if not setting:
             return None
-        
+
         return setting
-    
+
     def set(self, key: str, value):
         setting = self.settingObjects.get(key)
         if not setting:
             return
-        
+
         base_type = get_type(setting.type)
         if not isinstance(value, base_type):
-            self.logger.error(f"Setting {setting.name} is supposed to be of type {base_type}, but it is {type(value)}, skipping...")
+            self.logger.error(
+                f"Setting {setting.name} is supposed to be of type {base_type}, but it is {type(value)}, skipping..."
+            )
             return
-        
+
         setting.value = value
         self.save()
+
 
 class QmlSettingsInterface(QObject):
     _instance: typing.Union["QmlSettingsInterface", None] = None
     _is_initialized = False
-
 
     def __init__(self, settings: Settings, parent: QObject | None = None):
         # Ensure __init__ runs only once
@@ -516,17 +585,17 @@ class QmlSettingsInterface(QObject):
     def get(self, key: str, default=None) -> typing.Any:
         """Get a setting value by key."""
         return self.settings.get(key, default)
-    
+
     @Slot(str, object)
     def set(self, key: str, value) -> None:
         """Set a setting value by key."""
         self.settings.set(key, value)
-    
+
     @Slot(str, result=QObject)
     def getSettingsObjectByKey(self, key: str) -> typing.Optional[QObject]:
         """Get a setting object by key, returns None if not found."""
         return self.settings.settingObjects.get(key, None)
-    
+
     @Slot(str, result=QObject)
     def getSettingsObjectByName(self, name: str) -> typing.Optional[QObject]:
         """Get a setting object by name, returns None if not found."""
@@ -545,6 +614,7 @@ class QmlSettingsInterface(QObject):
         self.settings.logger.warning(f"No setting found with name: {name}")
         return ""
 
+
 class Setting(QObject):
     dataChanged = Signal(str, object)
     valueChanged = Signal()
@@ -557,12 +627,20 @@ class Setting(QObject):
             raise TypeError("Key must be a string" + "\n" + str(data))
         if not isinstance(data["description"], str):
             raise TypeError("Description must be a string")
-        
+
         self.logger = logging.getLogger("Settings")
-        
+
         self.protectedFields = [
-            "key", "name", "value", "description", "group", "hidden",
-            "type", "secure", "dropdownOptions", "visualDropdownOptions"
+            "key",
+            "name",
+            "value",
+            "description",
+            "group",
+            "hidden",
+            "type",
+            "secure",
+            "dropdownOptions",
+            "visualDropdownOptions",
         ]
 
         self.data = data
@@ -580,13 +658,14 @@ class Setting(QObject):
         # Underlying value type is derived from UI/control type
         self.valueProperty = Property(get_type(self.type), self.get, self.set, notify=self.dataChanged)  # type: ignore
 
-    
     def get(self, key: str, default=None):
         return self.data.get(key, default)
 
     def set(self, key: str, value):
         if key not in self.data:
-            self.logger.error(f"Setting {self.key} does not have key {key}, skipping...")
+            self.logger.error(
+                f"Setting {self.key} does not have key {key}, skipping..."
+            )
             return
 
         # Normalize to underlying base type
@@ -601,11 +680,15 @@ class Setting(QObject):
         if self.type == "dropdown":
             options = self.data.get("dropdownOptions") or []
             if value not in options:
-                self.logger.error(f"Setting {self.key} only accepts one of {options}, got '{value}', skipping...")
+                self.logger.error(
+                    f"Setting {self.key} only accepts one of {options}, got '{value}', skipping..."
+                )
                 return
 
         if not isinstance(value, base_type):
-            self.logger.error(f"Setting {self.key} expects {base_type}, got {type(value)} ({value}), skipping...")
+            self.logger.error(
+                f"Setting {self.key} expects {base_type}, got {type(value)} ({value}), skipping..."
+            )
             return
 
         self.logger.info(f"Setting '{key}' on {self.key} to {value}")
@@ -616,22 +699,24 @@ class Setting(QObject):
             self.valueChanged.emit()
 
         Settings.instance().save()
-    
+
     def setValue(self, value):
         """Set the value of the setting and notify the model."""
         # First update the value
         self.set("value", value)
-        
+
         # Emit the global settings changed signal
         Settings.instance().settingChanged.emit()
-        
+
         # Notify the model about the change
         model = Settings.instance().getModel()
         index = keyIndexMap.get(self.key)
         if index:
             value_col_idx = 0  # value isn't a display field, use first column
             value_index = model.index(index.row(), value_col_idx, model.parent(index))
-            model.dataChanged.emit(value_index, value_index, [Qt.ItemDataRole.EditRole, model.ValueRole])
+            model.dataChanged.emit(
+                value_index, value_index, [Qt.ItemDataRole.EditRole, model.ValueRole]
+            )
 
 
 def getSetting(key: str) -> Setting:

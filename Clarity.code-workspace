@@ -5,6 +5,15 @@
 		}
 	],
 	"settings": {
-		"austin.mode": "Wall time"
-	}
+		"austin.mode": "Wall time",
+		"[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true
+    }
+	},
+
+
+
+}
+	
 }

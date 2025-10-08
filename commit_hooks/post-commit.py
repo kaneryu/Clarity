@@ -28,18 +28,26 @@ from legacy_versioning import autover
 
 changelogPath = os.path.join(os.getcwd(), "CHANGELOG.md")
 
+
 def getChangelog():
     # write_default_changelog -> render_default_changelog_file -> changelog text
     repo = git.Repo(os.getcwd())
     remote = next(iter(repo.remotes), None)
     rh = ReleaseHistory.from_git_history(
-            repo=repo,
-            translator=semantic_release.VersionTranslator(),
-            commit_parser=convparser.ConventionalCommitParser(),
-            exclude_commit_patterns=[],
-        )
+        repo=repo,
+        translator=semantic_release.VersionTranslator(),
+        commit_parser=convparser.ConventionalCommitParser(),
+        exclude_commit_patterns=[],
+    )
     hvcs = Github(remote_url=remote.url if remote else None)
-    changelog_context = make_changelog_context(hvcs_client=hvcs, release_history=rh, mode=ChangelogMode.INIT, prev_changelog_file=changelogPath, insertion_flag="<!-- changelog -->", mask_initial_release=False)
+    changelog_context = make_changelog_context(
+        hvcs_client=hvcs,
+        release_history=rh,
+        mode=ChangelogMode.INIT,
+        prev_changelog_file=changelogPath,
+        insertion_flag="<!-- changelog -->",
+        mask_initial_release=False,
+    )
     changelog_text = semverChangelogWriter.render_default_changelog_file(
         output_format=ChangelogOutputFormat.MARKDOWN,
         changelog_context=changelog_context,
@@ -47,11 +55,20 @@ def getChangelog():
     )
     return changelog_text
 
+
 def getVersion():
     repo = git.Repo(os.getcwd())
     translator = semantic_release.VersionTranslator()
     parser = convparser.ConventionalCommitParser()
-    return semverAlgorithm.next_version(repo=repo, translator=translator, commit_parser=parser, allow_zero_version=True, major_on_zero=False, prerelease=False)
+    return semverAlgorithm.next_version(
+        repo=repo,
+        translator=translator,
+        commit_parser=parser,
+        allow_zero_version=True,
+        major_on_zero=False,
+        prerelease=False,
+    )
+
 
 def main():
     if os.getenv("POST_COMMIT_RUNNING") == "1":
@@ -62,34 +79,32 @@ def main():
     print(f"Calculated version: {version}")
     open("./version.txt", "w").write(version)
     open("./src/version.txt", "w").write(version)
-    
+
     with open("run.py", "r") as f:
         lines = f.readlines()
-    
+
     for i, line in enumerate(lines):
         if line.startswith("# nuitka-project: --product-version="):
             lines[i] = f"# nuitka-project: --product-version={version}\n"
         if line.startswith("# nuitka-project: --file-version="):
             lines[i] = f"# nuitka-project: --file-version={version}\n"
-    
+
     with open("run.py", "w") as f:
         f.writelines(lines)
-        
-    
+
     with open("pyproject.toml", "r") as f:
         lines = f.readlines()
-    
+
     for i, line in enumerate(lines):
         if line.startswith("version = "):
             lines[i] = f'version = "{version}"\n'
 
     with open("pyproject.toml", "w") as f:
         f.writelines(lines)
-    
+
     changelog_text = getChangelog()
     with open(changelogPath, "w", encoding="utf-8") as f:
         f.write(changelog_text)
-    
 
     subprocess.run(["git", "init"], check=True)
     subprocess.run(["git", "add", "version.txt"], check=True)
@@ -98,7 +113,8 @@ def main():
     subprocess.run(["git", "add", "run.py"], check=True)
     subprocess.run(["git", "add", "pyproject.toml"], check=True)
     subprocess.run(["git", "commit", "--amend", "--no-edit"], check=True)
-    
+
     os.environ["POST_COMMIT_RUNNING"] = "0"
+
 
 main()

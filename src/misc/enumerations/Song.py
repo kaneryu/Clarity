@@ -1,8 +1,9 @@
 import enum
 
+
 class PlayingStatus(enum.IntEnum):
     """Playing Status. Used to indicate the current playing status of a song.
-    
+
     NOT_READY: Media is not ready to play \n
     PLAYING: Playing \n
     PAUSED: Paused \n
@@ -12,8 +13,9 @@ class PlayingStatus(enum.IntEnum):
     STOPPED: No media is loaded \n
     ERROR: Unrecoverable error \n
     NOT_PLAYING: Only for songproxy class; Returned when the current song is not currently playing \n
-    
+
     """
+
     NOT_READY = -1  # Media is not ready to play
     PLAYING = 0  # Playing
     PAUSED = 1  # Paused
@@ -22,8 +24,9 @@ class PlayingStatus(enum.IntEnum):
     BUFFERING_LOCAL = 6  # Local buffering that shouldn't interrupt playback
     STOPPED = 3  # No media is loaded
     ERROR = 4  # Unrecoverable error
-    
+
     NOT_PLAYING = 5  # Only for songproxy class; Returned when the current song is not currently playing
+
 
 ReadablePlayingStatuses = {
     PlayingStatus.NOT_READY: "Not Ready",
@@ -36,16 +39,17 @@ ReadablePlayingStatuses = {
     PlayingStatus.ERROR: "Error",
     PlayingStatus.NOT_PLAYING: "Not Playing",
 }
-    
+
 
 class DownloadState(enum.IntEnum):
-    """ Download State. Used to indicate the download state of a song.
+    """Download State. Used to indicate the download state of a song.
 
     NOT_DOWNLOADED: The song is not downloaded \n
     DOWNLOADING: The song is currently downloading \n
     DOWNLOADED: The song is fully downloaded \n
-    
+
     """
+
     NOT_DOWNLOADED = 0
     DOWNLOADING = 1
     DOWNLOADED = 2

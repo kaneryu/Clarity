@@ -14,9 +14,11 @@ from src.misc.enumerations.Song import PlayingStatus
 try:
     import mpv as _mpv
     import locale
-    locale.setlocale(locale.LC_NUMERIC, 'C')
+
+    locale.setlocale(locale.LC_NUMERIC, "C")
 except Exception as e:  # pragma: no cover - allow editor import without runtime dep
     raise ImportError("python-mpv is not installed or failed to import") from e
+
 
 class MpvMediaPlayer(QObject):
     """Media playback engine using libmpv implementing the MediaPlayer contract.
@@ -26,7 +28,7 @@ class MpvMediaPlayer(QObject):
     - All mpv callbacks are dispatched back to the Qt main thread via QTimer.singleShot.
     - Mirrors VLC backend behavior for MRL resolution and signal semantics.
     """
-    
+
     NAME = "mpv"
 
     # Signal shapes must match Queue expectations
@@ -49,48 +51,48 @@ class MpvMediaPlayer(QObject):
         self.__last_time_emit: float = 0.0
 
         # mpv instance (audio only)
-        locale.setlocale(locale.LC_NUMERIC, 'C')
+        locale.setlocale(locale.LC_NUMERIC, "C")
         self._mpv = _mpv.MPV(
             input_default_bindings=False,
             input_vo_keyboard=False,
             video=False,
-            audio_display='no',
+            audio_display="no",
             ytdl=False,  # We already resolve URLs via Song
             # Slightly larger demuxer cache helps with network hiccups
             demuxer_max_back_bytes=50 * 1024 * 1024,
         )
 
         # Property observers
-        self._mpv.observe_property('time-pos', self._on_time)
-        self._mpv.observe_property('duration', self._on_duration)
-        self._mpv.observe_property('pause', self._on_pause)
-        self._mpv.observe_property('core-idle', self._on_idle)
+        self._mpv.observe_property("time-pos", self._on_time)
+        self._mpv.observe_property("duration", self._on_duration)
+        self._mpv.observe_property("pause", self._on_pause)
+        self._mpv.observe_property("core-idle", self._on_idle)
 
         # Events (register using decorator API; dispatch back to Qt thread)
-        @self._mpv.event_callback('end-file')
+        @self._mpv.event_callback("end-file")
         def on_end_file(event):
             self._on_end_file(event)
 
-        @self._mpv.event_callback('playback-restart')
+        @self._mpv.event_callback("playback-restart")
         def on_playback_restart(event):  # noqa: ARG001
             QTimer.singleShot(0, lambda: self.set_playing_status(PlayingStatus.PLAYING))
 
-        @self._mpv.event_callback('log-message')
+        @self._mpv.event_callback("log-message")
         def on_log_message(level, prefix, text):  # noqa: ARG001
             QTimer.singleShot(0, lambda: self._emit_log(level, prefix, text))
 
         # Detect cache starvation: mpv sets pause when 'paused-for-cache' becomes True
-        self._mpv.observe_property('paused-for-cache', self._on_paused_for_cache)
+        self._mpv.observe_property("paused-for-cache", self._on_paused_for_cache)
         # Detect seeks as local buffering
-        self._mpv.observe_property('seeking', self._on_seeking)
+        self._mpv.observe_property("seeking", self._on_seeking)
 
     def _emit_end(self) -> None:
         self.endReached.emit()
         self.set_playing_status(PlayingStatus.STOPPED)
 
     def _emit_log(self, level, prefix, text) -> None:
-        if level in ('error', 'fatal'):
-            self.errorOccurred.emit({'level': level, 'prefix': prefix, 'text': text})
+        if level in ("error", "fatal"):
+            self.errorOccurred.emit({"level": level, "prefix": prefix, "text": text})
 
     # ---------- Protocol surface ----------
     def isPlaying(self) -> bool:
@@ -179,7 +181,7 @@ class MpvMediaPlayer(QObject):
         pos = self.current_time_s()
         # Replace current file and try to preserve position
         try:
-            self._mpv.command('loadfile', mrl, 'replace', f'start={pos}')
+            self._mpv.command("loadfile", mrl, "replace", f"start={pos}")
             self.set_playing_status(PlayingStatus.BUFFERING)
         except Exception as e:  # pragma: no cover
             self.logger.exception("mpv migrate failed: %s", e)
@@ -189,11 +191,11 @@ class MpvMediaPlayer(QObject):
     def seek(self, seconds: int) -> None:
         if seconds < 0:
             raise ValueError("seconds must be >= 0")
-        self._mpv.command('seek', seconds, 'absolute')
+        self._mpv.command("seek", seconds, "absolute")
 
     @Slot(int)
     def aseek(self, seconds: int) -> None:
-        self._mpv.command('seek', seconds, 'relative')
+        self._mpv.command("seek", seconds, "relative")
 
     @Slot(int)
     def pseek(self, percentage: int) -> None:
@@ -240,23 +242,32 @@ class MpvMediaPlayer(QObject):
         # If paused due to cache starvation, let the paused-for-cache observer handle status as BUFFERING_NETWORK
         if paused:
             try:
-                pfc = getattr(self._mpv, 'paused_for_cache', None)
+                pfc = getattr(self._mpv, "paused_for_cache", None)
                 if pfc is None:
-                    pfc = self._mpv.get_property('paused-for-cache')
+                    pfc = self._mpv.get_property("paused-for-cache")
             except Exception:
                 pfc = False
             if pfc:
                 return
-        QTimer.singleShot(0, lambda: self.set_playing_status(PlayingStatus.PAUSED if paused else PlayingStatus.PLAYING))
+        QTimer.singleShot(
+            0,
+            lambda: self.set_playing_status(
+                PlayingStatus.PAUSED if paused else PlayingStatus.PLAYING
+            ),
+        )
 
     def _on_paused_for_cache(self, name, value):  # noqa: ARG002
         # When mpv pauses for cache, treat as NETWORK buffering
         if value:
-            QTimer.singleShot(0, lambda: self.set_playing_status(PlayingStatus.BUFFERING_NETWORK))
+            QTimer.singleShot(
+                0, lambda: self.set_playing_status(PlayingStatus.BUFFERING_NETWORK)
+            )
 
     def _on_seeking(self, name, value):  # noqa: ARG002
         if value:
-            QTimer.singleShot(0, lambda: self.set_playing_status(PlayingStatus.BUFFERING_LOCAL))
+            QTimer.singleShot(
+                0, lambda: self.set_playing_status(PlayingStatus.BUFFERING_LOCAL)
+            )
 
     def _on_idle(self, name, idle):  # noqa: ARG002
         if idle:
@@ -267,7 +278,7 @@ class MpvMediaPlayer(QObject):
         def handle():
             eventdata = event.data
             try:
-                reason = getattr(eventdata, 'reason', None)
+                reason = getattr(eventdata, "reason", None)
                 """
                 REASONS:
                 ABORTED = 2
@@ -278,22 +289,30 @@ class MpvMediaPlayer(QObject):
                 RESTARTED = 1
                 error = 0
                 """
-                reason_name = 'eof' if reason == 0 else 'error' if reason == 4 else 'stop' if reason in (2, 3) else None
+                reason_name = (
+                    "eof"
+                    if reason == 0
+                    else (
+                        "error" if reason == 4 else "stop" if reason in (2, 3) else None
+                    )
+                )
             except Exception:
                 reason_name = None
 
             # Handle explicit reasons first
-            if reason_name == 'eof':
+            if reason_name == "eof":
                 self._emit_end()
                 return
-            if reason_name in ('stop', 'quit'):
+            if reason_name in ("stop", "quit"):
                 # User or programmatic stop
                 # self.set_playing_status(PlayingStatus.STOPPED)
                 # This is emitted way too often, let's just ignore it
                 return
-            if reason_name == 'error':
+            if reason_name == "error":
                 # Let UI know an error occurred; do not emit end
-                self.errorOccurred.emit({'level': 'error', 'prefix': 'mpv', 'text': 'end-file: error'})
+                self.errorOccurred.emit(
+                    {"level": "error", "prefix": "mpv", "text": "end-file: error"}
+                )
                 self.set_playing_status(PlayingStatus.ERROR)
                 return
 
@@ -304,11 +323,16 @@ class MpvMediaPlayer(QObject):
             except Exception:
                 cur, dur = 0.0, 0.0
 
-            at_end = (dur > 0 and cur >= (dur - 1.0))  # within 1s of end
+            at_end = dur > 0 and cur >= (dur - 1.0)  # within 1s of end
             if at_end:
                 self._emit_end()
             else:
                 # Not actually at end; likely transient (e.g., cache/network hiccup). Ignore.
-                self.logger.debug("mpv end-file ignored: not at end (cur=%s, dur=%s, reason=%s)", cur, dur, reason_name)
+                self.logger.debug(
+                    "mpv end-file ignored: not at end (cur=%s, dur=%s, reason=%s)",
+                    cur,
+                    dur,
+                    reason_name,
+                )
 
         handle()

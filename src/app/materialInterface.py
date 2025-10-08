@@ -14,17 +14,20 @@ import dataclasses
 
 rgba_to_hex = lambda rgba: "#{:02X}{:02X}{:02X}{:02X}".format(*map(round, rgba))[:-2]
 
+
 class Theme(QObject):
     themeChanged = Signal(name="themeChanged")
-    
+
     _instance: typing.Union["Theme", None]
-    
-    @classmethod 
+
+    @classmethod
     def getInstance(cls) -> "Theme":
-        if (hasattr(cls, "_instance") and cls._instance is None) or not hasattr(cls, "_instance"): # if instance var exists and is not None, or if it does not exist
+        if (hasattr(cls, "_instance") and cls._instance is None) or not hasattr(
+            cls, "_instance"
+        ):  # if instance var exists and is not None, or if it does not exist
             cls._instance = Theme()
         return cls._instance
-    
+
     def __init__(self) -> None:
         super().__init__()
         self._primary_paletteKeyColor: str
@@ -81,20 +84,26 @@ class Theme(QObject):
         self._tertiaryFixedDim: str
         self._onTertiaryFixed: str
         self._onTertiaryFixedVariant: str
-        
+
         self.themeLight: DynamicScheme
         self.themeDark: DynamicScheme
 
     @Slot(result=str)
     def getAllColors(self):
         retlist = []
-        for color in vars(MaterialDynamicColors).keys(): # for every attr in this reference class
-            color_name = getattr(MaterialDynamicColors, color) # get the name of the attr from the reference
-            if hasattr(color_name, "get_hct"): # now we check if the attr is a color
-                retlist.append({color: str(eval(f"self.{color}"))})  # then we actually get the color from this class
+        for color in vars(
+            MaterialDynamicColors
+        ).keys():  # for every attr in this reference class
+            color_name = getattr(
+                MaterialDynamicColors, color
+            )  # get the name of the attr from the reference
+            if hasattr(color_name, "get_hct"):  # now we check if the attr is a color
+                retlist.append(
+                    {color: str(eval(f"self.{color}"))}
+                )  # then we actually get the color from this class
 
         return json.dumps(retlist)
-    
+
     @Slot(str, result=str)
     def getColor(self, color: str) -> str:
         """Get color from color name
@@ -106,8 +115,10 @@ class Theme(QObject):
             str: Hex value of color
         """
         return getattr(self, color)
-    
-    def get_dynamicColors(self, source: int, dark: bool, contrast: float) -> SchemeTonalSpot:
+
+    def get_dynamicColors(
+        self, source: int, dark: bool, contrast: float
+    ) -> SchemeTonalSpot:
         """Get dynamic colors from source color
 
         Args:
@@ -124,41 +135,47 @@ class Theme(QObject):
             firstTime = True
         else:
             firstTime = False
-            
-        scheme = SchemeTonalSpot( # choose any scheme here
-            
-            Hct.from_int(source), # source color in hct form
-            dark, # dark mode
-            contrast, # contrast
+
+        scheme = SchemeTonalSpot(  # choose any scheme here
+            Hct.from_int(source),  # source color in hct form
+            dark,  # dark mode
+            contrast,  # contrast
         )
-        
+
         for color in vars(MaterialDynamicColors).keys():
             color_name = getattr(MaterialDynamicColors, color)
-            if hasattr(color_name, "get_hct"): # is a color
-    #             print("self._" + color + ": str")
-    #             print(f"""
-    # @Property(str, notify=themeChanged)
-    # def {color}(self):
-    #     return self._{color}
-    
-    # @{color_name}.setter
-    # def {color_name}(self, value):
-    #     self._{color_name} = value
-    #     self.themeChanged.emit()
-                      
-                      
-    #                   """)
-                
+            if hasattr(color_name, "get_hct"):  # is a color
+                #             print("self._" + color + ": str")
+                #             print(f"""
+                # @Property(str, notify=themeChanged)
+                # def {color}(self):
+                #     return self._{color}
+
+                # @{color_name}.setter
+                # def {color_name}(self, value):
+                #     self._{color_name} = value
+                #     self.themeChanged.emit()
+
+                #                   """)
+
                 if firstTime:
                     color_name: DynamicColor
-                    c = color_name.get_hct(scheme).to_rgba() # get color in rgba format
-                    c[2] + 1 # for some reason every blue value is 1 less than it should be, so we add 1 to it
-                    self.__setattr__(color, self.list_rgb_to_hex(c)) # set attribute of color name to its value in rgba format
+                    c = color_name.get_hct(scheme).to_rgba()  # get color in rgba format
+                    (
+                        c[2] + 1
+                    )  # for some reason every blue value is 1 less than it should be, so we add 1 to it
+                    self.__setattr__(
+                        color, self.list_rgb_to_hex(c)
+                    )  # set attribute of color name to its value in rgba format
                 else:
-                    exec(f"self.{color} = self.list_rgb_to_hex(color_name.get_hct(scheme).to_rgba())")
+                    exec(
+                        f"self.{color} = self.list_rgb_to_hex(color_name.get_hct(scheme).to_rgba())"
+                    )
         self.themeChanged.emit()
-    
-    def get_dynamicColorObject(self, source: int, dark: bool, contrast: float) -> DynamicScheme:
+
+    def get_dynamicColorObject(
+        self, source: int, dark: bool, contrast: float
+    ) -> DynamicScheme:
         """Get dynamic color object from source color
 
         Args:
@@ -169,16 +186,17 @@ class Theme(QObject):
         Returns:
             DynamicScheme: Dynamic color object
         """
-        scheme = SchemeTonalSpot( # choose any scheme here
-            
-            Hct.from_int(source), # source color in hct form
-            dark, # dark mode
-            contrast, # contrast
+        scheme = SchemeTonalSpot(  # choose any scheme here
+            Hct.from_int(source),  # source color in hct form
+            dark,  # dark mode
+            contrast,  # contrast
         )
         return scheme
 
     def get_dynamicColorsFromImage(self, path: str):
-        colors: dict = materialQuantize.ImageQuantizeCelebi(path, 1, 128)  # Get colors from image, quality=1 (only use every pixel), max_colors=128
+        colors: dict = materialQuantize.ImageQuantizeCelebi(
+            path, 1, 128
+        )  # Get colors from image, quality=1 (only use every pixel), max_colors=128
         selected = Score.score(colors)
         return self.get_dynamicColorObject(selected[0], True, 0)
 
@@ -187,10 +205,11 @@ class Theme(QObject):
             attr: DynamicColor = getattr(MaterialDynamicColors, attrName)
             if hasattr(attr, "get_hct"):
                 # attr is now confirmed to be the color's name
-                self.__setattr__("_" + attrName, rgba_to_hex(attr.get_hct(colors).to_rgba()))
+                self.__setattr__(
+                    "_" + attrName, rgba_to_hex(attr.get_hct(colors).to_rgba())
+                )
         self.themeChanged.emit()
-        
-                
+
     def list_rgb_to_hex(self, color: list[int]) -> str:
         """Convert a list of rgb values to a hex string
 
@@ -200,7 +219,9 @@ class Theme(QObject):
         Returns:
             str: Hex string
         """
-        return "#" + "".join([hex(x)[2:].zfill(2) for x in color[:3]]) # color[:3] because we don't need the alpha value
+        return "#" + "".join(
+            [hex(x)[2:].zfill(2) for x in color[:3]]
+        )  # color[:3] because we don't need the alpha value
 
     @Property(str, notify=themeChanged)
     def primary_paletteKeyColor(self):
@@ -209,7 +230,6 @@ class Theme(QObject):
     @primary_paletteKeyColor.setter
     def primary_paletteKeyColor(self, value):
         self._primary_paletteKeyColor = value
-        
 
     @Property(str, notify=themeChanged)
     def secondary_paletteKeyColor(self):
@@ -218,7 +238,6 @@ class Theme(QObject):
     @secondary_paletteKeyColor.setter
     def secondary_paletteKeyColor(self, value):
         self._secondary_paletteKeyColor = value
-        
 
     @Property(str, notify=themeChanged)
     def tertiary_paletteKeyColor(self):
@@ -227,7 +246,6 @@ class Theme(QObject):
     @tertiary_paletteKeyColor.setter
     def tertiary_paletteKeyColor(self, value):
         self._tertiary_paletteKeyColor = value
-        
 
     @Property(str, notify=themeChanged)
     def neutral_paletteKeyColor(self):
@@ -236,7 +254,6 @@ class Theme(QObject):
     @neutral_paletteKeyColor.setter
     def neutral_paletteKeyColor(self, value):
         self._neutral_paletteKeyColor = value
-        
 
     @Property(str, notify=themeChanged)
     def neutral_variant_paletteKeyColor(self):
@@ -245,7 +262,6 @@ class Theme(QObject):
     @neutral_variant_paletteKeyColor.setter
     def neutral_variant_paletteKeyColor(self, value):
         self._neutral_variant_paletteKeyColor = value
-        
 
     @Property(str, notify=themeChanged)
     def background(self):
@@ -254,7 +270,6 @@ class Theme(QObject):
     @background.setter
     def background(self, value):
         self._background = value
-        
 
     @Property(str, notify=themeChanged)
     def onBackground(self):
@@ -263,7 +278,6 @@ class Theme(QObject):
     @onBackground.setter
     def onBackground(self, value):
         self._onBackground = value
-        
 
     @Property(str, notify=themeChanged)
     def surface(self):
@@ -272,7 +286,6 @@ class Theme(QObject):
     @surface.setter
     def surface(self, value):
         self._surface = value
-        
 
     @Property(str, notify=themeChanged)
     def surfaceDim(self):
@@ -281,7 +294,6 @@ class Theme(QObject):
     @surfaceDim.setter
     def surfaceDim(self, value):
         self._surfaceDim = value
-        
 
     @Property(str, notify=themeChanged)
     def surfaceBright(self):
@@ -290,7 +302,6 @@ class Theme(QObject):
     @surfaceBright.setter
     def surfaceBright(self, value):
         self._surfaceBright = value
-        
 
     @Property(str, notify=themeChanged)
     def surfaceContainerLowest(self):
@@ -299,7 +310,6 @@ class Theme(QObject):
     @surfaceContainerLowest.setter
     def surfaceContainerLowest(self, value):
         self._surfaceContainerLowest = value
-        
 
     @Property(str, notify=themeChanged)
     def surfaceContainerLow(self):
@@ -308,7 +318,6 @@ class Theme(QObject):
     @surfaceContainerLow.setter
     def surfaceContainerLow(self, value):
         self._surfaceContainerLow = value
-        
 
     @Property(str, notify=themeChanged)
     def surfaceContainer(self):
@@ -317,7 +326,6 @@ class Theme(QObject):
     @surfaceContainer.setter
     def surfaceContainer(self, value):
         self._surfaceContainer = value
-        
 
     @Property(str, notify=themeChanged)
     def surfaceContainerHigh(self):
@@ -326,7 +334,6 @@ class Theme(QObject):
     @surfaceContainerHigh.setter
     def surfaceContainerHigh(self, value):
         self._surfaceContainerHigh = value
-        
 
     @Property(str, notify=themeChanged)
     def surfaceContainerHighest(self):
@@ -335,7 +342,6 @@ class Theme(QObject):
     @surfaceContainerHighest.setter
     def surfaceContainerHighest(self, value):
         self._surfaceContainerHighest = value
-        
 
     @Property(str, notify=themeChanged)
     def onSurface(self):
@@ -344,7 +350,6 @@ class Theme(QObject):
     @onSurface.setter
     def onSurface(self, value):
         self._onSurface = value
-        
 
     @Property(str, notify=themeChanged)
     def surfaceVariant(self):
@@ -353,7 +358,6 @@ class Theme(QObject):
     @surfaceVariant.setter
     def surfaceVariant(self, value):
         self._surfaceVariant = value
-        
 
     @Property(str, notify=themeChanged)
     def onSurfaceVariant(self):
@@ -362,7 +366,6 @@ class Theme(QObject):
     @onSurfaceVariant.setter
     def onSurfaceVariant(self, value):
         self._onSurfaceVariant = value
-        
 
     @Property(str, notify=themeChanged)
     def inverseSurface(self):
@@ -371,7 +374,6 @@ class Theme(QObject):
     @inverseSurface.setter
     def inverseSurface(self, value):
         self._inverseSurface = value
-        
 
     @Property(str, notify=themeChanged)
     def inverseOnSurface(self):
@@ -380,7 +382,6 @@ class Theme(QObject):
     @inverseOnSurface.setter
     def inverseOnSurface(self, value):
         self._inverseOnSurface = value
-        
 
     @Property(str, notify=themeChanged)
     def outline(self):
@@ -389,7 +390,6 @@ class Theme(QObject):
     @outline.setter
     def outline(self, value):
         self._outline = value
-        
 
     @Property(str, notify=themeChanged)
     def outlineVariant(self):
@@ -398,7 +398,6 @@ class Theme(QObject):
     @outlineVariant.setter
     def outlineVariant(self, value):
         self._outlineVariant = value
-        
 
     @Property(str, notify=themeChanged)
     def shadow(self):
@@ -407,7 +406,6 @@ class Theme(QObject):
     @shadow.setter
     def shadow(self, value):
         self._shadow = value
-        
 
     @Property(str, notify=themeChanged)
     def scrim(self):
@@ -416,7 +414,6 @@ class Theme(QObject):
     @scrim.setter
     def scrim(self, value):
         self._scrim = value
-        
 
     @Property(str, notify=themeChanged)
     def surfaceTint(self):
@@ -425,7 +422,6 @@ class Theme(QObject):
     @surfaceTint.setter
     def surfaceTint(self, value):
         self._surfaceTint = value
-        
 
     @Property(str, notify=themeChanged)
     def primary(self):
@@ -434,7 +430,6 @@ class Theme(QObject):
     @primary.setter
     def primary(self, value):
         self._primary = value
-        
 
     @Property(str, notify=themeChanged)
     def onPrimary(self):
@@ -443,7 +438,6 @@ class Theme(QObject):
     @onPrimary.setter
     def onPrimary(self, value):
         self._onPrimary = value
-        
 
     @Property(str, notify=themeChanged)
     def primaryContainer(self):
@@ -452,7 +446,6 @@ class Theme(QObject):
     @primaryContainer.setter
     def primaryContainer(self, value):
         self._primaryContainer = value
-        
 
     @Property(str, notify=themeChanged)
     def onPrimaryContainer(self):
@@ -461,7 +454,6 @@ class Theme(QObject):
     @onPrimaryContainer.setter
     def onPrimaryContainer(self, value):
         self._onPrimaryContainer = value
-        
 
     @Property(str, notify=themeChanged)
     def inversePrimary(self):
@@ -470,7 +462,6 @@ class Theme(QObject):
     @inversePrimary.setter
     def inversePrimary(self, value):
         self._inversePrimary = value
-        
 
     @Property(str, notify=themeChanged)
     def secondary(self):
@@ -479,7 +470,6 @@ class Theme(QObject):
     @secondary.setter
     def secondary(self, value):
         self._secondary = value
-        
 
     @Property(str, notify=themeChanged)
     def onSecondary(self):
@@ -488,7 +478,6 @@ class Theme(QObject):
     @onSecondary.setter
     def onSecondary(self, value):
         self._onSecondary = value
-        
 
     @Property(str, notify=themeChanged)
     def secondaryContainer(self):
@@ -497,7 +486,6 @@ class Theme(QObject):
     @secondaryContainer.setter
     def secondaryContainer(self, value):
         self._secondaryContainer = value
-        
 
     @Property(str, notify=themeChanged)
     def onSecondaryContainer(self):
@@ -506,7 +494,6 @@ class Theme(QObject):
     @onSecondaryContainer.setter
     def onSecondaryContainer(self, value):
         self._onSecondaryContainer = value
-        
 
     @Property(str, notify=themeChanged)
     def tertiary(self):
@@ -515,7 +502,6 @@ class Theme(QObject):
     @tertiary.setter
     def tertiary(self, value):
         self._tertiary = value
-        
 
     @Property(str, notify=themeChanged)
     def onTertiary(self):
@@ -524,7 +510,6 @@ class Theme(QObject):
     @onTertiary.setter
     def onTertiary(self, value):
         self._onTertiary = value
-        
 
     @Property(str, notify=themeChanged)
     def tertiaryContainer(self):
@@ -533,7 +518,6 @@ class Theme(QObject):
     @tertiaryContainer.setter
     def tertiaryContainer(self, value):
         self._tertiaryContainer = value
-        
 
     @Property(str, notify=themeChanged)
     def onTertiaryContainer(self):
@@ -542,7 +526,6 @@ class Theme(QObject):
     @onTertiaryContainer.setter
     def onTertiaryContainer(self, value):
         self._onTertiaryContainer = value
-        
 
     @Property(str, notify=themeChanged)
     def error(self):
@@ -551,7 +534,6 @@ class Theme(QObject):
     @error.setter
     def error(self, value):
         self._error = value
-        
 
     @Property(str, notify=themeChanged)
     def onError(self):
@@ -560,7 +542,6 @@ class Theme(QObject):
     @onError.setter
     def onError(self, value):
         self._onError = value
-        
 
     @Property(str, notify=themeChanged)
     def errorContainer(self):
@@ -569,7 +550,6 @@ class Theme(QObject):
     @errorContainer.setter
     def errorContainer(self, value):
         self._errorContainer = value
-        
 
     @Property(str, notify=themeChanged)
     def onErrorContainer(self):
@@ -578,7 +558,6 @@ class Theme(QObject):
     @onErrorContainer.setter
     def onErrorContainer(self, value):
         self._onErrorContainer = value
-        
 
     @Property(str, notify=themeChanged)
     def primaryFixed(self):
@@ -587,7 +566,6 @@ class Theme(QObject):
     @primaryFixed.setter
     def primaryFixed(self, value):
         self._primaryFixed = value
-        
 
     @Property(str, notify=themeChanged)
     def primaryFixedDim(self):
@@ -596,7 +574,6 @@ class Theme(QObject):
     @primaryFixedDim.setter
     def primaryFixedDim(self, value):
         self._primaryFixedDim = value
-        
 
     @Property(str, notify=themeChanged)
     def onPrimaryFixed(self):
@@ -605,7 +582,6 @@ class Theme(QObject):
     @onPrimaryFixed.setter
     def onPrimaryFixed(self, value):
         self._onPrimaryFixed = value
-        
 
     @Property(str, notify=themeChanged)
     def onPrimaryFixedVariant(self):
@@ -614,7 +590,6 @@ class Theme(QObject):
     @onPrimaryFixedVariant.setter
     def onPrimaryFixedVariant(self, value):
         self._onPrimaryFixedVariant = value
-        
 
     @Property(str, notify=themeChanged)
     def secondaryFixed(self):
@@ -623,7 +598,6 @@ class Theme(QObject):
     @secondaryFixed.setter
     def secondaryFixed(self, value):
         self._secondaryFixed = value
-        
 
     @Property(str, notify=themeChanged)
     def secondaryFixedDim(self):
@@ -632,7 +606,6 @@ class Theme(QObject):
     @secondaryFixedDim.setter
     def secondaryFixedDim(self, value):
         self._secondaryFixedDim = value
-        
 
     @Property(str, notify=themeChanged)
     def onSecondaryFixed(self):
@@ -641,7 +614,6 @@ class Theme(QObject):
     @onSecondaryFixed.setter
     def onSecondaryFixed(self, value):
         self._onSecondaryFixed = value
-        
 
     @Property(str, notify=themeChanged)
     def onSecondaryFixedVariant(self):
@@ -650,7 +622,6 @@ class Theme(QObject):
     @onSecondaryFixedVariant.setter
     def onSecondaryFixedVariant(self, value):
         self._onSecondaryFixedVariant = value
-        
 
     @Property(str, notify=themeChanged)
     def tertiaryFixed(self):
@@ -659,7 +630,6 @@ class Theme(QObject):
     @tertiaryFixed.setter
     def tertiaryFixed(self, value):
         self._tertiaryFixed = value
-        
 
     @Property(str, notify=themeChanged)
     def tertiaryFixedDim(self):
@@ -668,7 +638,6 @@ class Theme(QObject):
     @tertiaryFixedDim.setter
     def tertiaryFixedDim(self, value):
         self._tertiaryFixedDim = value
-        
 
     @Property(str, notify=themeChanged)
     def onTertiaryFixed(self):
@@ -677,7 +646,6 @@ class Theme(QObject):
     @onTertiaryFixed.setter
     def onTertiaryFixed(self, value):
         self._onTertiaryFixed = value
-        
 
     @Property(str, notify=themeChanged)
     def onTertiaryFixedVariant(self):
@@ -686,4 +654,3 @@ class Theme(QObject):
     @onTertiaryFixedVariant.setter
     def onTertiaryFixedVariant(self, value):
         self._onTertiaryFixedVariant = value
-        

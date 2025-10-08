@@ -1,8 +1,9 @@
 import enum
 
+
 class SearchFilters(enum.StrEnum):
-    """Search Filters. Used in search queries to filter results.
-    """
+    """Search Filters. Used in search queries to filter results."""
+
     SONGS = "songs"
     VIDEOS = "videos"
     ALBUMS = "albums"

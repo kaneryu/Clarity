@@ -15,7 +15,8 @@ import vlc  # type: ignore[import-untyped]
 
 from src import universal as universal
 from src.innertube.song import Song
-from src.misc.enumerations.Song import PlayingStatus 
+from src.misc.enumerations.Song import PlayingStatus
+
 
 class VLCMediaPlayer(QObject):
     """Media playback engine using VLC implementing the MediaPlayer contract.
@@ -26,7 +27,7 @@ class VLCMediaPlayer(QObject):
     - Emit playback-related signals
     - Handle MRL fetching and retry flow
     """
-    
+
     NAME = "vlc"
 
     # Reuse signal shapes used by Queue so Queue can re-emit them unchanged
@@ -60,7 +61,9 @@ class VLCMediaPlayer(QObject):
         vlc.libvlc_set_user_agent(
             self.instance,
             strToCtypes(f"Clarity {str(universal.version)}"),
-            strToCtypes(f"Clarity/{str(universal.version)} Python/{platform.python_version()}"),
+            strToCtypes(
+                f"Clarity/{str(universal.version)} Python/{platform.python_version()}"
+            ),
         )
 
         self.player: vlc.MediaPlayer = self.instance.media_player_new()
@@ -76,12 +79,24 @@ class VLCMediaPlayer(QObject):
         self.__playlastTime: float = 0
 
         # Event wiring
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerEndReached, self._on_song_finished)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerEncounteredError, self._on_vlc_error)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerPaused, self._on_pause_event)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerPlaying, self._on_play_event)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerBuffering, self._on_buffering_event)
-        self.eventManager.event_attach(vlc.EventType.MediaPlayerTimeChanged, self._on_time_changed_event)
+        self.eventManager.event_attach(
+            vlc.EventType.MediaPlayerEndReached, self._on_song_finished
+        )
+        self.eventManager.event_attach(
+            vlc.EventType.MediaPlayerEncounteredError, self._on_vlc_error
+        )
+        self.eventManager.event_attach(
+            vlc.EventType.MediaPlayerPaused, self._on_pause_event
+        )
+        self.eventManager.event_attach(
+            vlc.EventType.MediaPlayerPlaying, self._on_play_event
+        )
+        self.eventManager.event_attach(
+            vlc.EventType.MediaPlayerBuffering, self._on_buffering_event
+        )
+        self.eventManager.event_attach(
+            vlc.EventType.MediaPlayerTimeChanged, self._on_time_changed_event
+        )
 
     # -------------------- Public properties --------------------
     def isPlaying(self) -> bool:
@@ -116,8 +131,14 @@ class VLCMediaPlayer(QObject):
     # -------------------- Control API --------------------
     def play(self, song: Song):
         # If player is in a transient or error state, retry shortly
-        if self.player.get_state() in [vlc.State.Error, vlc.State.Opening, vlc.State.Buffering]:
-            self.logger.warning(f"Player in unstable state {self.player.get_state()}, delaying operation")
+        if self.player.get_state() in [
+            vlc.State.Error,
+            vlc.State.Opening,
+            vlc.State.Buffering,
+        ]:
+            self.logger.warning(
+                f"Player in unstable state {self.player.get_state()}, delaying operation"
+            )
             QTimer.singleShot(100, lambda: self.play(song))
             return
 
@@ -168,9 +189,13 @@ class VLCMediaPlayer(QObject):
                 self.play(song)
             else:
                 if getattr(song, "playbackReady", False):
-                    self.logger.debug("Current Song is playback ready, and the MRL was already set.")
+                    self.logger.debug(
+                        "Current Song is playback ready, and the MRL was already set."
+                    )
                 else:
-                    self.logger.debug("Current Song is not playback ready, so we don't set the MRL.")
+                    self.logger.debug(
+                        "Current Song is not playback ready, so we don't set the MRL."
+                    )
 
     @Slot()
     def pause(self):
@@ -191,7 +216,7 @@ class VLCMediaPlayer(QObject):
             self.play(self._current_song)
 
     def migrate(self, mrl: str):
-        paused = (self.player.is_playing() == 0)
+        paused = self.player.is_playing() == 0
         newMedia = self.instance.media_new(mrl)
         self.player.pause()
         t = self.player.get_time()
@@ -201,7 +226,7 @@ class VLCMediaPlayer(QObject):
         else:
             self.player.pause()
         self.player.set_time(t)
-    
+
     def destroy(self) -> None:
         self.stop()
         self.eventManager.event_detach(vlc.EventType.MediaPlayerEndReached)
