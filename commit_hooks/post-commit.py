@@ -24,12 +24,13 @@ from semantic_release.hvcs.github import Github
 
 import semantic_release.cli.changelog_writer as semverChangelogWriter
 
-from legacy_versioning import autover
+from legacy_versioning import autover, autochangelog
 
 changelogPath = os.path.join(os.getcwd(), "CHANGELOG.md")
+mostRecentChangelogPath = os.path.join(os.getcwd(), "MOST_RECENT_CHANGELOG.md")
 
 
-def getChangelog():
+def getChangelog(mode: ChangelogMode = ChangelogMode.INIT) -> str:
     # write_default_changelog -> render_default_changelog_file -> changelog text
     repo = git.Repo(os.getcwd())
     remote = next(iter(repo.remotes), None)
@@ -43,7 +44,7 @@ def getChangelog():
     changelog_context = make_changelog_context(
         hvcs_client=hvcs,
         release_history=rh,
-        mode=ChangelogMode.INIT,
+        mode=mode,
         prev_changelog_file=changelogPath,
         insertion_flag="<!-- changelog -->",
         mask_initial_release=False,
@@ -102,14 +103,21 @@ def main():
     with open("pyproject.toml", "w") as f:
         f.writelines(lines)
 
-    changelog_text = getChangelog()
+    changelogs = autochangelog.create_changelog()
+    fullChangelog = changelogs[0]
+    mostRecentChangelog = changelogs[1]
+
     with open(changelogPath, "w", encoding="utf-8") as f:
-        f.write(changelog_text)
+        f.write(fullChangelog)
+
+    with open(mostRecentChangelogPath, "w", encoding="utf-8") as f:
+        f.write(mostRecentChangelog)
 
     subprocess.run(["git", "init"], check=True)
     subprocess.run(["git", "add", "version.txt"], check=True)
     subprocess.run(["git", "add", "src/version.txt"], check=True)
     subprocess.run(["git", "add", "CHANGELOG.md"], check=True)
+    subprocess.run(["git", "add", "MOST_RECENT_CHANGELOG.md"], check=True)
     subprocess.run(["git", "add", "run.py"], check=True)
     subprocess.run(["git", "add", "pyproject.toml"], check=True)
     subprocess.run(["git", "commit", "--amend", "--no-edit"], check=True)

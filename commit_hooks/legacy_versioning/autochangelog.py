@@ -5,11 +5,13 @@ Generates both full changelog and most recent changelog for CI/CD.
 
 import logging
 from typing import Dict, List, Tuple
-from version_utils import (
+from packaging.version import Version
+from .version_utils import (
     get_commit_history_detailed,
     parse_detailed_commit,
     is_git_repository,
     is_breaking_change,
+    get_last_tag,
     COMMIT_TYPE_INCREMENT_MAPPING,
     COMMIT_TYPE_INDEX_MAP,
 )
@@ -119,10 +121,26 @@ def create_changelog() -> Tuple[str, str]:
         logger.warning("No changelog entries found")
         return ("", "")
 
-    most_recent_version = list(changelog.keys())[-1]
+    # Get last tag and most recent version for comparison
+    last_tag_str = get_last_tag()
+    if last_tag_str:
+        # Remove 'v' prefix if present
+        last_tag_str = last_tag_str.lstrip("v")
+        last_tag = Version(last_tag_str)
+        # Create a new version with patch set to 0 by reconstructing
+        last_tag = Version(f"{last_tag.major}.{last_tag.minor}.0")
+    else:
+        last_tag = Version("0.0.0")
 
-    for version in reversed(changelog.keys()):
-        version_section = f"# Version {version}\n\n"
+    most_recent_version = Version(list(changelog.keys())[-1])
+    logger.info(f"Last tag: {last_tag}, Most recent version: {most_recent_version}")
+
+    # Dictionary to track versions for most_recent_changelog
+    fmt_changelog_dict: dict[Version, str] = {}
+
+    for version_str in reversed(changelog.keys()):
+        version = Version(version_str)
+        version_section = f"# {version}\n\n"
         headline_changes = ""
         new_features = ""
         bugfixes = ""
@@ -131,7 +149,7 @@ def create_changelog() -> Tuple[str, str]:
         # Headline Changes (Breaking changes - using is_breaking_change logic)
         headline_items = [
             item
-            for item in changelog[version]
+            for item in changelog[version_str]
             if item.get("desc")
             and (
                 "BREAKING CHANGE" in item.get("desc", "")
@@ -141,37 +159,51 @@ def create_changelog() -> Tuple[str, str]:
         if headline_items:
             headline_changes = "## Headline Changes\n\n"
             for item in headline_items:
-                headline_changes += (
-                    f"- {item['desc']} -- {item['author']} on {item['date']}\n"
-                )
+                line = f"- {item['desc']} -- {item['author']} on {item['date']}\n"
+                headline_changes += line
+                fmt_changelog_dict[version] = fmt_changelog_dict.get(
+                    version, ""
+                ) + line.lstrip(" - ")
             headline_changes += "\n"
 
         # New Features
-        feature_items = [item for item in changelog[version] if item["type"] == "feat"]
+        feature_items = [
+            item for item in changelog[version_str] if item["type"] == "feat"
+        ]
         if feature_items:
             new_features = "## New Features\n\n"
             for item in feature_items:
-                new_features += (
-                    f"- {item['desc']} -- {item['author']} on {item['date']}\n"
-                )
+                line = f"- {item['desc']} -- {item['author']} on {item['date']}\n"
+                new_features += line
+                fmt_changelog_dict[version] = fmt_changelog_dict.get(
+                    version, ""
+                ) + line.lstrip(" - ")
             new_features += "\n"
 
         # Bugfixes
-        bugfix_items = [item for item in changelog[version] if item["type"] == "fix"]
+        bugfix_items = [
+            item for item in changelog[version_str] if item["type"] == "fix"
+        ]
         if bugfix_items:
             bugfixes = "## Bugfixes\n\n"
             for item in bugfix_items:
-                bugfixes += f"- {item['desc']} -- {item['author']} on {item['date']}\n"
+                line = f"- {item['desc']} -- {item['author']} on {item['date']}\n"
+                bugfixes += line
+                fmt_changelog_dict[version] = fmt_changelog_dict.get(
+                    version, ""
+                ) + line.lstrip(" - ")
             bugfixes += "\n"
 
         # Performance Improvements
-        perf_items = [item for item in changelog[version] if item["type"] == "perf"]
+        perf_items = [item for item in changelog[version_str] if item["type"] == "perf"]
         if perf_items:
             perfimprovements = "## Performance Improvements\n\n"
             for item in perf_items:
-                perfimprovements += (
-                    f"- {item['desc']} -- {item['author']} on {item['date']}\n"
-                )
+                line = f"- {item['desc']} -- {item['author']} on {item['date']}\n"
+                perfimprovements += line
+                fmt_changelog_dict[version] = fmt_changelog_dict.get(
+                    version, ""
+                ) + line.lstrip(" - ")
             perfimprovements += "\n"
 
         # Assemble version section
@@ -184,9 +216,11 @@ def create_changelog() -> Tuple[str, str]:
         )
         changelog_str += version_content + "\n"
 
-        # Save most recent version
-        if version == most_recent_version:
-            most_recent_changelog = version_content
+    # Build most_recent_changelog by filtering versions between last_tag and most_recent_version
+    most_recent_changelog = "# Changes Since Last Release\n\n"
+    for version in sorted(fmt_changelog_dict.keys(), reverse=True):
+        if version <= most_recent_version and version > last_tag:
+            most_recent_changelog += f"- ({version}) " + fmt_changelog_dict[version]
 
     return (changelog_str, most_recent_changelog)
 

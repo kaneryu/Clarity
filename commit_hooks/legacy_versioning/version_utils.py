@@ -13,39 +13,17 @@ logger = logging.getLogger(__name__)
 
 # Commit type to version increment mapping
 COMMIT_TYPE_INCREMENT_MAPPING = [
-    {
-        "type": "feat",
-        "inc": "minor",
-        "amt": 1
-    },
-    {
-        "type": "fix",
-        "inc": "patch",
-        "amt": 1
-    },
-    {
-        "type": "perf",
-        "inc": "patch",
-        "amt": 1
-    },
-    {
-        "type": "refactor",
-        "inc": "patch",
-        "amt": 1
-    },
-    {
-        "type": "chore",
-        "inc": "patch",
-        "amt": 0
-    },
-    {
-        "type": "docs",
-        "inc": "patch",
-        "amt": 0
-    }
+    {"type": "feat", "inc": "minor", "amt": 1},
+    {"type": "fix", "inc": "patch", "amt": 1},
+    {"type": "perf", "inc": "patch", "amt": 1},
+    {"type": "refactor", "inc": "patch", "amt": 1},
+    {"type": "chore", "inc": "patch", "amt": 0},
+    {"type": "docs", "inc": "patch", "amt": 0},
 ]
 
-COMMIT_TYPE_INDEX_MAP = {item["type"]: index for index, item in enumerate(COMMIT_TYPE_INCREMENT_MAPPING)}
+COMMIT_TYPE_INDEX_MAP = {
+    item["type"]: index for index, item in enumerate(COMMIT_TYPE_INCREMENT_MAPPING)
+}
 
 # Regex for parsing conventional commits (simple format - for git log)
 SIMPLE_COMMIT_REGEX = re.compile(
@@ -71,13 +49,17 @@ def is_git_repository() -> bool:
     """Check if current directory is a git repository."""
     try:
         subprocess.run(
-            ['git', 'rev-parse', '--git-dir'],
+            ["git", "rev-parse", "--git-dir"],
             check=True,
             capture_output=True,
-            timeout=5
+            timeout=5,
         )
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        FileNotFoundError,
+    ):
         return False
 
 
@@ -93,14 +75,16 @@ def get_commit_history_simple() -> List[str]:
     """
     try:
         output = subprocess.check_output(
-            ['git', 'log', '--oneline'],
-            timeout=30,
-            encoding='utf-8'
+            ["git", "log", "--oneline"], timeout=30, encoding="utf-8"
         )
-        commits = output.strip().split('\n')
+        commits = output.strip().split("\n")
         commits.reverse()  # Oldest first
         return commits
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        FileNotFoundError,
+    ) as e:
         logger.error(f"Failed to get git commit history: {e}")
         return []
 
@@ -112,14 +96,18 @@ def get_commit_history_detailed() -> List[str]:
     """
     try:
         output = subprocess.check_output(
-            ['git', 'log', '--pretty=format:%h %an %ad %s', '--date=short'],
+            ["git", "log", "--pretty=format:%h %an %ad %s", "--date=short"],
             timeout=30,
-            encoding='utf-8'
+            encoding="utf-8",
         )
-        commits = output.strip().split('\n')
+        commits = output.strip().split("\n")
         commits.reverse()  # Oldest first
         return commits
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        FileNotFoundError,
+    ) as e:
         logger.error(f"Failed to get git commit history: {e}")
         return []
 
@@ -132,18 +120,18 @@ def parse_simple_commit(commit: str) -> Optional[Dict[str, str]]:
     commit = commit.strip()
     if not commit or commit.startswith("Merge"):
         return None
-    
+
     matches = SIMPLE_COMMIT_REGEX.match(commit)
     if not matches:
         logger.debug(f"Skipping invalid commit format: {commit}")
         return None
-    
+
     return {
         "hash": matches.group("hash"),
         "type": matches.group("type"),
         "scope": matches.group("scope") or "",
         "desc": matches.group("desc"),
-        "full_message": commit
+        "full_message": commit,
     }
 
 
@@ -155,12 +143,12 @@ def parse_detailed_commit(commit: str) -> Optional[Dict[str, str]]:
     commit = commit.strip()
     if not commit or commit.startswith("Merge"):
         return None
-    
+
     matches = DETAILED_COMMIT_REGEX.match(commit)
     if not matches:
         logger.debug(f"Skipping invalid commit format: {commit}")
         return None
-    
+
     return {
         "hash": matches.group("hash"),
         "author": matches.group("author").strip(),
@@ -168,11 +156,13 @@ def parse_detailed_commit(commit: str) -> Optional[Dict[str, str]]:
         "type": matches.group("type"),
         "scope": matches.group("scope") or "",
         "desc": matches.group("desc"),
-        "full_message": commit
+        "full_message": commit,
     }
 
 
-def calculate_version_from_commits(commits: List[str], use_detailed: bool = False) -> Tuple[int, int, int]:
+def calculate_version_from_commits(
+    commits: List[str], use_detailed: bool = False
+) -> Tuple[int, int, int]:
     """
     Calculate semantic version from commit history.
     Returns tuple of (major, minor, patch).
@@ -180,24 +170,26 @@ def calculate_version_from_commits(commits: List[str], use_detailed: bool = Fals
     major = 0
     minor = 0
     patch = 0
-    
+
     parse_func = parse_detailed_commit if use_detailed else parse_simple_commit
-    
+
     for commit in commits:
         parsed = parse_func(commit)
         if not parsed:
             continue
-        
+
         commit_type = parsed["type"]
         full_message = parsed.get("full_message", commit)
-        
+
         # Get increment details for this commit type
         if commit_type not in COMMIT_TYPE_INDEX_MAP:
             logger.warning(f"Unknown commit type: {commit_type}")
             continue
-        
-        commit_increment = COMMIT_TYPE_INCREMENT_MAPPING[COMMIT_TYPE_INDEX_MAP[commit_type]]
-        
+
+        commit_increment = COMMIT_TYPE_INCREMENT_MAPPING[
+            COMMIT_TYPE_INDEX_MAP[commit_type]
+        ]
+
         # Check for breaking changes first (takes precedence)
         if is_breaking_change(full_message):
             major += 1
@@ -213,7 +205,7 @@ def calculate_version_from_commits(commits: List[str], use_detailed: bool = Fals
             patch = 0
         elif commit_increment["inc"] == "patch":
             patch += commit_increment["amt"]
-    
+
     return (major, minor, patch)
 
 
@@ -224,7 +216,7 @@ def check_commit_format(commit_message: str) -> bool:
     """
     if commit_message.startswith("Merge"):
         return True  # Merge commits are allowed
-    
+
     # For commit messages (without hash), use COMMIT_MESSAGE_REGEX
     return COMMIT_MESSAGE_REGEX.match(commit_message.strip()) is not None
 
@@ -237,3 +229,21 @@ def get_version_string() -> str:
     commits = get_commit_history_simple()
     major, minor, patch = calculate_version_from_commits(commits)
     return f"{major}.{minor}.{patch}"
+
+
+def get_last_tag() -> Optional[str]:
+    """
+    Get the most recent git tag.
+    Returns tag string or None if no tags exist.
+    """
+    try:
+        output = subprocess.check_output(
+            ["git", "describe", "--tags", "--abbrev=0"], timeout=10, encoding="utf-8"
+        )
+        return output.strip()
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        FileNotFoundError,
+    ):
+        return None
