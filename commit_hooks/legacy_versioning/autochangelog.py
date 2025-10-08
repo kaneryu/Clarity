@@ -127,8 +127,6 @@ def create_changelog() -> Tuple[str, str]:
         # Remove 'v' prefix if present
         last_tag_str = last_tag_str.lstrip("v")
         last_tag = Version(last_tag_str)
-        # Create a new version with patch set to 0 by reconstructing
-        last_tag = Version(f"{last_tag.major}.{last_tag.minor}.0")
     else:
         last_tag = Version("0.0.0")
 
@@ -221,6 +219,8 @@ def create_changelog() -> Tuple[str, str]:
     for version in sorted(fmt_changelog_dict.keys(), reverse=True):
         if version <= most_recent_version and version > last_tag:
             most_recent_changelog += f"- ({version}) " + fmt_changelog_dict[version]
+        else:
+            break  # Stop once we reach versions older than last_tag
 
     return (changelog_str, most_recent_changelog)
 
