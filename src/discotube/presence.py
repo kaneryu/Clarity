@@ -199,8 +199,13 @@ class PresenceManagerThread(QThread):
                 "duration": duration,
                 "song_id": song_id,
                 "cover": cover,
-                "state": self.queue_instance.playingStatus.name,
             }
+            if isinstance(self.queue_instance.playingStatus, int):
+                self.currentDetails["state"] = PlayingStatus(
+                    self.queue_instance.playingStatus
+                ).name
+            else:
+                self.currentDetails["state"] = self.queue_instance.playingStatus.name
 
             buttons = [
                 {

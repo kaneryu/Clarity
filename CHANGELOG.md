@@ -1,3 +1,10 @@
+# 0.49.5
+
+## Bugfixes
+
+- bug where queuemanager doesn't convert playingstatus int to playingstatus enum value -- kaneryu on 2025-10-08
+
+
 # 0.49.4
 
 ## Bugfixes

@@ -394,7 +394,7 @@ class Queue(QObject):
     @QProperty(int, notify=playingStatusChanged)
     def playingStatus(self):
         with QMutexLocker(self._mutex):
-            return self._player.get_playing_status()
+            return PlayingStatus(self._player.get_playing_status())
 
     @playingStatus.setter
     def playingStatus(self, value: PlayingStatus):

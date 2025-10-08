@@ -102,11 +102,11 @@ class VLCMediaPlayer(QObject):
     def isPlaying(self) -> bool:
         return self._playingStatus == PlayingStatus.PLAYING
 
-    def get_playing_status(self) -> PlayingStatus:
+    def get_playing_status(self) -> int:
         # If media not yet set, advertise NOT_READY
         if self.player.get_media() is None:
-            return PlayingStatus.NOT_READY
-        return self._playingStatus
+            return PlayingStatus.NOT_READY.value
+        return self._playingStatus.value
 
     def set_playing_status(self, value: PlayingStatus) -> None:
         if value not in PlayingStatus:
