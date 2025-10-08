@@ -205,7 +205,7 @@ class Interactions(QObject):
     # convenience functions for interacting with the song class
     # all functions will take in an ID
     @Slot(str)
-    def getSongDownloadStatus(self, id: str):
+    def getSongDownloadState(self, id: str):
         smodule = universal.song_module
         song = smodule.Song(id)
         return song.downloadState

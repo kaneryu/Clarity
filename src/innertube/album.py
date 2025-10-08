@@ -234,12 +234,12 @@ class Album(QObject):
             )
             return
 
-        downloadStatuses: dict[Literal["id"], SongDownloadState] = {}
+        downloadStates: dict[Literal["id"], SongDownloadState] = {}
         for track in self.songs:
-            downloadStatuses[track.id] = track.downloadState
+            downloadStates[track.id] = track.downloadState
 
         downloadStatus = DownloadStatus.FULLY_DOWNLOADED
-        for status in downloadStatuses.values():
+        for status in downloadStates.values():
             match status:
                 case SongDownloadState.DOWNLOADING:
                     downloadStatus = DownloadStatus.DOWNLOAD_IN_PROGRESS

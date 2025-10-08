@@ -27,7 +27,7 @@ Item {
     DOWNLOADING = 1
     DOWNLOADED = 2
     */
-    property int albumDownloadStatus: album.downloadStatus
+    property int albumDownloadState: album.downloadState
 
     property color textColor: Theme.onSurface
 

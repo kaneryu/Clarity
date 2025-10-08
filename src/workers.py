@@ -338,7 +338,9 @@ class Async_BackgroundWorker(QThread):
                     try:
                         if asyncio.iscoroutinefunction(fun):
                             async with self.semaphore:
-                                res = await fun(*args, **kwargs)
+                                res = await asyncio.wait_for(
+                                    fun(*args, **kwargs), timeout=60
+                                )
                                 if callback:
                                     callback(res)
                         else:

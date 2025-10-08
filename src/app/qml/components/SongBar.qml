@@ -211,7 +211,7 @@ Item {
             id: downloadButton
             isIcon: true
             isTransparent: true
-            icon: (root.song.downloadStatus == 2) ? AssetsPath + "icons/songbar/downloaded.svg" : (root.song.downloadStatus == 0) ? AssetsPath + "icons/songbar/download.svg" : AssetsPath + "icons/songbar/downloading.svg"
+            icon: (root.song.downloadState == 2) ? AssetsPath + "icons/songbar/downloaded.svg" : (root.song.downloadState == 0) ? AssetsPath + "icons/songbar/download.svg" : AssetsPath + "icons/songbar/downloading.svg"
 
             Layout.preferredHeight: centerPanel.iconHeight
             Layout.preferredWidth: height

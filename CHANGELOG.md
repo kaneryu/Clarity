@@ -17,6 +17,9 @@
 - Fix bug where workers would be started up twice
   ([`fc84e28`](https://github.com/kaneryu/Clarity/commit/fc84e281a758d622475f56c12c364c3644cc82a4))
 
+- Fix endless RecursionError in songproxy
+  ([`e02fb6e`](https://github.com/kaneryu/Clarity/commit/e02fb6eb14fbb4aebdca4d8ce3ea6328559ce44a))
+
 - Refactor presence management and improve status handling
   ([`b3505b3`](https://github.com/kaneryu/Clarity/commit/b3505b37e2e1d7c86901ac133d8f0f0ef312aed0))
 
@@ -37,7 +40,7 @@
 ### Code Style
 
 - Format everything with Black
-  ([`0e64729`](https://github.com/kaneryu/Clarity/commit/0e64729a2b16b889b778023160b45325d059228f))
+  ([`62f53b5`](https://github.com/kaneryu/Clarity/commit/62f53b560f6ed5a63aec7a929cd2d2fa84c7934d))
 
 ### Continuous Integration
 

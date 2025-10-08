@@ -28,7 +28,7 @@ Item {
     DOWNLOADING = 1
     DOWNLOADED = 2
     */
-    property int songDownloadStatus: song.downloadStatus
+    property int songDownloadState: song.downloadState
     property int songPlayingStatus: song.playingStatus
     property color textColor: Theme.onSurface
 
@@ -105,7 +105,7 @@ Item {
 
         TextVariant.Default {
             id: artistLengthText
-            text: root.songArtist + " • " + root.songLength + " • " + (root.songDownloadStatus === 0 ? "Not downloaded" : root.songDownloadStatus === 1 ? "Downloading" : "Downloaded")
+            text: root.songArtist + " • " + root.songLength + " • " + (root.songDownloadState === 0 ? "Not downloaded" : root.songDownloadState === 1 ? "Downloading" : "Downloaded")
             color: root.textColor
             width: parent.width
             marquee: true

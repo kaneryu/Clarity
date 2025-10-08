@@ -725,7 +725,7 @@ class SongProxy(QObject):
     sourceChanged = Signal(str)
     dataStatusChanged = Signal(int)
     downloadedChanged = Signal(bool)
-    downloadStatusChanged = Signal(int)
+    downloadStateChanged = Signal(int)
     downloadProgressChanged = Signal(int)
     playingStatusChanged = Signal(int)
 
@@ -737,7 +737,7 @@ class SongProxy(QObject):
 
         self.target.idChanged.connect(self.idChanged)
         self.target.sourceChanged.connect(self.sourceChanged)
-        # self.target.downloadStateChanged.connect(self.downloadStatusChanged)
+        self.target.downloadStateChanged.connect(self.downloadStateChanged)
         self.target.dataStatusChanged.connect(self.dataStatusChanged)
         self.target.downloadProgressChanged.connect(self.downloadProgressChanged)
         self.target.playingStatusChanged.connect(self.playingStatusChanged)
@@ -808,8 +808,8 @@ class SongProxy(QObject):
     def source(self) -> str:
         return getattr(self, "_source")
 
-    @QProperty(int, notify=downloadStatusChanged)
-    def downloadStatus(self) -> int:
+    @QProperty(int, notify=downloadStateChanged)
+    def downloadState(self) -> int:
         return getattr(self, "_downloadState")
 
     @QProperty(int, notify=downloadProgressChanged)
