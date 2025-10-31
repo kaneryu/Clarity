@@ -10,7 +10,13 @@ if typing.TYPE_CHECKING:
 from src.misc import cleanup, settings
 from src.misc.enumerations.Song import PlayingStatus
 from PySide6.QtCore import QThread, Slot
-from pypresence import Presence, ActivityType, StatusDisplayType, DiscordNotFound
+from pypresence import (
+    Presence,
+    ActivityType,
+    StatusDisplayType,
+    DiscordNotFound,
+    PipeClosed,
+)
 from workers import bgworker
 
 
@@ -73,7 +79,7 @@ class PresenceManagerThread(QThread):
 
     def reloadRPC(self):
         if not self.newPresence:
-            self.rpc = Presence(self.client_id)
+            self.rpc: Presence | None = Presence(self.client_id)
         else:
             self.rpc = self.newPresence
             self.newPresence = None
@@ -97,6 +103,8 @@ class PresenceManagerThread(QThread):
     #     self.jobs.put(self.onPlayingStatusChanged)
 
     def occasional_reconnect_try(self):
+        if self.rpc is None:
+            return
         try:
             self.rpc.connect()
             self.logger.info("Reconnected to Discord RPC", {"notifying": True})
@@ -127,6 +135,9 @@ class PresenceManagerThread(QThread):
             #     pass
             now = time.time()
             if (now - self._last_rpc_ts) >= self._rate_limit_seconds:
+                if self.rpc is None:
+                    if not bgworker.checkInOccasional(self.occasional_reconnect_try):
+                        self.reloadRPC()
                 if (
                     self.queue_instance.playingStatus == PlayingStatus.PLAYING
                     or self.queue_instance.playingStatus
@@ -143,6 +154,9 @@ class PresenceManagerThread(QThread):
                         self.clearPresence()
 
         # Shutdown RPC connection when stopping
+        if self.rpc is None:
+            self.logger.info("RPC is none during shutdown")
+            return
         try:
             self.rpc.close()
             self.logger.info("Discord RPC connection closed")
@@ -172,7 +186,7 @@ class PresenceManagerThread(QThread):
         return self.currentDetails is None
 
     def onNewSong(self):
-        if not self.enabled:
+        if not self.enabled or self.rpc is None:
             return
         if not hasattr(self, "rpc") or not self.queue_instance.currentSongObject:
             return
@@ -254,7 +268,7 @@ class PresenceManagerThread(QThread):
             self.clearPresence()
 
     def clearPresence(self):
-        if not hasattr(self, "rpc"):
+        if not hasattr(self, "rpc") or self.rpc is None:
             return
         try:
             now = time.time()
@@ -263,8 +277,14 @@ class PresenceManagerThread(QThread):
                     "Presence update throttled; will retry when window opens"
                 )
                 return
+            try:
+                self.rpc.clear()
+            except PipeClosed:
+                self.rpc.close()
+                del self.rpc
+                self.rpc = None
+                return
 
-            self.rpc.clear()
             self.currentDetails = None
             self._last_rpc_ts = now
             self.logger.info("Cleared Discord presence")

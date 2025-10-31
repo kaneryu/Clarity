@@ -640,8 +640,8 @@ class Song(QObject):
         elif self.playbackInfo.get("fromdownload", False):
             self.purge_playback()
 
-        audio = self.playbackInfo["audio"]
-        video = self.playbackInfo["video"]
+        audio = self.playbackInfo.get("audio", [])
+        video = self.playbackInfo.get("video", [])
 
         audio = audio[-1] if len(audio) > 0 else None
         video = video[-1] if len(video) > 0 else None
