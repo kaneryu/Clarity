@@ -78,6 +78,9 @@ class Album(QObject):
 
     def _set_info(self, rawAlbumDetails: dict) -> None:
         self.rawAlbumDetails = rawAlbumDetails
+        if rawAlbumDetails.get("cleanTracks") is not None:
+            # use clean tracks if available
+            rawAlbumDetails["tracks"] = rawAlbumDetails["cleanTracks"]
 
         assert (
             rawAlbumDetails["type"].lower() == "album"
@@ -109,7 +112,7 @@ class Album(QObject):
         self.trackList: list[dict] = [
             track
             for track in rawAlbumDetails["tracks"]
-            if track.get("videoId") is not None and track.get("isAvailable") == True
+            if track.get("videoId") is not None
         ]
         self.trackIdTitleMap: dict[Literal["id", "title"], str] = {
             track["videoId"]: track["title"] for track in self.trackList
@@ -219,6 +222,9 @@ class Album(QObject):
                 return
 
             self.rawData = await api.get_album(self.id)
+            rawCleanSongList = await api.get_album_songs_clean(self.id)
+
+            self.rawData["cleanTracks"] = rawCleanSongList
             self.cacheManager.put(identifier, json.dumps(self.rawData), byte=False)
         else:
             self.rawData = json.loads(cachedData)

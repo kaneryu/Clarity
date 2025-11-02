@@ -51,6 +51,7 @@ Item {
             qsTr("Search for a new artist"),
             qsTr("Search for a mood"),
             qsTr("Search for your friend's playlist"),
+            qsTr("Search for what makes you move"),
             qsTr("Search for anything")
         ]
         property int placeholderIndex: 0

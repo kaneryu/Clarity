@@ -146,9 +146,12 @@ class CacheManager:
             "last_used": lu,
             "statistics": st,
         }
-
-        with open(metadata_path, "w") as f:
-            json.dump(metadata, f, indent=4)
+        try:
+            with open(metadata_path, "w") as f:
+                json.dump(metadata, f, indent=4)
+        except Exception as e:
+            self.log.error(f"Error saving cache metadata: {e}")
+            # how'd that happen, lol
 
     def __metadataLoad(self):
         """Internal function, loads metadata."""
