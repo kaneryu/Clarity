@@ -343,7 +343,7 @@ async def search(
             duration = item["duration_seconds"]
             explicit = item["isExplicit"]
             song = universal.createSongMainThread(id)
-            universal.asyncBgworker.add_job_sync(song.get_info)
+            universal.asyncBgworker.addJob(song.get_info)
         except KeyError:
             return None
         return {

@@ -12,7 +12,7 @@ import os
 from src import paths
 from src.misc import settings
 from src.misc.enumerations.Network import OnlineStatus
-from src.workers import bgworker
+from src.workers import bgworker, TimedJobSettings
 
 from PySide6.QtCore import QObject, Signal, Slot, Property
 
@@ -39,11 +39,11 @@ class NetworkManager(QObject):
             )
 
         super().__init__()
-        self.logger = logging.getLogger("NetworkManager")
-        self.session = requests.Session()
-        self.timeout = 30  # Default timeout in seconds
+        self.logger: logging.Logger = logging.getLogger("NetworkManager")
+        self.session: requests.Session = requests.Session()
+        self.timeout: int = 30  # Default timeout in seconds
         self.proxy_config: Union[dict, None] = None
-        self.default_headers = {
+        self.default_headers: dict[str, str] = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9",
             # "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
@@ -64,8 +64,11 @@ class NetworkManager(QObject):
         NetworkManager._instance = self
         self.onlineStatus: OnlineStatus = OnlineStatus.ONLINE
 
-        bgworker.add_occasional_task(
-            self.occasionally_test_onlinemode, interval=10, dynamic_interval_max=60
+        bgworker.timed_job_manager.addTimedJob(
+            self.occasionally_test_onlinemode,
+            TimedJobSettings(
+                dynamic=True, base_interval=10, max_interval=60, growth_factor=1.5
+            ),
         )  # Max interval of 1 minute, run every 10 seconds to start
 
     def occasionally_test_onlinemode(self) -> bool:

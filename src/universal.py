@@ -117,7 +117,13 @@ os.environ["PATH"] = (
 from .workers import setup_workers
 
 setup_workers()
-from .workers import bgworker, asyncBgworker
+from .workers import (
+    bgworker,
+    asyncBgworker,
+    TimedJobSettings,
+    argfuncFactory,
+    asyncargfuncFactory,
+)
 
 from .misc import settings as settings_module
 

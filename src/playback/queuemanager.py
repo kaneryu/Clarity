@@ -345,11 +345,10 @@ class Queue(QObject):
     def _on_error(self, event):
         self.logger.error("Player Error")
         self.logger.error("Player error event: %s", event)
-        universal.bgworker.add_job(self.refetch)
+        universal.bgworker.addJob(self.refetch)
 
     # Finalize debounced Next presses: perform single play/stop
     def _finalize_next_sequence(self):
-        presses = self._next_press_count
         self._next_press_count = 0
         if self._next_press_exhausted:
             self._next_press_exhausted = False

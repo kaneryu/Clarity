@@ -133,7 +133,7 @@ class MpvMediaPlayer(QObject):
             self._noMrl = True
             self.songChanged.emit(-1)
             self.durationChanged.emit()
-            universal.bgworker.add_job(func=song.get_playback)
+            universal.bgworker.addJob(func=song.get_playback)
             return
 
         self._noMrl = False

@@ -1,16 +1,24 @@
-import threading  # noqa: F401
-import os
+import typing
+import asyncio
 import inspect
 import traceback
+import enum
 import time
-import asyncio
-import aiohttp
-import queue
-from typing import Any, Callable, Optional, overload, Dict, Literal, Union  # noqa: F401
 import logging
+import queue
+import aiohttp
+from dataclasses import dataclass
+import os
 
+from PySide6.QtCore import (
+    QObject,
+    QThread,
+    QRunnable,
+    QThreadPool,
+    QMutex,
+    QMutexLocker,
+)
 import ytmusicapi
-from PySide6.QtCore import QThread, QThreadPool, QRunnable
 
 from src.misc.compiled import __compiled__
 import src.misc.cleanup as cleanup
@@ -20,50 +28,228 @@ from src.paths import Paths
 mainThread: QThread = QThread.currentThread()
 
 
+globalLogger = logging.getLogger("BackgroundWorkerSystem")
+
+
+def argfuncFactory(func: typing.Callable, *args, **kwargs) -> typing.Callable:
+    """Create a callable wrapper that captures arguments for deferred execution.
+
+    Args:
+        func: The callable to wrap
+        *args: Positional arguments to pass to func
+        **kwargs: Keyword arguments to pass to func
+
+    Returns:
+        A no-argument callable that invokes func with the captured arguments
+    """
+    return lambda: func(*args, **kwargs)
+
+
+def asyncargfuncFactory(func: typing.Callable, *args, **kwargs) -> typing.Callable:
+    """Create an async callable wrapper that captures arguments for deferred execution.
+
+    Args:
+        func: The async callable to wrap
+        *args: Positional arguments to pass to func
+        **kwargs: Keyword arguments to pass to func
+    """
+
+    async def wrapper():
+        return await func(*args, **kwargs)
+
+    return wrapper
+
+
+class ExecutionPriority(enum.IntEnum):
+    LOW_PRIORITY = 0
+    MEDIUM_PRIORITY = 1
+    HIGH_PRIORITY = 2
+
+
 class JobRunnable(QRunnable):
-    def __init__(self, func, args, kwargs, logger):
+    """A QRunnable wrapper for executing functions in a thread pool.
+
+    Supports both synchronous and asynchronous callables. Optionally tracks
+    a root function reference for lock management.
+    """
+
+    def __init__(
+        self,
+        func: typing.Callable,
+        rootfunc: typing.Union[typing.Callable, None] = None,
+    ):
         super().__init__()
         self.func = func
-        self.args = args
-        self.kwargs = kwargs
-        self.logger = logger
+        self.rootfunc = rootfunc if rootfunc else func
+
+        self.completedCallback: typing.Union[typing.Callable, None] = None
 
     def run(self):
         try:
             if inspect.iscoroutinefunction(self.func):
-                # Handle coroutine functions
-                asyncio.run(self.func(*self.args, **self.kwargs))
+                asyncio.run(self.func())
             else:
-                # Handle synchronous functions
-                self.func(*self.args, **self.kwargs)
+                self.func()
         except Exception as e:
-            self.logger.error(
-                "Error executing job: %s, function: %s, args: %s, kwargs: %s",
-                e,
-                self.func,
-                self.args,
-                self.kwargs,
-            )
+            globalLogger.error(f"Error occurred while executing job: {e}")
             traceback.print_exc()
+        if self.completedCallback:
+            self.completedCallback()
 
 
-class ColockManager:
-    def __init__(self):
-        self.locks: Dict[Callable, queue.Queue[JobRunnable]] = {}
+@dataclass
+class TimedJobSettings:
+    """Configuration for a timed job with optional dynamic interval adjustment.
 
-    def __getitem__(self, func: Callable) -> queue.Queue[JobRunnable]:
-        if func not in self.locks:
-            self.locks[func] = queue.Queue()
-        return self.locks[func]
+    Attributes:
+        dynamic: If True, interval adjusts based on success/failure
+        base_interval: Minimum interval in seconds
+        max_interval: Maximum interval in seconds (for dynamic mode)
+        growth_factor: Multiplier for interval growth on failure (dynamic mode)
+        interval: Fixed interval in seconds (overrides dynamic if set)
+    """
 
-    def __setitem__(self, func: Callable, value: queue.Queue) -> None:
-        self.locks[func] = value
+    dynamic: bool
+
+    base_interval: int
+    max_interval: int
+    growth_factor: float
+
+    interval: typing.Optional[int] = None
+
+
+class TimedJobManager(QObject):
+    """Manages periodic jobs with optional dynamic interval adjustment.
+
+    Tracks jobs that should run at regular intervals. In dynamic mode,
+    intervals adjust based on whether jobs return True (success) or False (failure).
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.timed_jobs: typing.List[
+            typing.Tuple[typing.Callable, TimedJobSettings, int, int]
+        ] = []  # (func, settings, dynamicInterval, last_run_timestamp)
+
+        self.logger = logging.getLogger("TimedJobManager")
+
+    def addTimedJob(self, func: typing.Callable, settings: TimedJobSettings) -> None:
+        """Register a function to be executed periodically.
+
+        Args:
+            func: Callable to execute. If dynamic, should return bool indicating success
+            settings: Timing and behavior configuration
+        """
+        self.timed_jobs.append(
+            (func, settings, 0, 0)
+        )  # 0 is the initial last run timestamp
+
+    def removeTimedJob(self, func: typing.Callable) -> None:
+        """Unregister a timed job.
+
+        Args:
+            func: The callable previously registered with addTimedJob
+        """
+        self.timed_jobs = [
+            (f, s, di, lr) for (f, s, di, lr) in self.timed_jobs if f != func
+        ]
+
+    def checkInTimedJobs(self, func: typing.Callable) -> bool:
+        """Check if a callable is registered as a timed job.
+
+        Args:
+            func: The callable to check
+
+        Returns:
+            True if the callable is registered, False otherwise
+        """
+        for f, s, di, lr in self.timed_jobs:
+            if f == func:
+                return True
+        return False
+
+    def tick(self) -> typing.List[JobRunnable]:
+        """Check and prepare jobs that are due to run.
+
+        Returns:
+            List of JobRunnables ready for execution
+        """
+        current_time = int(time.time())
+        jobs_to_run: typing.List[JobRunnable] = []
+        for i, (func, settings, dynamicInterval, last_run) in enumerate(
+            self.timed_jobs
+        ):
+            if current_time - last_run >= (
+                settings.interval if settings.interval else dynamicInterval
+            ):
+                self.timed_jobs[i] = (func, settings, dynamicInterval, current_time)
+
+                if settings.dynamic:
+
+                    def wrapper(captured_func=func):
+                        success = False
+                        try:
+                            if inspect.iscoroutinefunction(captured_func):
+                                success = asyncio.run(captured_func())
+                            else:
+                                success = captured_func()
+
+                            if not isinstance(success, bool):
+                                success = False  # Default to False if not boolean
+                        except Exception as e:
+                            globalLogger.error(f"Error in timed job: {e}")
+                            traceback.print_exc()
+                        self.dynamic_result(captured_func, success)
+
+                    runnable = JobRunnable(wrapper, rootfunc=func)
+                    jobs_to_run.append(runnable)
+
+                else:
+                    runnable = JobRunnable(func)
+                    jobs_to_run.append(runnable)
+
+        self.logger.debug(
+            f"Timed jobs to run: {[job.rootfunc.__name__ for job in jobs_to_run]}"
+        )
+        return jobs_to_run
+
+    def dynamic_result(self, func: typing.Callable, success: bool) -> None:
+        """Update dynamic interval based on job result.
+
+        Args:
+            func: The callable that completed
+            success: Whether the job succeeded
+        """
+        for i, (f, settings, dynamicInterval, last_run) in enumerate(self.timed_jobs):
+            if f == func and settings.dynamic:
+                if success:
+                    try:
+                        dynamicInterval = max(
+                            settings.base_interval,
+                            int(dynamicInterval / settings.growth_factor),
+                        )
+                    except ZeroDivisionError:
+                        dynamicInterval = settings.base_interval
+                else:
+                    dynamicInterval = min(
+                        settings.max_interval,
+                        int(dynamicInterval * settings.growth_factor),
+                    )
+                self.timed_jobs[i] = (f, settings, dynamicInterval, last_run)
+                break
 
 
 class BackgroundWorker(QThread):
-    _instance: Union["BackgroundWorker", None] = None
+    """Singleton thread managing a priority queue of background jobs.
 
-    def __new__(self, /, *, max_threads: int = 10) -> "BackgroundWorker":
+    Executes jobs through a QThreadPool with priority levels. Supports
+    function locking to prevent concurrent execution of the same function
+    and timed jobs for periodic tasks.
+    """
+
+    _instance: typing.Union["BackgroundWorker", None] = None
+
+    def __new__(self) -> "BackgroundWorker":
         if (
             not hasattr(BackgroundWorker, "_instance")
             or BackgroundWorker._instance is None
@@ -73,237 +259,163 @@ class BackgroundWorker(QThread):
             ).__new__(BackgroundWorker)
         return BackgroundWorker._instance
 
-    def __init__(self, max_threads=10):
-        if hasattr(self, "initialized") and self.initialized:
-            return
-        self.initialized = True
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.thread_pool = QThreadPool.globalInstance()
+        self.priority_queue: queue.PriorityQueue = queue.PriorityQueue()
+        self.timed_job_manager = TimedJobManager()
 
-        QThread.__init__(self)
-        self.daemon = True
-        self.stopped = False
-        self.jobs = []  # list of {"func": function, "args": args, "kwargs": kwargs}
-        self.occasionalTasks = (
-            []
-        )  # list of {"func": function, "args": args, "kwargs": kwargs, "interval": seconds, "dynamic_interval_max": seconds, "last_run": timestamp}
-        self.colock: ColockManager = (
-            ColockManager()
-        )  # map of functions to their queues;
-        self.min_interval = 1  # Minimum interval for dynamic tasks
-        self.threadpool = QThreadPool.globalInstance()
-        self.threadpool.setMaxThreadCount(max_threads)
-        self.setObjectName("BackgroundWorker")
+        self.func_lock_set: typing.Set[typing.Callable] = set()
+        self.running_funcs: typing.List[typing.Callable] = []
+
         self.logger = logging.getLogger("BackgroundWorker")
-        cleanup.addCleanup(self.stop)
 
-    def run(self):
-        self.logger.info(
-            "BackgroundWorker started, alive: %s, max threads: %s",
-            self.isRunning(),
-            self.threadpool.maxThreadCount(),
-        )
-        while not self.stopped:
-            time.sleep(1 / 15)  # 15hz
-            for i in self.jobs.copy():
-                # Create a runnable job and submit it to the thread pool
-                job_runnable = JobRunnable(
-                    i["func"], i["args"], i["kwargs"], self.logger
-                )
-                if i["func"] in self.colock.locks:
-                    self.colock[i["func"]].put(job_runnable)
+        self.running_funcs_mutex = QMutex()
 
-                    def job_colock_runner(func=i["func"]):
-                        job = self.colock[func].get()
-                        job.run()
-                        self.colock[func].task_done()
+        self.running = False
 
-                    self.threadpool
+        self._job_counter = 0
+        self._counter_mutex = QMutex()
 
-                self.threadpool.start(job_runnable)
-                self.jobs.remove(i)
-            current_time = time.time()
-            for task in self.occasionalTasks:
-                if (
-                    current_time - task["last_run"] >= task["interval"]
-                    and not task["isRunning"]
-                ):
-                    job_runnable = JobRunnable(
-                        task["func"], task["args"], task["kwargs"], self.logger
-                    )
-                    self.threadpool.start(job_runnable)
-                    task["last_run"] = current_time
+        cleanup.addCleanup(self.shutdown)
 
-    def stop(self):
-        self.stopped = True
-        self.logger.info("BackgroundWorker stopped")
-        self.threadpool.waitForDone()
-        self.quit()
-
-    def add_job(self, func, colock: Optional[bool] = False, *args, **kwargs):
-        if colock:
-            self.colock[
-                func
-            ]  # will either create or get the queue (and do nothing with it)
-        job = {"func": func, "args": args, "kwargs": kwargs}
-        self.jobs.append(job)
-
-    @overload
-    def add_occasional_task(
-        self, func: Callable[..., Any], interval: int, *args, **kwargs
-    ): ...
-
-    @overload
-    def add_occasional_task(
-        self, func: Callable[..., bool], *, dynamic_interval_max: int, **kwargs
-    ): ...
-
-    def add_occasional_task(
+    def addJob(
         self,
-        func: Callable[..., Any],
-        interval: Optional[int] = None,
-        dynamic_interval_max: Optional[int] = None,
-        *args,
-        **kwargs,
+        func: typing.Union[typing.Callable, JobRunnable],
+        priority: ExecutionPriority = ExecutionPriority.MEDIUM_PRIORITY,
     ) -> None:
-        """Add a task to be run occasionally in the background.
-
-        The task can be scheduled to run at a fixed interval or with a dynamic interval that adjusts based on the task's success.
-        The task is not guaranteed to run at the exact interval, but will run as close to it as possible depending on system load and other factors.
-        \n
-        For a dynamic interval, the function must return a boolean indicating success (True) or failure (False).
-        If the function returns True, the interval doubles until it reaches the maximum specified by dynamic_interval_max.
-        If the function returns False, the interval resets to the maximum (set in BackgroundWorker.min_interval).
-        To enable dynamic interval, set dynamic_interval_max.
-        You can set the starting interval with interval
-        \n
+        """Queue a job for background execution.
 
         Args:
-            func (Callable[..., Any]): The function to run.
-            interval (Optional[int], optional): The interval in seconds to run the task. If dynamic interval is supplied, it's the growth rate and first interval. Defaults to None.
-            dynamic_interval_max (Optional[int], optional): The maximum dynamic interval in seconds. Defaults to None.
-
-        Raises:
-            TypeError: If both interval and dynamic_interval_max are provided.
-            TypeError: If the function does not have a return type of bool when using dynamic_interval_max.
-
-        Returns:
-            None
-
+            func: Callable or JobRunnable to execute
+            priority: Execution priority (LOW, MEDIUM, or HIGH)
         """
-        if interval is None and dynamic_interval_max is None:
-            raise TypeError(
-                "add_occasional_task() requires at least one of 'interval' or 'dynamic_interval_max'"
+        if isinstance(func, JobRunnable):
+            job = func
+        else:
+            job = JobRunnable(func)
+
+        with QMutexLocker(self._counter_mutex):
+            counter = self._job_counter
+            self._job_counter += 1
+
+        # Counter ensures FIFO order within same priority
+        self.priority_queue.put((priority.value, counter, job))
+        if isinstance(func, JobRunnable):
+            self.logger.info(
+                f"Job {func.rootfunc.__name__} added with priority {priority.name}"
+            )
+        else:
+            self.logger.info(
+                f"Job {job.func.__name__} added with priority {priority.name}"
             )
 
-        task = {
-            "func": func,
-            "args": args,
-            "kwargs": kwargs,
-            "interval": interval or 0,
-            "last_run": 0,
-            "dynamic_interval_max": dynamic_interval_max,
-            "isRunning": False,
-        }
+    def onJobStarted(self, job: JobRunnable) -> None:
+        with QMutexLocker(self.running_funcs_mutex):
+            self.running_funcs.append(job.rootfunc)
+            self.logger.info(f"Job {job.rootfunc.__name__} started")
 
-        if dynamic_interval_max is not None:
-            function_signature = inspect.signature(func)
-            return_annotation = function_signature.return_annotation
-            if (
-                return_annotation is inspect.Signature.empty
-                or return_annotation is not bool
-            ):
-                raise TypeError(
-                    "When using 'dynamic_interval_max', the function must have a return type of 'bool'"
-                )
-            task["start_interval"] = task["interval"]
-            base_interval = (
-                self.min_interval
-                if task["start_interval"] != 0
-                else task["start_interval"]
-            )
-            task["interval"] = base_interval  # Start with minimum interval
+    def onJobCompleted(self, job: JobRunnable) -> None:
+        with QMutexLocker(self.running_funcs_mutex):
+            if job.rootfunc in self.running_funcs:
+                self.running_funcs.remove(job.rootfunc)
+            self.logger.info(f"Job {job.rootfunc.__name__} completed")
 
-            def dynamic_task_wrapper():
-                base_interval = (
-                    self.min_interval
-                    if task["start_interval"] != 0
-                    else task["start_interval"]
-                )
-                task["isRunning"] = True
-                try:
-                    result = func(*args, **kwargs)
-                except Exception as e:
-                    self.logger.error(f"Error with job {func}, {e}")
-                    traceback.print_exc()
-
-                if isinstance(result, bool):
-                    if result:
-                        task["interval"] *= 2  # Double the interval if successful
-                        if task["interval"] > dynamic_interval_max:
-                            task["interval"] = (
-                                dynamic_interval_max  # Cap at max interval
-                            )
+    def run(self) -> None:
+        self.running = True
+        while self.running:
+            if not self.priority_queue.empty():
+                _, _, job = self.priority_queue.get()
+                with QMutexLocker(self.running_funcs_mutex):
+                    if job.rootfunc in self.func_lock_set:
+                        run_allowed = job.rootfunc not in self.running_funcs
                     else:
-                        task["interval"] = (
-                            base_interval  # If not, revert to min interval
-                        )
-                task["isRunning"] = False
-                return result
+                        run_allowed = True
+                if not run_allowed:
+                    self.logger.debug(
+                        f"Job {job.rootfunc.__name__} is already running, re-adding to queue"
+                    )
+                    self.addJob(job, ExecutionPriority.HIGH_PRIORITY)
+                    continue
+                job.completedCallback = lambda j=job: self.onJobCompleted(j)
+                self.thread_pool.start(job)
+                self.onJobStarted(job)
 
-            task["func"] = dynamic_task_wrapper
-        self.occasionalTasks.append(task)
+            timed_jobs = self.timed_job_manager.tick()
+            for job_func in timed_jobs:
+                with QMutexLocker(self.running_funcs_mutex):
+                    if job_func.rootfunc not in self.running_funcs:
+                        self.addJob(job_func, ExecutionPriority.LOW_PRIORITY)
+            self.msleep(100)  # Sleep briefly to prevent tight loop
 
-    def remove_occasional_task(self, func: Callable[..., Any]) -> None:
-        """Remove a previously added occasional task.
+    def addLockedFunction(self, func: typing.Callable) -> None:
+        """Mark a function to prevent concurrent execution.
+
+        When a function is locked, only one instance can run at a time.
+        Subsequent attempts are re-queued until the first completes.
 
         Args:
-            func (Callable[..., Any]): The function to remove from the occasional tasks.
-
-        Returns:
-            None
+            func: The callable to lock
         """
-        self.occasionalTasks = [
-            task for task in self.occasionalTasks if task["func"] != func
-        ]
+        self.func_lock_set.add(func)
 
-    def runnow(self, func) -> None:
-        runnable = JobRunnable(func, (), {}, self.logger)
-        self.threadpool.start(runnable, priority=1500)
+    def shutdown(self) -> None:
+        """Stop the worker thread and wait for completion."""
+        self.logger.info("Shutting down BackgroundWorker...")
+        self.running = False
+        self.wait(5000)  # Wait for thread to exit (5 sec timeout)
+        self.thread_pool.waitForDone()
 
 
-class Async_BackgroundWorker(QThread):
+class AsyncBackgroundWorker(QThread):
+    """Singleton thread managing an async event loop for concurrent I/O jobs.
 
-    _instance: Union["Async_BackgroundWorker", None] = None
+    Maintains an aiohttp session and ytmusicapi instance for efficient
+    network operations. Limits concurrent tasks to prevent resource exhaustion.
+    """
 
-    def __new__(cls, /, *, max_threads: int = 10) -> "Async_BackgroundWorker":
+    _instance: typing.Union["AsyncBackgroundWorker", None] = None
+
+    def __new__(cls) -> "AsyncBackgroundWorker":
         if (
-            not hasattr(Async_BackgroundWorker, "_instance")
-            or Async_BackgroundWorker._instance is None
+            not hasattr(AsyncBackgroundWorker, "_instance")
+            or AsyncBackgroundWorker._instance is None
         ):
-            Async_BackgroundWorker._instance = super(
-                Async_BackgroundWorker, cls
-            ).__new__(cls)
-        return Async_BackgroundWorker._instance
+            AsyncBackgroundWorker._instance = super(AsyncBackgroundWorker, cls).__new__(
+                cls
+            )
+        return AsyncBackgroundWorker._instance
 
-    def __init__(self):
-        if hasattr(self, "initialized") and self.initialized:
-            return
-        self.initialized = True
-        QThread.__init__(self)
-        self.daemon = True
-        self.stopped = False
-        self.jobs: asyncio.Queue = asyncio.Queue()  # Use asyncio.Queue to manage jobs
-        self.semaphore = asyncio.Semaphore(10)
-        self.setObjectName("Async_BackgroundWorker")
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.job_queue: asyncio.Queue = asyncio.Queue()
         self.logger = logging.getLogger("AsyncBackgroundWorker")
-        cleanup.addCleanup(self.stop)
+        self.running = False
 
-    def run(self):
-        self.event_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.event_loop)
-        self.event_loop.run_until_complete(self.Arun())
+        self.event_loop: typing.Union[asyncio.AbstractEventLoop, None] = None
 
-    async def Arun(self):
-        self.logger.info("Async_BackgroundWorker started, alive: %s", self.isRunning())
+        cleanup.addCleanup(self.shutdown)
+
+    def addJob(self, func: typing.Callable) -> None:
+        """Queue an async job for execution.
+
+        Args:
+            func: Async callable to execute in the event loop
+        """
+        self.job_queue.put_nowait(func)
+        self.logger.debug(f"Job {func.__name__} added to async queue")
+
+    def run(self) -> None:
+        asyncio.run(self.async_run())
+
+    async def async_run(self) -> None:
+        self.event_loop = asyncio.get_event_loop()
+        tasks: set[asyncio.Task] = set()
+        max_concurrent = 10
+        self.running = True
+
+        self.logger.info("AsyncBackgroundWorker started, alive: %s", self.isRunning())
         self.session = aiohttp.ClientSession()
         if not __compiled__:
             self.API = ytmusicapi.YTMusic(requests_session=self.session)
@@ -325,82 +437,52 @@ class Async_BackgroundWorker(QThread):
                 ),
             )
 
+        while self.running:
+            if len(tasks) >= max_concurrent:
+                done, tasks = await asyncio.wait(
+                    tasks, return_when=asyncio.FIRST_COMPLETED
+                )
+            try:
+                func = await asyncio.wait_for(self.job_queue.get(), timeout=1)
+            except TimeoutError:
+                continue
+            task = asyncio.create_task(self._run_job(func))
+            tasks.add(task)
+            task.add_done_callback(lambda t: tasks.discard(t))
+
+    async def _run_job(self, func: typing.Callable) -> None:
         try:
-            while not self.stopped:
-                await asyncio.sleep(1 / 60)  # 60hz
-                while not self.jobs.empty():
-                    job = await self.jobs.get()
-                    fun = job["func"]
-                    args = job["args"]
-                    kwargs = job["kwargs"]
-                    callback = job.get("cb")
-
-                    try:
-                        if asyncio.iscoroutinefunction(fun):
-                            async with self.semaphore:
-                                res = await asyncio.wait_for(
-                                    fun(*args, **kwargs), timeout=60
-                                )
-                                if callback:
-                                    callback(res)
-                        else:
-                            res = fun(*args, **kwargs)
-                            if callback:
-                                callback(res)
-                    except Exception as e:
-                        self.logger.error(
-                            "Error executing job: %s, function: %s, args: %s, kwargs: %s",
-                            e,
-                            fun,
-                            args,
-                            kwargs,
-                        )
-                        traceback.print_exc()
-                    finally:
-                        self.jobs.task_done()
-            print("")
+            if inspect.iscoroutinefunction(func):
+                await func()
+            else:
+                func()
+            self.logger.debug(f"Job {func.__name__} completed")
+        except Exception as e:
+            self.logger.error(f"Error in job {func.__name__}: {e}")
+            traceback.print_exc()
         finally:
-            await self.session.close()
-            self.logger.info("Async_BackgroundWorker session closed")
+            self.job_queue.task_done()
 
-    async def add_job(self, func, callback=None, *args, **kwargs):
-        job = {"func": func, "args": args, "kwargs": kwargs}
-        if callback:
-            job["cb"] = callback
-        await self.jobs.put(job)
-
-    def add_job_sync(
-        self, func, callback=None, usestar=True, a=[], kw={}, *args, **kwargs
-    ):
-        if usestar:
-            job = {"func": func, "args": args, "kwargs": kwargs}
-            if callback:
-                job["cb"] = callback
-            self.jobs.put_nowait(job)
-        else:
-            job = {"func": func, "args": a, "kwargs": kw}
-            if callback:
-                job["cb"] = callback
-            self.jobs.put_nowait(job)
-
-    def stop(self):
-        self.stopped = True
-        # Wait for all pending jobs to complete
-        while not self.event_loop.is_running():
-            time.sleep(1 / 15)
-
-        self.logger.info("Async_BackgroundWorker stopped")
-        self.quit()
+    def shutdown(self) -> None:
+        """Stop the async event loop and wait for completion."""
+        self.logger.info("Shutting down AsyncBackgroundWorker...")
+        self.running = False
+        self.wait(5000)
 
 
 bgworker: BackgroundWorker = None  # type: ignore
-asyncBgworker: Async_BackgroundWorker = None  # type: ignore
+asyncBgworker: AsyncBackgroundWorker = None  # type: ignore
 
 
 def setup_workers():
+    """Initialize and start the global background worker instances.
+
+    Creates both synchronous (bgworker) and asynchronous (asyncBgworker)
+    worker threads. Should be called once during application startup.
+    """
     global bgworker, asyncBgworker
     bgworker = BackgroundWorker()
     bgworker.start()
 
-    asyncBgworker = Async_BackgroundWorker()
+    asyncBgworker = AsyncBackgroundWorker()
     asyncBgworker.start()

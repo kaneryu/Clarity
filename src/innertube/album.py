@@ -174,7 +174,7 @@ class Album(QObject):
         tracklist = [song.Song(id) for id in idlist]
         for track in tracklist:
             if not track.dataStatus == DataStatus.LOADED:
-                universal.asyncBgworker.add_job_sync(track.get_info)
+                universal.asyncBgworker.addJob(track.get_info)
             track.downloadStateChanged.connect(self.songDownloadStatusChanged)
         self.songs = tracklist
         return self.songs
@@ -266,7 +266,7 @@ class Album(QObject):
             return
 
         for track in self.songs:
-            universal.asyncBgworker.add_job_sync(track.download)
+            universal.asyncBgworker.addJob(track.download)
         self.logger.info("Added all song downloads to queue")
 
 
@@ -285,7 +285,7 @@ def albumFromSong(song: song.Song) -> Union[Album, None]:
         return None
     albumInstance = Album(albumInfo)
     if albumInstance.dataStatus is not DataStatus.LOADED:
-        universal.asyncBgworker.add_job_sync(
+        universal.asyncBgworker.addJob(
             albumInstance.get_info, universal.asyncBgworker.API
         )
     return albumInstance
@@ -297,7 +297,7 @@ def albumFromSongID(songID: str) -> Union[Album, None]:
     ).result()
     albumInstance = Album(albumID) if albumID is not None else None
     if albumInstance is not None and albumInstance.dataStatus is not DataStatus.LOADED:
-        universal.asyncBgworker.add_job_sync(
+        universal.asyncBgworker.addJob(
             albumInstance.get_info, universal.asyncBgworker.API
         )
     return albumInstance

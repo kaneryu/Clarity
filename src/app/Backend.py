@@ -71,7 +71,7 @@ class Backend(QObject):
     # @Property(bool, notify=onlineChanged)
 
     def updateMaterialColors(self):
-        def task():
+        def updateMaterialColors_task():
             songobj = universal.queueInstance.currentSongObject
             thumb = songobj.smallestThumbailUrl  # type: ignore[attr-defined]
             res = networking.networkManager.get(thumb)
@@ -87,7 +87,7 @@ class Backend(QObject):
                 if obj is not None:
                     materialInterface.Theme.getInstance().update_dynamicColors(obj)
 
-        universal.bgworker.add_job(task)
+        universal.bgworker.addJob(updateMaterialColors_task)
 
     @Property(str, notify=urlChanged)
     def url(self):

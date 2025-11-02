@@ -213,7 +213,7 @@ class Song(QObject):
                 self.downloadStateChanged.emit(self._downloadState)
             self.get_info_cache_only()
 
-        universal.bgworker.add_job(_lazy_init)
+        universal.bgworker.addJob(_lazy_init)
         # self.moveToThread(g.mainThread)
 
         self.title: str = "Unknown Title"

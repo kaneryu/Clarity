@@ -153,7 +153,7 @@ class Interactions(QObject):
     @Slot(str)
     def downloadSong(self, id: str):
         song = universal.song_module.Song(id)
-        universal.asyncBgworker.add_job_sync(song.download)
+        universal.asyncBgworker.addJob(song.download)
 
     @Slot(str, result=QObject)
     def getSong(self, id: str):
@@ -162,8 +162,8 @@ class Interactions(QObject):
 
     @Slot(str, result=bool)
     def search(self, query: str) -> bool:
-        universal.asyncBgworker.add_job_sync(
-            func=universal.search_shorthand, usestar=False, a=[], kw={"query": query}
+        universal.asyncBgworker.addJob(
+            universal.asyncargfuncFactory(universal.search_shorthand, query=query)
         )
         return True
 
