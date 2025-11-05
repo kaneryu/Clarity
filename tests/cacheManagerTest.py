@@ -4,6 +4,7 @@ import os
 from src.cacheManager.cacheManager import CacheManager
 import time
 
+
 class TestCacheManager(unittest.TestCase):
     def setUp(self):
         self.cache_dir = "test_cache"
@@ -24,12 +25,12 @@ class TestCacheManager(unittest.TestCase):
         self.cache_manager.put("key2", "value2", byte=False, expiration=0)
         value = self.cache_manager.get("key2")
         self.assertEqual(value, False)
-        
+
     def test_put_persistent(self):
         self.cache_manager.put("key3", "value3", False, persistent=True)
         value = self.cache_manager._load_from_disk("key3")
         self.assertEqual(value, "value3")
-        
+
     def test_delete(self):
         self.cache_manager.put("key4", "value4", False)
         self.cache_manager.delete("key4")
@@ -47,12 +48,15 @@ class TestCacheManager(unittest.TestCase):
 
     def test_collect(self):
         self.cache_manager.put("key7", "value7", byte=False, expiration=0)
-        self.cache_manager.put("key8", "value8", byte=False, expiration=time.time() + 10000)
+        self.cache_manager.put(
+            "key8", "value8", byte=False, expiration=time.time() + 10000
+        )
         self.cache_manager.collect()
         value1 = self.cache_manager.get("key7")
         value2 = self.cache_manager.get("key8")
         self.assertEqual(value1, False)
         self.assertEqual(value2, "value8")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
