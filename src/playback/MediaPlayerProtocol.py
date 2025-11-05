@@ -48,7 +48,8 @@ class MediaPlayer(Protocol):
             is known (initial load, live → VOD resolution, stream quality migration).
         timeChanged(int seconds) : Throttled (implementation defined) playback clock.
             MUST monotonically increase unless seeking or restarting.
-        songChanged() : Active Song object changed or its resolved media (MRL) replaced.
+        songChanged(int) : Active Song object changed or its resolved media (MRL) replaced.
+        prevSongOnSongChange(QObject) : Previous Song object before songChanged emitted.
         endReached() : Natural media end (NOT emitted for manual stop()).
         errorOccurred(object) : Non‑recoverable backend error or unexpected failure.
             Payload SHOULD carry a backend specific event / exception object.
@@ -100,6 +101,7 @@ class MediaPlayer(Protocol):
     durationChanged: Any
     timeChanged: Any
     songChanged: Any  # MUST accept an int
+    prevSongOnSongChange: Any  # MUST accept a QObject
 
     endReached: Any
     errorOccurred: Any

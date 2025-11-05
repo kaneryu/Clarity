@@ -17,7 +17,18 @@ from src import universal as universal
 from src.innertube.song import Song
 from src.misc.enumerations.Song import PlayingStatus
 
+VLCSTATUS_MAP = {
+    vlc.State.Playing: PlayingStatus.PLAYING,
+    vlc.State.Paused: PlayingStatus.PAUSED,
+    vlc.State.Stopped: PlayingStatus.STOPPED,
+    vlc.State.Buffering: PlayingStatus.BUFFERING_LOCAL,
+    vlc.State.Opening: PlayingStatus.NOT_READY,
+    vlc.State.Ended: PlayingStatus.STOPPED,
+    vlc.State.Error: PlayingStatus.ERROR,
+}
 
+
+# noinspection PyUnresolvedReferences
 class VLCMediaPlayer(QObject):
     """Media playback engine using VLC implementing the MediaPlayer contract.
 
@@ -35,6 +46,7 @@ class VLCMediaPlayer(QObject):
     durationChanged = Signal()
     timeChanged = Signal(int)
     songChanged = Signal(int)
+    prevSongOnSongChange = Signal(QObject)  # payload: previous Song object
 
     # Lifecycle/control signals for the queue to react
     endReached = Signal()
@@ -55,13 +67,13 @@ class VLCMediaPlayer(QObject):
         ]
         self.instance: vlc.Instance = vlc.Instance(vlc_args)
 
-        def strToCtypes(s: str) -> ctypes.c_char_p:
+        def str_to_ctypes(s: str) -> ctypes.c_char_p:
             return ctypes.c_char_p(s.encode("utf-8"))
 
         vlc.libvlc_set_user_agent(
             self.instance,
-            strToCtypes(f"Clarity {str(universal.version)}"),
-            strToCtypes(
+            str_to_ctypes(f"Clarity {str(universal.version)}"),
+            str_to_ctypes(
                 f"Clarity/{str(universal.version)} Python/{platform.python_version()}"
             ),
         )
@@ -72,6 +84,7 @@ class VLCMediaPlayer(QObject):
         # Internal state
         self._playingStatus: PlayingStatus = PlayingStatus.STOPPED
         self._current_song: Optional[Song] = None
+        self._prev_song: Optional[Song] = None
         self._noMrl: bool = False
 
         # Throttle timers for events
@@ -97,16 +110,41 @@ class VLCMediaPlayer(QObject):
         self.eventManager.event_attach(
             vlc.EventType.MediaPlayerTimeChanged, self._on_time_changed_event
         )
+        self.eventManager.event_attach(
+            vlc.EventType.MediaStateChanged, self.update_playing_status
+        )
 
     # -------------------- Public properties --------------------
-    def isPlaying(self) -> bool:
+    def is_playing(self) -> bool:
         return self._playingStatus == PlayingStatus.PLAYING
 
     def get_playing_status(self) -> int:
         # If media not yet set, advertise NOT_READY
-        if self.player.get_media() is None:
-            return PlayingStatus.NOT_READY.value
-        return self._playingStatus.value
+        # Let's try just using VLC's state directly
+        vlc_state = self.player.get_state()
+        if vlc_state is vlc.State.Buffering:
+            if not self.is_playing():
+                return PlayingStatus.BUFFERING_LOCAL.value
+            else:
+                return PlayingStatus.PLAYING.value
+
+        return VLCSTATUS_MAP.get(vlc_state, PlayingStatus.ERROR).value
+
+        # if self.player.get_media() is None:
+        #     return PlayingStatus.NOT_READY.value
+        # return self._playingStatus.value
+
+    def update_playing_status(self) -> None:
+        vlc_state = self.player.get_state()
+        if vlc_state is vlc.State.Buffering:
+            if not self.is_playing():
+                self.set_playing_status(PlayingStatus.BUFFERING_LOCAL)
+            else:
+                self.set_playing_status(PlayingStatus.PLAYING)
+            return
+        self.set_playing_status(
+            VLCSTATUS_MAP.get(vlc_state, PlayingStatus.ERROR)
+        )
 
     def set_playing_status(self, value: PlayingStatus) -> None:
         if value not in PlayingStatus:
@@ -142,6 +180,7 @@ class VLCMediaPlayer(QObject):
             QTimer.singleShot(100, lambda: self.play(song))
             return
 
+        self._prev_song = self._current_song
         self._current_song = song
 
         # Stop/reset previous media to avoid VLC issues
@@ -153,7 +192,7 @@ class VLCMediaPlayer(QObject):
             self._do_play(song)
 
     def _do_play(self, song: Song):
-        def Media(mrl: str) -> vlc.Media:
+        def get_media(mrl: str) -> vlc.Media:
             media: vlc.Media = self.instance.media_new(mrl)
             media.add_option(
                 "http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Herring/97.1.8280.8"
@@ -163,23 +202,28 @@ class VLCMediaPlayer(QObject):
 
         url = song.get_best_playback_MRL()
         if url is None:
+            # noinspection PyPropertyAccess
             self.logger.info(
                 f"No MRL found for song ({song.id} - {song.title}), fetching now..."
             )
             self.set_playing_status(PlayingStatus.NOT_READY)
             self._noMrl = True
             self.songChanged.emit(-1)
+            if self._prev_song is not None:
+                self.prevSongOnSongChange.emit(self._prev_song)
             self.durationChanged.emit()
             universal.bgworker.addJob(func=song.get_playback)
             return
 
         self._noMrl = False
-        self.player.set_media(Media(url))
+        self.player.set_media(get_media(url))
         self.player.play()
         self.songChanged.emit(-1)
+        if self._prev_song is not None:
+            self.prevSongOnSongChange.emit(self._prev_song)
         self.durationChanged.emit()
 
-    def onSongMrlChanged(self, song: Song):
+    def on_song_mrl_changed(self, song: Song):
         if self._current_song is None:
             return
         if song == self._current_song:
@@ -217,10 +261,10 @@ class VLCMediaPlayer(QObject):
 
     def migrate(self, mrl: str):
         paused = self.player.is_playing() == 0
-        newMedia = self.instance.media_new(mrl)
+        new_media = self.instance.media_new(mrl)
         self.player.pause()
         t = self.player.get_time()
-        self.player.set_media(newMedia)
+        self.player.set_media(new_media)
         if not paused:
             self.player.play()
         else:

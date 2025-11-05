@@ -42,13 +42,13 @@
         "mediaPlayerBackend": {
             "value": "vlc",
             "type": "dropdown",
-            "description": "Media Player Backend to use. VLC is recommended for best compatibility. MPV is stable and will work in more situations. Qt is stable.",
+            "description": "Media Player Backend to use. VLC is recommended for best compatibility. Qt is stable, but may be a bit slower. MPV has some issues on certain systems.",
             "group": "Media Player",
             "hidden": false,
             "name": "Media Player Backend",
             "secure": false,
-            "dropdownOptions": ["vlc", "mpv", "qt"],
-            "visualDropdownOptions": ["VLC (Recommended)", "MPV (Stable)", "Qt (Stable)"]
+            "dropdownOptions": ["vlc", "qt", "mpv"],
+            "visualDropdownOptions": ["VLC (Recommended)", "Qt (Stable)",  "MPV (Experimental)"]
         }
     }
 }

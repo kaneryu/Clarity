@@ -156,7 +156,7 @@ class Queue(QObject):
         self.logger = logging.getLogger("Queue")
         self._pointer = 0
 
-        self._mutex = QMutex()
+        self.mutex = QMutex()
         self._queueAccessMutex = QMutex()
 
         self.loop: LoopType = LoopType.NONE
@@ -225,6 +225,13 @@ class Queue(QObject):
             song: Song = self.queue[prevpointer]
             song.playingStatusChanged.emit(PlayingStatus.NOT_PLAYING)
 
+    @Slot(QObject)
+    def songChangedPlaybackStatusUpdateObject(self, prevsong: Song):
+        if (
+            prevsong is not None
+        ):  # this is run when the previous song is actually changed by the media player
+            prevsong.playingStatusChanged.emit(PlayingStatus.NOT_PLAYING)
+
     def updateMediaPlayer(self, fallback: bool = True):
         backend = getSetting("mediaPlayerBackend").value
         setting = getSetting("mediaPlayerBackend")
@@ -279,6 +286,9 @@ class Queue(QObject):
         self._player.playingStatusChanged.connect(self._on_playing_status_changed)
         self._player.endReached.connect(self._on_end_reached)
         self._player.errorOccurred.connect(self._on_error)
+        self._player.prevSongOnSongChange.connect(
+            self.songChangedPlaybackStatusUpdateObject
+        )
 
     def swapPlayers(self, new_player: MediaPlayer):
         if not isinstance(new_player, MediaPlayer):
@@ -297,6 +307,9 @@ class Queue(QObject):
         old_player.playingStatusChanged.disconnect(self._on_playing_status_changed)
         old_player.endReached.disconnect(self._on_end_reached)
         old_player.errorOccurred.disconnect(self._on_error)
+        old_player.prevSongOnSongChange.disconnect(
+            self.songChangedPlaybackStatusUpdateObject
+        )
 
         # Switch to new player and wire it
         self._player = new_player
@@ -389,12 +402,12 @@ class Queue(QObject):
 
     @QProperty(bool, notify=playingStatusChanged)
     def isPlaying(self):
-        with QMutexLocker(self._mutex):
+        with QMutexLocker(self.mutex):
             return self._player.get_playing_status() == int(PlayingStatus.PLAYING)
 
     @QProperty(int, notify=playingStatusChanged)
     def playingStatus(self):
-        with QMutexLocker(self._mutex):
+        with QMutexLocker(self.mutex):
             return PlayingStatus(self._player.get_playing_status())
 
     @playingStatus.setter
@@ -419,17 +432,17 @@ class Queue(QObject):
 
     @QProperty(str, notify=songChanged)
     def currentSongTitle(self):
-        with QMutexLocker(self._mutex):
+        with QMutexLocker(self.mutex):
             return self.info(self.pointer)["title"]
 
     @QProperty(str, notify=songChanged)
     def currentSongChannel(self):
-        with QMutexLocker(self._mutex):
+        with QMutexLocker(self.mutex):
             return self.info(self.pointer)["uploader"]
 
     @QProperty(str, notify=songChanged)
     def currentSongDescription(self):
-        with QMutexLocker(self._mutex):
+        with QMutexLocker(self.mutex):
             return self.info(self.pointer)["description"]
 
     @QProperty(str, notify=songChanged)

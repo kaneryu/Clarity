@@ -36,6 +36,7 @@ class MpvMediaPlayer(QObject):
     durationChanged = Signal()
     timeChanged = Signal(int)
     songChanged = Signal(int)
+    prevSongOnSongChange = Signal(QObject)
 
     endReached = Signal()
     errorOccurred = Signal(object)
@@ -47,6 +48,7 @@ class MpvMediaPlayer(QObject):
         # Internal state
         self._status: PlayingStatus = PlayingStatus.STOPPED
         self._current_song: Optional[Song] = None
+        self._prev_song: Optional[Song] = None
         self._noMrl: bool = False
         self.__last_time_emit: float = 0.0
 
@@ -75,11 +77,11 @@ class MpvMediaPlayer(QObject):
 
         @self._mpv.event_callback("playback-restart")
         def on_playback_restart(event):  # noqa: ARG001
-            QTimer.singleShot(0, lambda: self.set_playing_status(PlayingStatus.PLAYING))
+            self.set_playing_status(PlayingStatus.PLAYING)
 
         @self._mpv.event_callback("log-message")
         def on_log_message(level, prefix, text):  # noqa: ARG001
-            QTimer.singleShot(0, lambda: self._emit_log(level, prefix, text))
+            self._emit_log(level, prefix, text)
 
         # Detect cache starvation: mpv sets pause when 'paused-for-cache' becomes True
         self._mpv.observe_property("paused-for-cache", self._on_paused_for_cache)
@@ -122,6 +124,7 @@ class MpvMediaPlayer(QObject):
 
     def play(self, song: Song) -> None:
         # Reset if mpv is in an odd transient state (handled by immediate load anyway)
+        self._prev_song = self._current_song
         self._current_song = song
 
         url = song.get_best_playback_MRL()
@@ -142,6 +145,7 @@ class MpvMediaPlayer(QObject):
         # Initial load is considered local buffering until playback restarts
         self.set_playing_status(PlayingStatus.BUFFERING_LOCAL)
         self.songChanged.emit(-1)
+        self.prevSongOnSongChange.emit(self._prev_song)
         self.durationChanged.emit()
 
     def onSongMrlChanged(self, song: Song) -> None:

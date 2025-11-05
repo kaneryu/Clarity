@@ -11,6 +11,16 @@ from src import universal as universal
 from src.innertube.song import Song
 from src.misc.enumerations.Song import PlayingStatus
 
+QTPLAYBACKSTATE_MAP = {
+    QMediaPlayer.PlaybackState.PlayingState: PlayingStatus.PLAYING,
+    QMediaPlayer.PlaybackState.PausedState: PlayingStatus.PAUSED,
+    QMediaPlayer.PlaybackState.StoppedState: PlayingStatus.STOPPED,
+
+    QMediaPlayer.MediaStatus.BufferingMedia: PlayingStatus.BUFFERING_LOCAL,
+    QMediaPlayer.MediaStatus.LoadingMedia: PlayingStatus.BUFFERING_LOCAL,
+    QMediaPlayer.MediaStatus.StalledMedia: PlayingStatus.BUFFERING_NETWORK,
+    QMediaPlayer.MediaStatus.EndOfMedia: PlayingStatus.STOPPED,
+}
 
 class QtMediaPlayer(QObject):
     """Media playback engine using QtMultimedia implementing the MediaPlayer contract.
@@ -25,6 +35,7 @@ class QtMediaPlayer(QObject):
     durationChanged = Signal()
     timeChanged = Signal(int)
     songChanged = Signal(int)
+    prevSongOnSongChange = Signal(QObject)
 
     endReached = Signal()
     errorOccurred = Signal(object)
@@ -36,6 +47,7 @@ class QtMediaPlayer(QObject):
         # State
         self._status: PlayingStatus = PlayingStatus.STOPPED
         self._current_song: Optional[Song] = None
+        self._prev_song: Optional[Song] = None
         self._noMrl: bool = False
         self.__last_time_emit: float = 0.0
 
@@ -51,6 +63,7 @@ class QtMediaPlayer(QObject):
         self._player.mediaStatusChanged.connect(self._onMediaStatus)
         self._player.positionChanged.connect(self._onPositionChanged)
         self._player.durationChanged.connect(lambda _=None: self.durationChanged.emit())
+        self._player.playbackStateChanged.connect(self.update_playing_status)
         # errorOccurred added in Qt6 API
         try:
             self._player.errorOccurred.connect(lambda err: self.errorOccurred.emit(err))  # type: ignore[attr-defined]
@@ -62,7 +75,12 @@ class QtMediaPlayer(QObject):
         return self._player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
 
     def get_playing_status(self) -> int:
-        return int(self._status)
+        return QTPLAYBACKSTATE_MAP.get(self._player.playbackState(), PlayingStatus.ERROR).value
+
+    def update_playing_status(self) -> None:
+        state = self._player.playbackState()
+        mapped_status = QTPLAYBACKSTATE_MAP.get(state, PlayingStatus.ERROR)
+        self.set_playing_status(mapped_status)
 
     def set_playing_status(self, value: PlayingStatus) -> None:
         if value != self._status:
@@ -92,6 +110,7 @@ class QtMediaPlayer(QObject):
         self._player.setSource(QUrl.fromLocalFile(mrl))
 
     def play(self, song: Song) -> None:
+        self._prev_song = self._current_song
         self._current_song = song
         url = song.get_best_playback_MRL()
         if url is None:
@@ -108,6 +127,7 @@ class QtMediaPlayer(QObject):
         self._noMrl = False
         self._set_source(url)
         self._player.play()
+        self.prevSongOnSongChange.emit(self._prev_song)
         self.songChanged.emit(-1)
         self.durationChanged.emit()
 
