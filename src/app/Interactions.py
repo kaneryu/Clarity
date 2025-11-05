@@ -76,27 +76,27 @@ class Interactions(QObject):
 
     @Property(str, notify=songChanged)
     def currentSongChannel(self):
-        with QMutexLocker(universal.queueInstance._mutex):
+        with QMutexLocker(universal.queueInstance.mutex):
             return universal.queueInstance.currentSongChannel
 
     @Property(int, notify=songChanged)
     def currentSongTime(self):
-        with QMutexLocker(universal.queueInstance._mutex):
+        with QMutexLocker(universal.queueInstance.mutex):
             return universal.queueInstance.currentSongTime
 
     @Property(int, notify=durationChanged)
     def currentSongDuration(self):
-        with QMutexLocker(universal.queueInstance._mutex):
+        with QMutexLocker(universal.queueInstance.mutex):
             return universal.queueInstance.currentSongDuration
 
     @Property(str, notify=songChanged)
     def songFinishesAt(self):
-        with QMutexLocker(universal.queueInstance._mutex):
+        with QMutexLocker(universal.queueInstance.mutex):
             return universal.queueInstance.songFinishesAt
 
     @Property(str, notify=songChanged)
     def currentSongId(self):
-        with QMutexLocker(universal.queueInstance._mutex):
+        with QMutexLocker(universal.queueInstance.mutex):
             return universal.queueInstance.currentSongId
 
     @Property(QObject, notify=songChanged)
