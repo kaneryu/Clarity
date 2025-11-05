@@ -408,6 +408,11 @@ async def search(
                 if p == None:
                     continue
                 model._newResult(p)
+        if model.rowCount(QModelIndex()) == 0 or model._data == []:
+            logging.getLogger("SearchLogger").info(
+                f"No results found for {query}", {"notifying": True}
+            )
+            return model
     except Exception as e:
         logging.getLogger("SearchLogger").error(
             f"Failed searching for {query}, Error: " + str(e)
