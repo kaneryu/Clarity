@@ -182,12 +182,19 @@ class TimedJobManager(QObject):
             if current_time - last_run >= (
                 settings.interval if settings.interval else dynamicInterval
             ):
-                self.timed_jobs[i] = (func, settings, dynamicInterval, current_time)
+                self.timed_jobs[i] = (
+                    func,
+                    settings,
+                    dynamicInterval,
+                    current_time + 3500000,
+                )  # temporarily block re-running by setting last_run far in future
 
                 if settings.dynamic:
 
                     def wrapper(captured_func=func):
                         success = False
+                        # We're also going to update the last run time here because this is when it's actually run
+                        self.updateLastRan(captured_func)
                         try:
                             if inspect.iscoroutinefunction(captured_func):
                                 success = asyncio.run(captured_func())
@@ -205,6 +212,19 @@ class TimedJobManager(QObject):
                     jobs_to_run.append(runnable)
 
                 else:
+
+                    def default_wrapper(captured_func=func):
+                        # We're also going to update the last run time here because this is when it's actually run
+                        self.updateLastRan(captured_func)
+                        try:
+                            if inspect.iscoroutinefunction(captured_func):
+                                asyncio.run(captured_func())
+                            else:
+                                captured_func()
+                        except Exception as e:
+                            globalLogger.error(f"Error in timed job: {e}")
+                            traceback.print_exc()
+
                     runnable = JobRunnable(func)
                     jobs_to_run.append(runnable)
 
@@ -212,6 +232,18 @@ class TimedJobManager(QObject):
             f"Timed jobs to run: {[job.rootfunc.__name__ for job in jobs_to_run]}"
         )
         return jobs_to_run
+
+    def updateLastRan(self, func: typing.Callable) -> None:
+        """Update the last run timestamp for a timed job.
+
+        Args:
+            func: The callable whose last run time to update
+        """
+        current_time = int(time.time())
+        for i, (f, settings, dynamicInterval, last_run) in enumerate(self.timed_jobs):
+            if f == func:
+                self.timed_jobs[i] = (f, settings, dynamicInterval, current_time)
+                break
 
     def dynamic_result(self, func: typing.Callable, success: bool) -> None:
         """Update dynamic interval based on job result.
