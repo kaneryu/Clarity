@@ -8,6 +8,7 @@ import os
 import json
 import collections
 from hashlib import md5
+from dataclasses import dataclass, asdict
 
 import io
 import logging
@@ -42,6 +43,16 @@ def getdataStore(name: str) -> "DataStore":
     return dataStores[name] if name in dataStores else DataStore(name)
 
 
+@dataclass
+class DataStoreStatistics:
+    hits: int = 0
+    misses: int = 0
+    saves: int = 0
+    evictons: int = 0
+    deletions: int = 0
+    size: int = 0
+
+
 class DataStore:
     def __init__(self, name: str, directory: str = ""):
         """Initialize the DataStore.
@@ -65,14 +76,7 @@ class DataStore:
         else:
             self.directory = directory
 
-        self.statistics = {
-            "hits": 0,
-            "misses": 0,
-            "saves": 0,
-            "evictons": 0,  # keeps track of how many items have been evicted
-            "deletions": 0,  # keeps track of how many items have been deleted, including evictions
-            "size": 0,
-        }
+        self.statistics = DataStoreStatistics()
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
 
@@ -95,7 +99,7 @@ class DataStore:
         cpm = json.dumps(self.__dataStore_path_map)
         md = json.dumps(self.metadata)
         lu = json.dumps(self.last_used, default=self.ordered_dict_to_dict)
-        st = json.dumps(self.statistics)
+        st = json.dumps(asdict(self.statistics))
         version = 2
 
         metadata_path = os.path.join(
@@ -123,7 +127,15 @@ class DataStore:
             return False
 
         with open(metadata_path, "r") as f:
-            metadata = json.load(f)
+            try:
+                metadata = json.load(f)
+            except json.JSONDecodeError:
+                self.logging.error("metadata file corrupted")
+                self.last_used = collections.OrderedDict()
+                self.statistics = DataStoreStatistics()
+                self.metadata = {}
+                self.integrityCheck(restore=True)
+                return False
 
         if not "version" in metadata:
             self.logging.error("metadata version not found")
@@ -137,7 +149,7 @@ class DataStore:
         self.last_used = json.loads(
             metadata["last_used"], object_pairs_hook=collections.OrderedDict
         )
-        self.statistics = json.loads(metadata["statistics"])
+        self.statistics = DataStoreStatistics(**json.loads(metadata["statistics"]))
 
     def __wfsetup(
         self,
@@ -148,7 +160,7 @@ class DataStore:
     ):
 
         estimated_size = len(value) if isinstance(value, (str, bytes)) else 0
-        if self.statistics["size"] + estimated_size > self.max_size:
+        if self.statistics.size + estimated_size > self.max_size:
             self.logging.warning("dataStore full")
 
         if any(c in key for c in ["\\", "/", ":", "*", "?", '"', "<", ">", "|", " "]):
@@ -183,9 +195,9 @@ class DataStore:
             "bytes": byte,
             "dict": dictmode,
         }
-        self.statistics["size"] += s
+        self.statistics.size += s
         self.metadata[key]["size"] = s
-        self.statistics["saves"] += 1
+        self.statistics.saves += 1
         self.__metadataSave()
 
     def write_file(
@@ -281,7 +293,7 @@ class DataStore:
         """
         if not key in self.__dataStore_path_map:
             self.logging.debug("dataStore miss: " + key)
-            self.statistics["misses"] += 1
+            self.statistics.misses += 1
             return False
         elif not os.path.exists(
             self.__dataStore_path_map[key]
@@ -291,7 +303,7 @@ class DataStore:
                 f"key {key} was orphaned (data was deleted but reference still exists)"
             )
             self.logging.debug("dataStore miss: " + key)
-            self.statistics["misses"] += 1
+            self.statistics.misses += 1
             return False
 
         b = self.metadata[key].get("bytes", False)
@@ -299,7 +311,7 @@ class DataStore:
 
         self.last_used.move_to_end(key)
         value = self.__dataStore_path_map[key]
-        self.statistics["hits"] += 1
+        self.statistics.hits += 1
         self.metadata[key]["accessCount"] += 1
         with open(value, "r" if not b else "rb") as file:
             value = file.read()
@@ -317,8 +329,8 @@ class DataStore:
         """
         if key in self.__dataStore_path_map:
             try:
-                self.statistics["size"] -= self.metadata[key]["size"]
-                self.statistics["deletions"] += 1
+                self.statistics.size -= self.metadata[key]["size"]
+                self.statistics.deletions += 1
                 if os.path.exists(self.__dataStore_path_map[key]):
                     os.remove(self.__dataStore_path_map[key])
                 del self.__dataStore_path_map[key]
@@ -374,8 +386,7 @@ class DataStore:
                         "dict": False,
                         "size": size_on_disk,
                     }
-                    # Update aggregate size
-                    self.statistics["size"] += size_on_disk
+                    self.statistics.size += size_on_disk
                     restored_any = True
                 else:
                     # Sync path and metadata details
@@ -384,7 +395,7 @@ class DataStore:
 
                     prev_size = md.get("size", 0)
                     if prev_size != size_on_disk:
-                        self.statistics["size"] += size_on_disk - prev_size
+                        self.statistics.size += size_on_disk - prev_size
                         md["size"] = size_on_disk
                         restored_any = True
 
@@ -443,7 +454,7 @@ class DataStore:
 
         if not key in self.__dataStore_path_map:
             self.logging.debug("dataStore miss: " + key)
-            self.statistics["misses"] += 1
+            self.statistics.misses += 1
             return False
         elif not os.path.exists(
             self.__dataStore_path_map[key]
@@ -453,14 +464,14 @@ class DataStore:
                 f"key {key} was orphaned (data was deleted but reference still exists)"
             )
             self.logging.debug("dataStore miss: " + key)
-            self.statistics["misses"] += 1
+            self.statistics.misses += 1
             return False
         try:
             self.last_used.move_to_end(key)
         except KeyError:
             self.last_used[key] = time.time()
 
-        self.statistics["hits"] += 1
+        self.statistics.hits += 1
         self.last_used[key] = time.time()
         self.__metadataSave()
 
@@ -472,7 +483,7 @@ class DataStore:
         Returns:
             dict: The statistics of the dataStore
         """
-        return self.statistics
+        return asdict(self.statistics)
 
     def checkFileExists(self, key: str) -> bool:
         """Check if an item is in the dataStore.
