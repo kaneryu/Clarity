@@ -1,21 +1,41 @@
-# filepath: src/innertube/player.py
+# filepath: src/playback/VlcPlayer.py
 from __future__ import annotations
 
+import sys
 import time
 import logging
 import platform
 import ctypes
+import  os
+import subprocess
 
 
 from typing import Optional, Protocol, Union, runtime_checkable, Any
 
 from PySide6.QtCore import QObject, Signal, SignalInstance, Slot, Qt, QTimer
 
-import vlc  # type: ignore[import-untyped]
-
 from src import universal as universal
 from src.innertube.song import Song
 from src.misc.enumerations.Song import PlayingStatus
+from src.paths import Paths
+from src.playback.MediaPlayerProtocol import MediaPlayer
+
+def _import_vlc():
+    os.environ["PYTHON_VLC_LIB_PATH"] = os.path.join(Paths.ASSETSPATH, "libs", "vlc", "libvlc.dll")
+    os.environ["PYTHON_VLC_MODULE_PATH"] = os.path.join(Paths.ASSETSPATH, "libs", "vlc", "plugins")
+
+    cache_gen_path = os.path.join(Paths.ASSETSPATH, "libs", "vlc", "vlc_cache_gen.exe")
+    if os.path.exists(cache_gen_path):
+        try:
+            subprocess.run([cache_gen_path, os.path.abspath(os.path.join(Paths.ASSETSPATH, "libs", "vlc", "plugins"))], check=True)
+        except subprocess.CalledProcessError as e:
+            logging.error("Failed to generate VLC plugin cache: %s", e)
+
+    import vlc
+    return vlc
+
+vlc = _import_vlc()
+
 
 VLCSTATUS_MAP = {
     vlc.State.Playing: PlayingStatus.PLAYING,
@@ -111,11 +131,11 @@ class VLCMediaPlayer(QObject):
             vlc.EventType.MediaPlayerTimeChanged, self._on_time_changed_event
         )
         self.eventManager.event_attach(
-            vlc.EventType.MediaStateChanged, self.update_playing_status
+            vlc.EventType.MediaStateChanged, self._on_state_changed_event
         )
 
     # -------------------- Public properties --------------------
-    def is_playing(self) -> bool:
+    def isPlaying(self) -> bool:
         return self._playingStatus == PlayingStatus.PLAYING
 
     def get_playing_status(self) -> int:
@@ -123,7 +143,7 @@ class VLCMediaPlayer(QObject):
         # Let's try just using VLC's state directly
         vlc_state = self.player.get_state()
         if vlc_state is vlc.State.Buffering:
-            if not self.is_playing():
+            if not self.isPlaying():
                 return PlayingStatus.BUFFERING_LOCAL.value
             else:
                 return PlayingStatus.PLAYING.value
@@ -137,7 +157,7 @@ class VLCMediaPlayer(QObject):
     def update_playing_status(self) -> None:
         vlc_state = self.player.get_state()
         if vlc_state is vlc.State.Buffering:
-            if not self.is_playing():
+            if not self.isPlaying():
                 self.set_playing_status(PlayingStatus.BUFFERING_LOCAL)
             else:
                 self.set_playing_status(PlayingStatus.PLAYING)
@@ -167,7 +187,7 @@ class VLCMediaPlayer(QObject):
             return 0
 
     # -------------------- Control API --------------------
-    def play(self, song: Song):
+    def play(self, song: Song) -> None:
         # If player is in a transient or error state, retry shortly
         if self.player.get_state() in [
             vlc.State.Error,
@@ -223,7 +243,7 @@ class VLCMediaPlayer(QObject):
             self.prevSongOnSongChange.emit(self._prev_song)
         self.durationChanged.emit()
 
-    def on_song_mrl_changed(self, song: Song):
+    def onSongMrlChanged(self, song: Song) -> None:
         if self._current_song is None:
             return
         if song == self._current_song:
@@ -242,24 +262,24 @@ class VLCMediaPlayer(QObject):
                     )
 
     @Slot()
-    def pause(self):
+    def pause(self) -> None:
         self.player.pause()
 
     @Slot()
-    def resume(self):
+    def resume(self) -> None:
         self.player.play()
 
     @Slot()
-    def stop(self):
+    def stop(self) -> None:
         self.player.stop()
         # Let Queue decide what to do with WinSMTC, we only emit status via events
 
     @Slot()
-    def reload(self):
+    def reload(self) -> None:
         if self._current_song is not None:
             self.play(self._current_song)
 
-    def migrate(self, mrl: str):
+    def migrate(self, mrl: str) -> None:
         paused = self.player.is_playing() == 0
         new_media = self.instance.media_new(mrl)
         self.player.pause()
@@ -288,7 +308,6 @@ class VLCMediaPlayer(QObject):
             raise ValueError("Time must be between 0 and video length")
         if self.player.get_media() is not None:
             self.player.set_time(seek_time_ms)
-            time.sleep(0.1)
             self._on_play_event(None)
         else:
             raise ValueError("No Media Loaded")
@@ -337,6 +356,11 @@ class VLCMediaPlayer(QObject):
             self.logger.debug("Time Changed Event")
         # Emit timeline in seconds
         self.timeChanged.emit(self.current_time_s())
+
+    def _on_state_changed_event(self, event):
+        self.logger.info("State Changed Event")
+        print(event)
+        self.update_playing_status()
 
     def _on_song_finished(self, event):
         self.logger.info("Song Finished")

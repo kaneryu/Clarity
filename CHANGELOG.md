@@ -1,3 +1,10 @@
+# 0.50.0
+
+## New Features
+
+- add update_playing_status method to media players, also package libvlc with clarity. -- kaneryu on 2025-11-14
+
+
 # 0.49.15
 
 

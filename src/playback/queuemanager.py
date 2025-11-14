@@ -238,27 +238,27 @@ class Queue(QObject):
 
         if backend == "vlc" and not isinstance(self._player, VLCMediaPlayer):
             try:
-                self.swapPlayers(VLCMediaPlayer())
+                self.swapPlayers(VLCMediaPlayer())  # type: ignore[arg-type]
                 setting.value = "vlc"
-
             except Exception as e:
                 self.logger.exception("Failed to initialize vlc backend: %s", e)
                 if fallback and self._player is None:
-                    self.swapPlayers(MpvMediaPlayer())
+                    self.swapPlayers(MpvMediaPlayer())  # type: ignore[arg-type]
+                traceback.print_exc()
         elif backend == "mpv":
             try:
                 if not isinstance(self._player, MpvMediaPlayer):
-                    self.swapPlayers(MpvMediaPlayer())
+                    self.swapPlayers(MpvMediaPlayer())  # type: ignore[arg-type]
                 setting.value = "mpv"
             except Exception as e:
                 self.logger.exception("Failed to initialize mpv backend: %s", e)
                 traceback.print_exc()
                 if fallback and self._player is None:
-                    self.swapPlayers(VLCMediaPlayer())
+                    self.swapPlayers(VLCMediaPlayer())  # type: ignore[arg-type]
         elif backend == "qt":
             try:
                 if not isinstance(self._player, QtMediaPlayer):
-                    self.swapPlayers(QtMediaPlayer())
+                    self.swapPlayers(QtMediaPlayer())  # type: ignore[arg-type]
                 setting.value = "qt"
 
             except Exception as e:
@@ -266,10 +266,10 @@ class Queue(QObject):
                     "Failed to initialize QtMultimedia backend: %s", e
                 )
                 if fallback and self._player is None:
-                    self.swapPlayers(MpvMediaPlayer())
+                    self.swapPlayers(MpvMediaPlayer())  # type: ignore[arg-type]
         elif fallback and self._player is None:
             self.swapPlayers(
-                MpvMediaPlayer()
+                MpvMediaPlayer()  # type: ignore[arg-type]
             )  # Default to MPV if no valid backend is set
 
         if backend is not self._player.NAME:

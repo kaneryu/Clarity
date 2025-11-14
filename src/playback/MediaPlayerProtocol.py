@@ -9,11 +9,6 @@ import ctypes
 
 from typing import Optional, Protocol, Union, runtime_checkable, Any
 
-from PySide6.QtCore import QObject, Signal, SignalInstance, Slot, Qt, QTimer
-
-import vlc  # type: ignore[import-untyped]
-
-from src import universal as universal
 from src.innertube.song import Song
 from src.misc.enumerations.Song import PlayingStatus
 
@@ -112,6 +107,11 @@ class MediaPlayer(Protocol):
     def get_playing_status(self) -> int:
         """Return the current PlayingStatus as an int (QML/consumer compatibility)."""
 
+    def update_playing_status(self) -> None:
+        """Query the underlying backend for its current state and update the internal
+        PlayingStatus accordingly, emitting playingStatusChanged if it differs.
+        Could be called periodically (e.g., timer), but should be called backend events."""
+
     def set_playing_status(self, value: PlayingStatus) -> None:
         """Force internal state machine to a new PlayingStatus and emit playingStatusChanged.
         Should only be used internally by implementations."""
@@ -135,33 +135,26 @@ class MediaPlayer(Protocol):
     def destroy(self) -> None:
         """Clean up resources, stop playback, disconnect signals, prepare for deletion."""
 
-    @Slot()
     def pause(self) -> None:
         """Pause playback if playing. No-op if already paused or not ready."""
 
-    @Slot()
     def resume(self) -> None:
         """Resume playback if paused / buffering completion allows. No-op if already playing."""
 
-    @Slot()
     def stop(self) -> None:
         """Stop playback (status transitions to STOPPED). Must NOT emit endReached()."""
 
-    @Slot()
     def reload(self) -> None:
         """Recreate / rebind the underlying backend media for the current Song (error recovery)."""
 
     def migrate(self, mrl: str) -> None:
         """Hot-swap underlying media resource while attempting to preserve playback position."""
 
-    @Slot(int)
     def seek(self, seconds: int) -> None:
         """Absolute seek to the given second offset. Raises ValueError if out of bounds."""
 
-    @Slot(int)
     def aseek(self, seconds: int) -> None:
         """Relative seek by delta seconds (negative allowed). Bounds clamped / validated."""
 
-    @Slot(int)
     def pseek(self, percentage: int) -> None:
         """Seek to percentage (0-100) of total duration. Raises ValueError if outside range."""

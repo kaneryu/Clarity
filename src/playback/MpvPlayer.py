@@ -103,6 +103,27 @@ class MpvMediaPlayer(QObject):
     def get_playing_status(self) -> int:
         return int(self._status)
 
+    def update_playing_status(self) -> None:
+        if self._mpv is None:
+            self.set_playing_status(PlayingStatus.STOPPED)
+            return
+
+        try:
+            idle = bool(self._mpv.core_idle)
+            paused = bool(self._mpv.pause)
+            pfc = bool(getattr(self._mpv, "paused_for_cache", False))
+        except Exception:
+            idle, paused, pfc = True, False, False
+
+        if idle:
+            self.set_playing_status(PlayingStatus.STOPPED)
+        elif pfc:
+            self.set_playing_status(PlayingStatus.BUFFERING_NETWORK)
+        elif paused:
+            self.set_playing_status(PlayingStatus.PAUSED)
+        else:
+            self.set_playing_status(PlayingStatus.PLAYING)
+
     def set_playing_status(self, value: PlayingStatus) -> None:
         if value != self._status:
             self._status = value
