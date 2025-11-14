@@ -1,8 +1,9 @@
 # Changes Since Last Release
 
-- (0.49.6) streamline presence recconect, and potentially fix bug with it. -- kaneryu on 2025-10-08
-- (0.49.5) bug where queuemanager doesn't convert playingstatus int to playingstatus enum value -- kaneryu on 2025-10-08
-- (0.49.4) revert completely to using legacy versioning files, and update most_recent_changelog behavior. -- kaneryu on 2025-10-08
-- (0.49.3) fix endless RecursionError in songproxy -- kaneryu on 2025-10-07
-- (0.49.2) restore previous versioning behavior (not previous changlog behavior, though) -- kaneryu on 2025-10-06
-- (0.49.1) update DownloadStatus references to DownloadState in album and song modules -- kaneryu on 2025-10-06
+- (0.49.14) Fix interactions to use the new renamed mutex variable -- kaneryu on 2025-11-05
+- (0.49.13) Improve search transparency by logging when no results were added to the model, not just when no results were returned from the search. -- kaneryu on 2025-11-05
+- (0.49.12) add previous song signal, change how getting playback status works to rely on the player's status instead of tracking it ourself (for VLC and QT only, not MPV) -- kaneryu on 2025-11-05
+- (0.49.11) fix bug where dynamic timed jobs interval doesn't increase -- kaneryu on 2025-11-04
+- (0.49.9) albums now fetch a 'clean' song list, when possible. -- kaneryu on 2025-11-01
+- (0.49.8) handle missing audio and video keys in playbackInfo to prevent KeyError -- kaneryu on 2025-10-31
+- (0.49.7) fix bug in autochangelog where it would include too many commits in most_recent_changelog -- kaneryu on 2025-10-08

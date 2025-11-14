@@ -1,3 +1,58 @@
+# 0.49.15
+
+
+# 0.49.14
+
+## Bugfixes
+
+- Fix interactions to use the new renamed mutex variable -- kaneryu on 2025-11-05
+
+
+# 0.49.13
+
+## Bugfixes
+
+- Improve search transparency by logging when no results were added to the model, not just when no results were returned from the search. -- kaneryu on 2025-11-05
+
+
+# 0.49.12
+
+## Bugfixes
+
+- add previous song signal, change how getting playback status works to rely on the player's status instead of tracking it ourself (for VLC and QT only, not MPV) -- kaneryu on 2025-11-05
+
+
+# 0.49.11
+
+## Bugfixes
+
+- fix bug where dynamic timed jobs interval doesn't increase -- kaneryu on 2025-11-04
+
+
+# 0.49.10
+
+
+# 0.49.9
+
+## Bugfixes
+
+- albums now fetch a 'clean' song list, when possible. -- kaneryu on 2025-11-01
+
+
+# 0.49.8
+
+## Bugfixes
+
+- handle missing audio and video keys in playbackInfo to prevent KeyError -- kaneryu on 2025-10-31
+
+
+# 0.49.7
+
+## Bugfixes
+
+- fix bug in autochangelog where it would include too many commits in most_recent_changelog -- kaneryu on 2025-10-08
+
+
 # 0.49.6
 
 ## Bugfixes

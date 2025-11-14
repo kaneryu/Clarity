@@ -127,5 +127,4 @@ def main():
     os.environ["POST_COMMIT_RUNNING"] = "0"
 
 
-# main()
-print(autochangelog.create_changelog()[1])
+main()
