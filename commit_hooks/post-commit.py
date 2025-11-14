@@ -90,7 +90,7 @@ def main():
         if line.startswith("# nuitka-project: --file-version="):
             lines[i] = f"# nuitka-project: --file-version={version}\n"
         if line.startswith("# nuitka-project: --file-description="):
-            lines[i] = f'# nuitka-project: --file-description="Clarity v{version}"'
+            lines[i] = f'# nuitka-project: --file-description="Clarity v{version}"\n'
 
     with open("run.py", "w") as f:
         f.writelines(lines)

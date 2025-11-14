@@ -12,7 +12,8 @@
 # nuitka-project: --include-data-file=./phantomjs.exe=./phantomjs.exe
 # nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
 
-# nuitka-project: --file-description="Clarity v0.49.15"# nuitka-project: --copyright="This is free and open-source software — GNU GPL v3"
+# nuitka-project: --file-description="Clarity v0.49.15"
+# nuitka-project: --copyright="This is free and open-source software — GNU GPL v3"
 # nuitka-project: --windows-product-name="Clarity"
 
 # nuitka-project: --product-version=0.49.15
