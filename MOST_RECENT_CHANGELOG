@@ -1,0 +1,5 @@
+# Changes Since Last Release
+
+- (0.50.0) add update_playing_status method to media players, also package libvlc with clarity. -- kaneryu on 2025-11-14
+fix bug where not all songs would be added to results -- kaneryu on 2025-12-22
+make all bugfixes display under the same (major.minor.0) instead of each displaying under their own heading, and add a test mode -- kaneryu on 2025-12-22

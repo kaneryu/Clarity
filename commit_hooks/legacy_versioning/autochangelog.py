@@ -6,7 +6,13 @@ Generates both full changelog and most recent changelog for CI/CD.
 import logging
 from typing import Dict, List, Tuple
 from packaging.version import Version
-from .version_utils import (
+
+if __name__ == "__main__":
+    import sys
+
+    sys.path.append("commit_hooks/legacy_versioning")
+
+from version_utils import (
     get_commit_history_detailed,
     parse_detailed_commit,
     is_git_repository,
@@ -86,12 +92,12 @@ def get_dict_changelog() -> Dict[str, List[Dict[str, str]]]:
                 current_version = f"{major}.{minor}.{patch}"
                 if current_version not in changelog:
                     changelog[current_version] = []
-        elif commit_increment_details["inc"] == "patch":
-            patch += commit_increment_details["amt"]
-            if commit_increment_details["amt"] > 0:
-                current_version = f"{major}.{minor}.{patch}"
-                if current_version not in changelog:
-                    changelog[current_version] = []
+        # elif commit_increment_details["inc"] == "patch":
+        #     patch += commit_increment_details["amt"]
+        #     if commit_increment_details["amt"] > 0:
+        #         current_version = f"{major}.{minor}.{patch}"
+        #         if current_version not in changelog:
+        #             changelog[current_version] = []
 
         # Append commit to current version (FIXED: no longer overwrites)
         changelog[current_version].append(
@@ -225,7 +231,7 @@ def create_changelog() -> Tuple[str, str]:
     return (changelog_str, most_recent_changelog)
 
 
-def write_changelog() -> None:
+def write_changelog(test=False) -> None:
     """
     Generate and write changelog files to disk.
     Creates CHANGELOG and MOST_RECENT_CHANGELOG files.
@@ -234,14 +240,18 @@ def write_changelog() -> None:
         changelog_full, changelog_recent = create_changelog()
 
         # Write full changelog
-        with open("CHANGELOG", "w", encoding="utf-8") as f:
+        with open("CHANGELOG" + ("_test" if test else ""), "w", encoding="utf-8") as f:
             f.write(changelog_full)
-        logger.info("Successfully wrote CHANGELOG")
+        logger.info("Successfully wrote CHANGELOG" + ("_test" if test else ""))
 
         # Write most recent changelog
-        with open("MOST_RECENT_CHANGELOG", "w", encoding="utf-8") as f:
+        with open(
+            "MOST_RECENT_CHANGELOG" + ("_test" if test else ""), "w", encoding="utf-8"
+        ) as f:
             f.write(changelog_recent)
-        logger.info("Successfully wrote MOST_RECENT_CHANGELOG")
+        logger.info(
+            "Successfully wrote MOST_RECENT_CHANGELOG" + ("_test" if test else "")
+        )
 
     except IOError as e:
         logger.error(f"Failed to write changelog files: {e}")
@@ -249,3 +259,7 @@ def write_changelog() -> None:
     except Exception as e:
         logger.error(f"Unexpected error while generating changelog: {e}")
         raise
+
+
+if __name__ == "__main__":
+    write_changelog(test=True)
