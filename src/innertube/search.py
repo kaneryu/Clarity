@@ -307,7 +307,7 @@ async def search_suggestions(query: str, detailed=True) -> list | dict:
 async def search(
     query: str,
     filter: SearchFilters | None = None,
-    limit: int = 20,
+    limit: int = 40,
     ignore_spelling: bool = False,
     model: Union[BasicSearchResultsModel, None] = None,
 ) -> Union[BasicSearchResultsModel, None]:
@@ -340,11 +340,12 @@ async def search(
             else:
                 parentId = ""
 
-            duration = item["duration_seconds"]
-            explicit = item["isExplicit"]
+            duration = item.get("duration_seconds", 0)
+            # explicit = item.get("isExplicit", False)
             song = universal.createSongMainThread(id)
             universal.asyncBgworker.addJob(song.get_info)
         except KeyError:
+            logging.getLogger("SearchLogger").error(f"Failed parsing song item: {item}")
             return None
         return {
             "type": type_,

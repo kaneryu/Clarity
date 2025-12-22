@@ -1,5 +1,6 @@
 # Changes Since Last Release
 
+- (0.50.1) fix bug where not all songs would be added to results -- kaneryu on 2025-12-22
 - (0.50.0) add update_playing_status method to media players, also package libvlc with clarity. -- kaneryu on 2025-11-14
 - (0.49.14) Fix interactions to use the new renamed mutex variable -- kaneryu on 2025-11-05
 - (0.49.13) Improve search transparency by logging when no results were added to the model, not just when no results were returned from the search. -- kaneryu on 2025-11-05

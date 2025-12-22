@@ -1,3 +1,10 @@
+# 0.50.1
+
+## Bugfixes
+
+- fix bug where not all songs would be added to results -- kaneryu on 2025-12-22
+
+
 # 0.50.0
 
 ## New Features
