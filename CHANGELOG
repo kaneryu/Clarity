@@ -1,3 +1,10 @@
+# 0.51.0
+
+## New Features
+
+- migrate to provider-based song architecture with separated data models -- kaneryu on 2026-01-11
+
+
 # 0.50.0
 
 ## New Features
