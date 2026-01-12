@@ -17,7 +17,7 @@ from pypresence import (
     DiscordNotFound,
     PipeClosed,
 )
-from workers import bgworker, TimedJobSettings
+import workers
 
 
 class PresenceManagerThread(QThread):
@@ -44,7 +44,7 @@ class PresenceManagerThread(QThread):
 
         self.currentDetails: dict[str, typing.Any] | None = None
 
-        self.reconnectTrySettings = TimedJobSettings(
+        self.reconnectTrySettings = workers.TimedJobSettings(
             dynamic=True, base_interval=30, max_interval=300, growth_factor=1.5
         )
 
@@ -87,13 +87,14 @@ class PresenceManagerThread(QThread):
         else:
             self.rpc = self.newPresence
             self.newPresence = None
+
         try:
             self.rpc.connect()
             self.logger.info("Discord RPC connected")
         except Exception as e:
             self.logger.error(f"Failed to connect to Discord: {e}")
             if isinstance(e, DiscordNotFound):
-                bgworker.timed_job_manager.addTimedJob(
+                workers.bgworker.timed_job_manager.addTimedJob(
                     self.occasional_reconnect_try, self.reconnectTrySettings
                 )  # Try reconnecting every 30 seconds
             return
@@ -114,7 +115,9 @@ class PresenceManagerThread(QThread):
             self.logger.info("Reconnected to Discord RPC", {"notifying": True})
             if self.enabled and self.queue_instance.isPlaying:
                 self.onNewSong()
-            bgworker.timed_job_manager.removeTimedJob(self.occasional_reconnect_try)
+            workers.bgworker.timed_job_manager.removeTimedJob(
+                self.occasional_reconnect_try
+            )
         except Exception as e:
             self.logger.warning(f"Reconnection to Discord RPC failed: {e}")
 
@@ -140,7 +143,7 @@ class PresenceManagerThread(QThread):
             now = time.time()
             if (now - self._last_rpc_ts) >= self._rate_limit_seconds:
                 if self.rpc is None:
-                    if not bgworker.timed_job_manager.checkInTimedJobs(
+                    if not workers.bgworker.timed_job_manager.checkInTimedJobs(
                         self.occasional_reconnect_try
                     ):
                         self.reloadRPC()

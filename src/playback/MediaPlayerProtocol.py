@@ -1,15 +1,9 @@
 # filepath: src/innertube/player.py
 from __future__ import annotations
 
-import time
-import logging
-import platform
-import ctypes
+from typing import Protocol, runtime_checkable, Any
 
-
-from typing import Optional, Protocol, Union, runtime_checkable, Any
-
-from src.innertube.song import Song
+from src.innertube import Song
 from src.misc.enumerations.Song import PlayingStatus
 
 
@@ -110,7 +104,8 @@ class MediaPlayer(Protocol):
     def update_playing_status(self) -> None:
         """Query the underlying backend for its current state and update the internal
         PlayingStatus accordingly, emitting playingStatusChanged if it differs.
-        Could be called periodically (e.g., timer), but should be called backend events."""
+        Could be called periodically (e.g., timer), but should be called backend events.
+        """
 
     def set_playing_status(self, value: PlayingStatus) -> None:
         """Force internal state machine to a new PlayingStatus and emit playingStatusChanged.

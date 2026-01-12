@@ -54,7 +54,7 @@ class DataStoreStatistics:
 
 
 class DataStore:
-    def __init__(self, name: str, directory: str = ""):
+    def __init__(self, name: str, directory: str = "", tag: str = ""):
         """Initialize the DataStore.
         Note that this dataStore is long-term persistent only
         Args:
@@ -62,10 +62,12 @@ class DataStore:
             name (str): Name for the dataStore.
         """
         self.max_size = 1000000000  # 1GB
-        self.__dataStore_path_map: dict[str, str] = {}
+        self.__dataStore_path_map: dict[str, str] = {}  # key -> path map
         self.metadata: dict[str, dict] = {}
         self.last_used: collections.OrderedDict = collections.OrderedDict()
         self.name = name or ""
+
+        self.tag = tag or ""  # Optional tag for the dataStore
 
         if directory == "":
             self.directory = (

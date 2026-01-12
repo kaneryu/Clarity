@@ -84,7 +84,7 @@ def main():
     theme.get_dynamicColors(0x1A1D1D, True, 0.0)
     engineSetup(engine, theme, backend, interactions)
 
-    myappid = f"oss.clarity.music_player.{str(universal.version)}"
+    myappid = f"oss.clarity.music_player"
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     engine.quit.connect(app.quit)
@@ -119,7 +119,7 @@ def debug():
     theme.get_dynamicColors(0x1A1D1D, True, 0.0)
     engineSetup(engine, theme, backend, interactions)
 
-    myappid = f"oss.clarity.music_player.{str(universal.version)}"
+    myappid = f"oss.clarity.music_player"
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     engine.quit.connect(app.quit)

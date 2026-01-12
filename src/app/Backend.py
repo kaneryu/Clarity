@@ -73,7 +73,7 @@ class Backend(QObject):
     def updateMaterialColors(self):
         def updateMaterialColors_task():
             songobj = universal.queueInstance.currentSongObject
-            thumb = songobj.smallestThumbailUrl  # type: ignore[attr-defined]
+            thumb = songobj.smallestThumbnailUrl  # type: ignore[attr-defined]
             res = networking.networkManager.get(thumb)
             if res is None:
                 return

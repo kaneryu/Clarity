@@ -202,9 +202,18 @@ class BasicSearchResultsModel(QAbstractListModel):
             data["creator"],
             Qt.ItemDataRole.UserRole + 2,
         )
-        self.setData(
-            self.index(len(self._data) - 1, 0), data["id"], Qt.ItemDataRole.UserRole + 3
-        )
+        if not isinstance(data["id"], str):
+            self.setData(
+                self.index(len(self._data) - 1, 0),
+                str(data["id"]),
+                Qt.ItemDataRole.UserRole + 3,
+            )
+        else:
+            self.setData(
+                self.index(len(self._data) - 1, 0),
+                data["id"],
+                Qt.ItemDataRole.UserRole + 3,
+            )
         self.setData(
             self.index(len(self._data) - 1, 0),
             data["duration"],
@@ -329,7 +338,9 @@ async def search(
             type_ = "song"
             title = item.get("title", "")
             creator = item["artists"][0]["id"] if item.get("artists", None) else ""
-            id = item["videoId"] if item.get("videoId", None) else item["browseId"]
+            id = universal.NamespacedTypedIdentifier.from_string(
+                f"youtube:song:{item['videoId']}"
+            )
 
             if item.get("album", None) is not None:
                 parentId = (
@@ -354,7 +365,7 @@ async def search(
             "id": id,
             "parentId": parentId,
             "duration": duration,
-            "object": universal.song_module.Song(id),
+            "object": song,
         }
 
     def parseVideo(item: dict):
@@ -399,7 +410,7 @@ async def search(
                 continue  # TEMPORARY BEHAVIOR
             else:
                 resultType = result["resultType"].lower()
-            if resultType == "song":
+            if resultType == "song" or resultType == "video":
                 p = parseSong(result)
                 if p == None:
                     continue

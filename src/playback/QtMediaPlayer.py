@@ -5,22 +5,22 @@ import time
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, Slot, QUrl
-from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput, QMediaFormat
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 
 from src import universal as universal
-from src.innertube.song import Song
+from src.innertube import Song
 from src.misc.enumerations.Song import PlayingStatus
 
 QTPLAYBACKSTATE_MAP = {
     QMediaPlayer.PlaybackState.PlayingState: PlayingStatus.PLAYING,
     QMediaPlayer.PlaybackState.PausedState: PlayingStatus.PAUSED,
     QMediaPlayer.PlaybackState.StoppedState: PlayingStatus.STOPPED,
-
     QMediaPlayer.MediaStatus.BufferingMedia: PlayingStatus.BUFFERING_LOCAL,
     QMediaPlayer.MediaStatus.LoadingMedia: PlayingStatus.BUFFERING_LOCAL,
     QMediaPlayer.MediaStatus.StalledMedia: PlayingStatus.BUFFERING_NETWORK,
     QMediaPlayer.MediaStatus.EndOfMedia: PlayingStatus.STOPPED,
 }
+
 
 class QtMediaPlayer(QObject):
     """Media playback engine using QtMultimedia implementing the MediaPlayer contract.
@@ -75,7 +75,9 @@ class QtMediaPlayer(QObject):
         return self._player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
 
     def get_playing_status(self) -> int:
-        return QTPLAYBACKSTATE_MAP.get(self._player.playbackState(), PlayingStatus.ERROR).value
+        return QTPLAYBACKSTATE_MAP.get(
+            self._player.playbackState(), PlayingStatus.ERROR
+        ).value
 
     def update_playing_status(self) -> None:
         state = self._player.playbackState()
@@ -112,7 +114,7 @@ class QtMediaPlayer(QObject):
     def play(self, song: Song) -> None:
         self._prev_song = self._current_song
         self._current_song = song
-        url = song.get_best_playback_MRL()
+        url = song.get_best_playback_mrl()
         if url is None:
             self.logger.info(
                 f"No MRL found for song ({song.id} - {getattr(song, 'title', song.id)}), fetching now..."
@@ -154,7 +156,7 @@ class QtMediaPlayer(QObject):
     def reload(self) -> None:
         if self._current_song is None:
             return
-        url = self._current_song.get_best_playback_MRL()
+        url = self._current_song.get_best_playback_mrl()
         if not url:
             return
         pos = self._player.position()

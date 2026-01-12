@@ -186,7 +186,7 @@ ytheaders.json
 .idea/
 settings.json
 test.py
-src/app/assets/libs/
+src/app/assets/libs/libmpv-2.dll
 debug_album+*.json
 starthere.txt
 *.aprof

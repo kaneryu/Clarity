@@ -1,12 +1,8 @@
-import time
-from datetime import datetime, timedelta
 import json
 import asyncio
-import io
-import enum
 import os
 import logging
-from typing import Union, Literal, Any
+from typing import Union, Literal
 
 from PySide6.QtCore import (
     Property as QProperty,
@@ -33,7 +29,8 @@ from src.misc.enumerations.Album import DownloadStatus
 from src.misc.enumerations.Song import DownloadState as SongDownloadState
 from src.misc.enumerations import DataStatus
 
-from src.innertube.models.songListModel import SongListModel, SongProxyListModel
+from src.innertube.song import SongListModel, SongProxyListModel
+from src.innertube.globalModels import NamespacedTypedIdentifier, SimpleIdentifier
 
 
 def run_sync(func, *args, **kwargs):
@@ -171,7 +168,10 @@ class Album(QObject):
 
         idlist = list(self.trackIdTitleMap.keys())
 
-        tracklist = [song.Song(id) for id in idlist]
+        tracklist = [
+            song.Song(NamespacedTypedIdentifier.from_string(f"youtube:song:{id}"))
+            for id in idlist
+        ]
         for track in tracklist:
             if not track.dataStatus == DataStatus.LOADED:
                 universal.asyncBgworker.addJob(track.get_info)

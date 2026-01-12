@@ -2,7 +2,7 @@ import time
 import logging
 import traceback
 
-from typing import TYPE_CHECKING, Union, Any, cast
+from typing import Union
 
 from PySide6.QtCore import (
     Property as QProperty,
@@ -10,26 +10,29 @@ from PySide6.QtCore import (
     Slot,
     Qt,
     QObject,
-    QSize,
     QModelIndex,
     QPersistentModelIndex,
     QAbstractListModel,
     QMutex,
     QMutexLocker,
     QTimer,
-    QThread,
 )
+from misc.enumerations import DataStatus
 
 from src import universal as universal
-from src import cacheManager
 from src.misc.enumerations.Queue import LoopType
-from src.misc.settings import Settings, getSetting
+from src.misc.settings import getSetting
 import src.discotube.presence as presence
 import src.wintube.winSMTC as winSMTC
 
 # Import Song and PlayingStatus without creating circular imports.
 # song.py must not import Queue; it should use g.queueInstance when needed.
 from src.innertube.song import Song, PlayingStatus
+from src.innertube import (
+    SimpleIdentifier,
+    NamespacedIdentifier,
+    NamespacedTypedIdentifier,
+)
 from src.innertube.album import Album
 from playback.MediaPlayerProtocol import MediaPlayer
 from src.playback.VlcPlayer import VLCMediaPlayer
@@ -63,7 +66,7 @@ class QueueModel(QAbstractListModel):
         if role == Qt.ItemDataRole.UserRole + 3:
             return "placeholder"
         if role == Qt.ItemDataRole.UserRole + 4:
-            return self._queue[index.row()].id
+            return str(self._queue[index.row()].nsid)
         if role == Qt.ItemDataRole.UserRole + 5:
             return index.row()
         return None
@@ -504,10 +507,12 @@ class Queue(QObject):
         self.play()
 
     @Slot(str)
-    def goToSong(self, id: str):
-        if not id in self.queue:
+    def goToSong(self, id: Union[str, NamespacedTypedIdentifier]):
+        if isinstance(id, str):
+            id = NamespacedTypedIdentifier.from_string(id)
+        if str(id) in self.queueIds:
             self.add(id)
-        self.pointer = self.queueIds.index(id)  # type: ignore[attr-defined]
+        self.pointer = self.queueIds.index(str(id))  # type: ignore[attr-defined]
         self.play()
 
     @Slot()
@@ -626,8 +631,13 @@ class Queue(QObject):
             "description": song_.description,
         }
 
-    def add(self, id: str, index: int = -1, goto: bool = False):
-        s: Song = Song(id=id)
+    def add(
+        self,
+        id: Union[str, NamespacedTypedIdentifier, NamespacedIdentifier],
+        index: int = -1,
+        goto: bool = False,
+    ):
+        s: Song = Song(id)
 
         # Insert song into model immediately (even if metadata isn't loaded yet)
         insert_index = len(self.queue) if index == -1 else index
@@ -635,15 +645,15 @@ class Queue(QObject):
         self.queueModel.setData(
             self.queueModel.index(insert_index), s, Qt.ItemDataRole.EditRole
         )
-        self.queueIds.insert(insert_index, s.id)
+        self.queueIds.insert(insert_index, str(s.ntid))
 
         # If metadata needs to be fetched, do it asynchronously
-        if s.source is None:
+        if s.dataStatus == DataStatus.NOTLOADED:
 
             def on_info_fetched():
                 # When metadata arrives, notify the model that this row changed
                 try:
-                    row_index = self.queueIds.index(s.id)
+                    row_index = self.queueIds.index(str(s.ntid))
                     model_index = self.queueModel.index(row_index)
                     self.queueModel.dataChanged.emit(model_index, model_index)
                     self.logger.debug(f"Song metadata loaded: {s.title}")
@@ -655,7 +665,7 @@ class Queue(QObject):
             s.songInfoFetched.connect(on_info_fetched)
 
             # Submit async task without blocking
-            coro = s.get_info(universal.asyncBgworker.API)
+            coro = s.get_info()
             if hasattr(universal.asyncBgworker, "run_coroutine_threadsafe"):
                 universal.asyncBgworker.run_coroutine_threadsafe(coro)
             else:
@@ -671,9 +681,11 @@ class Queue(QObject):
 
         s.playbackReadyChanged.connect(lambda: self.songMrlChanged(s))
 
-    def gotoOrAdd(self, id: str):
+    def gotoOrAdd(
+        self, id: Union[str, NamespacedTypedIdentifier, NamespacedIdentifier]
+    ):
         if id in self.queueIds:  # type: ignore[operator]
-            self.pointer = self.queueIds.index(id)  # type: ignore[attr-defined]
+            self.pointer = self.queueIds.index(str(id))  # type: ignore[attr-defined]
             self.play()
         else:
             self.add(id, goto=False)
@@ -704,7 +716,7 @@ def addAlbumToQueue(album: Album, goto: bool = False):
     q = universal.queueInstance
     start_index = len(q.queue)
     for song in album.songs:
-        q.add(song.id)
+        q.add(song.nsid)
     if goto and len(album.songs) > 0:
         q.pointer = start_index
         q.play()

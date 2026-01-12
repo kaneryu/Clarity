@@ -1,40 +1,57 @@
 # filepath: src/playback/VlcPlayer.py
 from __future__ import annotations
 
-import sys
 import time
 import logging
 import platform
 import ctypes
-import  os
+import os
 import subprocess
 
 
-from typing import Optional, Protocol, Union, runtime_checkable, Any
+from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtCore import QObject, Signal, SignalInstance, Slot, Qt, QTimer
+from PySide6.QtCore import QObject, Signal, Slot, QTimer
 
 from src import universal as universal
-from src.innertube.song import Song
+from src.innertube import Song
 from src.misc.enumerations.Song import PlayingStatus
 from src.paths import Paths
-from src.playback.MediaPlayerProtocol import MediaPlayer
+
+if TYPE_CHECKING:
+    import vlc
+
 
 def _import_vlc():
-    os.environ["PYTHON_VLC_LIB_PATH"] = os.path.join(Paths.ASSETSPATH, "libs", "vlc", "libvlc.dll")
-    os.environ["PYTHON_VLC_MODULE_PATH"] = os.path.join(Paths.ASSETSPATH, "libs", "vlc", "plugins")
+    os.environ["PYTHON_VLC_LIB_PATH"] = os.path.join(
+        Paths.ASSETSPATH, "libs", "vlc", "libvlc.dll"
+    )
+    os.environ["PYTHON_VLC_MODULE_PATH"] = os.path.join(
+        Paths.ASSETSPATH, "libs", "vlc", "plugins"
+    )
 
-    cache_gen_path = os.path.join(Paths.ASSETSPATH, "libs", "vlc", "vlc_cache_gen.exe")
+    cache_gen_path = os.path.join(Paths.ASSETSPATH, "libs", "vlc", "vlc-cache-gen.exe")
     if os.path.exists(cache_gen_path):
         try:
-            subprocess.run([cache_gen_path, os.path.abspath(os.path.join(Paths.ASSETSPATH, "libs", "vlc", "plugins"))], check=True)
+            subprocess.run(
+                [
+                    cache_gen_path,
+                    os.path.abspath(
+                        os.path.join(Paths.ASSETSPATH, "libs", "vlc", "plugins")
+                    ),
+                ],
+                check=True,
+            )
         except subprocess.CalledProcessError as e:
             logging.error("Failed to generate VLC plugin cache: %s", e)
 
     import vlc
+
     return vlc
 
-vlc = _import_vlc()
+
+if not TYPE_CHECKING:
+    vlc = _import_vlc()
 
 
 VLCSTATUS_MAP = {
@@ -84,8 +101,11 @@ class VLCMediaPlayer(QObject):
             "verbose=1",
             "vv",
             "log-verbose=3",
+            "file-logging="
+            + os.path.join(Paths.ASSETSPATH, "libs", "vlc", "vlc_log.txt"),
         ]
         self.instance: vlc.Instance = vlc.Instance(vlc_args)
+        self.instance.add_intf("logger")
 
         def str_to_ctypes(s: str) -> ctypes.c_char_p:
             return ctypes.c_char_p(s.encode("utf-8"))
@@ -162,9 +182,7 @@ class VLCMediaPlayer(QObject):
             else:
                 self.set_playing_status(PlayingStatus.PLAYING)
             return
-        self.set_playing_status(
-            VLCSTATUS_MAP.get(vlc_state, PlayingStatus.ERROR)
-        )
+        self.set_playing_status(VLCSTATUS_MAP.get(vlc_state, PlayingStatus.ERROR))
 
     def set_playing_status(self, value: PlayingStatus) -> None:
         if value not in PlayingStatus:
@@ -220,7 +238,7 @@ class VLCMediaPlayer(QObject):
             media.add_option("http-referrer=https://www.youtube.com/")
             return media
 
-        url = song.get_best_playback_MRL()
+        url = song.get_best_playback_mrl()
         if url is None:
             # noinspection PyPropertyAccess
             self.logger.info(

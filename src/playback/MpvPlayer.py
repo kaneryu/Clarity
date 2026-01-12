@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import logging
 import time
-import importlib
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, Slot, QTimer
 
 from src import universal as universal
-from src.innertube.song import Song
+from src.innertube import Song
 from src.misc.enumerations.Song import PlayingStatus
 
 try:
@@ -148,7 +147,7 @@ class MpvMediaPlayer(QObject):
         self._prev_song = self._current_song
         self._current_song = song
 
-        url = song.get_best_playback_MRL()
+        url = song.get_best_playback_mrl()
         if url is None:
             self.logger.info(
                 f"No MRL found for song ({song.id} - {getattr(song, 'title', song.id)}), fetching now..."

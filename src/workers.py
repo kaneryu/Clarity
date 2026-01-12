@@ -1,3 +1,4 @@
+import json
 import typing
 import asyncio
 import inspect
@@ -424,19 +425,32 @@ class AsyncBackgroundWorker(QThread):
         self.job_queue: asyncio.Queue = asyncio.Queue()
         self.logger = logging.getLogger("AsyncBackgroundWorker")
         self.running = False
+        self.default_timeout: typing.Optional[float] = 30.0  # seconds
+        self.long_running_threshold: float = 30.0  # seconds before logging warning
+
+        self.task_metadata: typing.Dict[asyncio.Task, typing.Tuple[str, float]] = (
+            {}
+        )  # task -> (name, start_time)
 
         self.event_loop: typing.Union[asyncio.AbstractEventLoop, None] = None
 
         cleanup.addCleanup(self.shutdown)
 
-    def addJob(self, func: typing.Callable) -> None:
+    def addJob(
+        self, func: typing.Callable, timeout: typing.Optional[float] = None
+    ) -> None:
         """Queue an async job for execution.
 
         Args:
             func: Async callable to execute in the event loop
+            timeout: Maximum execution time in seconds (None for no timeout, uses default_timeout if not specified)
         """
-        self.job_queue.put_nowait(func)
-        self.logger.debug(f"Job {func.__name__} added to async queue")
+        if timeout is None:
+            timeout = self.default_timeout
+        self.job_queue.put_nowait((func, timeout))
+        self.logger.debug(
+            f"Job {func.__name__} added to async queue (timeout: {timeout}s)"
+        )
 
     def run(self) -> None:
         asyncio.run(self.async_run())
@@ -449,6 +463,7 @@ class AsyncBackgroundWorker(QThread):
 
         self.logger.info("AsyncBackgroundWorker started, alive: %s", self.isRunning())
         self.session = aiohttp.ClientSession()
+
         if not __compiled__:
             self.API = ytmusicapi.YTMusic(requests_session=self.session)
         else:
@@ -469,31 +484,62 @@ class AsyncBackgroundWorker(QThread):
                 ),
             )
 
+        monitor_task = asyncio.create_task(  # noqa: F841
+            self._monitor_long_running_tasks()
+        )
+
         while self.running:
             if len(tasks) >= max_concurrent:
                 done, tasks = await asyncio.wait(
                     tasks, return_when=asyncio.FIRST_COMPLETED
                 )
             try:
-                func = await asyncio.wait_for(self.job_queue.get(), timeout=1)
+                func, job_timeout = await asyncio.wait_for(
+                    self.job_queue.get(), timeout=1
+                )
             except TimeoutError:
                 continue
-            task = asyncio.create_task(self._run_job(func))
+            task = asyncio.create_task(self._run_job(func, job_timeout))
             tasks.add(task)
-            task.add_done_callback(lambda t: tasks.discard(t))
+            self.task_metadata[task] = (func.__name__, time.time())
 
-    async def _run_job(self, func: typing.Callable) -> None:
+            def cleanup_task(t):
+                tasks.discard(t)
+                self.task_metadata.pop(t, None)
+
+            task.add_done_callback(cleanup_task)
+
+    async def _run_job(
+        self, func: typing.Callable, timeout: typing.Optional[float]
+    ) -> None:
         try:
             if inspect.iscoroutinefunction(func):
-                await func()
+                if timeout:
+                    await asyncio.wait_for(func(), timeout=timeout)
+                else:
+                    await func()
             else:
                 func()
             self.logger.debug(f"Job {func.__name__} completed")
+        except asyncio.TimeoutError:
+            self.logger.error(f"Job {func.__name__} timed out after {timeout}s")
         except Exception as e:
             self.logger.error(f"Error in job {func.__name__}: {e}")
             traceback.print_exc()
         finally:
             self.job_queue.task_done()
+
+    async def _monitor_long_running_tasks(self) -> None:
+        """Periodically check for tasks exceeding the long-running threshold."""
+        while self.running:
+            await asyncio.sleep(10)  # Check every 10 seconds
+            current_time = time.time()
+            for task, (name, start_time) in list(self.task_metadata.items()):
+                elapsed = current_time - start_time
+                if elapsed > self.long_running_threshold:
+                    self.logger.warning(
+                        f"Task {name} has been running for {elapsed:.1f}s (threshold: {self.long_running_threshold}s)"
+                    )
 
     def shutdown(self) -> None:
         """Stop the async event loop and wait for completion."""
@@ -502,19 +548,5 @@ class AsyncBackgroundWorker(QThread):
         self.wait(5000)
 
 
-bgworker: BackgroundWorker = None  # type: ignore
-asyncBgworker: AsyncBackgroundWorker = None  # type: ignore
-
-
-def setup_workers():
-    """Initialize and start the global background worker instances.
-
-    Creates both synchronous (bgworker) and asynchronous (asyncBgworker)
-    worker threads. Should be called once during application startup.
-    """
-    global bgworker, asyncBgworker
-    bgworker = BackgroundWorker()
-    bgworker.start()
-
-    asyncBgworker = AsyncBackgroundWorker()
-    asyncBgworker.start()
+bgworker = BackgroundWorker()
+asyncBgworker = AsyncBackgroundWorker()

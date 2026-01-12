@@ -106,6 +106,7 @@ def install_json_logging(level=logging.INFO):
 
 
 install_json_logging()
+logger = logging.getLogger("Clarity")
 from .paths import Paths
 
 os.environ["PATH"] = (
@@ -114,9 +115,6 @@ os.environ["PATH"] = (
     + os.environ["PATH"]
 )
 
-from .workers import setup_workers
-
-setup_workers()
 from .workers import (
     bgworker,
     asyncBgworker,
@@ -124,6 +122,9 @@ from .workers import (
     argfuncFactory,
     asyncargfuncFactory,
 )
+
+bgworker.start()
+asyncBgworker.start()
 
 from .misc import settings as settings_module
 
@@ -134,6 +135,11 @@ from src.cacheManager import (
     dataStore as dataStore_module,
 )
 import src.innertube as innertube_module
+from src.innertube.globalModels import (
+    NamespacedIdentifier,
+    NamespacedTypedIdentifier,
+    SimpleIdentifier,
+)
 from src.innertube import song as song_module
 from src.innertube import album as album_module
 from playback import queuemanager as queue_module
@@ -213,22 +219,34 @@ def nprint(*args, **kwargs):
 
 builtins.print = nprint
 
-startupQueue: list[str] = [
-    "YPV676YeHNg",
-    "a3mxLL7nX1E",
-    "DimcNLjX50c",
-    "r76AWibyDDQ",
-    "fB8elptKFcQ",
+startupQueue: list[NamespacedTypedIdentifier] = [
+    NamespacedTypedIdentifier.from_string("youtube:song:YPV676YeHNg"),
+    NamespacedTypedIdentifier.from_string("youtube:song:a3mxLL7nX1E"),
+    NamespacedTypedIdentifier.from_string("youtube:song:DimcNLjX50c"),
+    NamespacedTypedIdentifier.from_string("youtube:song:r76AWibyDDQ"),
+    NamespacedTypedIdentifier.from_string("youtube:song:fB8elptKFcQ"),
 ]
 
 
-def getAllDownloadedSongs() -> list:
-    l = list(songDataStore.getAll().keys())
-    l = [i for i in l if not i.endswith("_downloadMeta")]
-    return l
+def getAllDownloadedSongs() -> list[NamespacedTypedIdentifier]:
+    downloadedSongs: list[NamespacedTypedIdentifier] = []
+    i: dataStore_module.DataStore
+    j: str
+    for i in dataStore_module.dataStores.values():
+        if not i.tag == "songDonwnloads":
+            continue
+        for j in i.getAll().keys():
+            try:
+                if j.endswith("_downloadMeta"):
+                    continue
+                nsid = NamespacedTypedIdentifier.from_string(f"youtube:song:{j}")
+                downloadedSongs.append(nsid)
+            except Exception:
+                logger.warning(f"Invalid downloaded song id in datastore: {j}")
+    return downloadedSongs
 
 
-def createSongMainThread(songId: str) -> song_module.Song:
+def createSongMainThread(songId: NamespacedTypedIdentifier) -> song_module.Song:
     song = song_module.Song(songId)
     song.moveToThread(mainThread)
     return song
