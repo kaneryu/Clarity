@@ -115,14 +115,14 @@ def main():
     with open(mostRecentChangelogPath, "w", encoding="utf-8") as f:
         f.write(mostRecentChangelog)
 
-    subprocess.run(["git", "init"], check=True)
-    subprocess.run(["git", "add", "version.txt"], check=True)
-    subprocess.run(["git", "add", "src/version.txt"], check=True)
-    subprocess.run(["git", "add", "CHANGELOG.md"], check=True)
-    subprocess.run(["git", "add", "MOST_RECENT_CHANGELOG.md"], check=True)
-    subprocess.run(["git", "add", "run.py"], check=True)
-    subprocess.run(["git", "add", "pyproject.toml"], check=True)
-    subprocess.run(["git", "commit", "--amend", "--no-edit"], check=True)
+    # subprocess.run(["git", "init"], check=True)
+    # subprocess.run(["git", "add", "version.txt"], check=True)
+    # subprocess.run(["git", "add", "src/version.txt"], check=True)
+    # subprocess.run(["git", "add", "CHANGELOG.md"], check=True)
+    # subprocess.run(["git", "add", "MOST_RECENT_CHANGELOG.md"], check=True)
+    # subprocess.run(["git", "add", "run.py"], check=True)
+    # subprocess.run(["git", "add", "pyproject.toml"], check=True)
+    # subprocess.run(["git", "commit", "--amend", "--no-edit"], check=True)
 
     os.environ["POST_COMMIT_RUNNING"] = "0"
 

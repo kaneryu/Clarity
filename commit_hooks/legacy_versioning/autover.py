@@ -5,7 +5,11 @@ and validating commit message formats.
 """
 
 import logging
-from version_utils import get_version_string, check_commit_format, is_git_repository
+from .version_utils import (
+    get_version_string,
+    check_commit_format,
+    is_git_repository,
+)
 import subprocess
 
 # Set up logging
@@ -45,7 +49,8 @@ def checkCommit(commit: str) -> bool:
 
 if __name__ == "__main__":
     currentVersion = getVer()
-    # add tag to latest commit with version:
-    subprocess.run(
-        ["git", "tag", "-a", f"v{currentVersion}", "-m", f"Version {currentVersion}"]
-    )
+    print(currentVersion)
+    # # add tag to latest commit with version:
+    # subprocess.run(
+    #     ["git", "tag", "-a", f"v{currentVersion}", "-m", f"Version {currentVersion}"]
+    # )

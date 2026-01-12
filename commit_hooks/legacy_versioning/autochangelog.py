@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     sys.path.append("commit_hooks/legacy_versioning")
 
-from version_utils import (
+from .version_utils import (
     get_commit_history_detailed,
     parse_detailed_commit,
     is_git_repository,
