@@ -1,2 +1,39 @@
+update finnaly done! ai turned out to be useless...
 
-uh, yeah. buggy. I think the songs not loading issue is something to do with the new patch to fetching downloaded state. and also the massive amount of new AI code, lol
+anyway, new todo:
+we gotta add artists
+and also playlists
+yeah
+
+Once we add playlists i'll implement radio playlists, and stuff like that
+For now, a good warmup would be adding a 'downloads' page. That would be basically how a playlist page would look like, but it's using existing data and not that many new methods. Then I can start adding playlists.
+
+Playlists would be stored in a sqlite database, so i'll need to start adding database stuff (finnaly, state will be kept between appliation launches)
+
+So, the next update should be
+Playlists (local only for now)
+Download page
+Liked songs (pretty easy now that we have a database)
+Add right click context menu!! (functions like add song to be next in queue, add to playlist, download, like, etc)
+
+Next+1 update:
+Remote playlist support
+Radio playlist support
+Some type of stats storage? like logging each listen and stuff like that
+* video support (we techincally already support videos, just unblock them from search, but like actual support for them)
+
+Next+2 update:
+Home page!
+With radio playlist support, and stats support we can start to do basic reccomandation stuff based off of past listening history
+This means adding a home page with quick picks, keep listening, similar tos, etc etc
+
+Next+3 update:
+We combine it all together, and add artist support
+Artists have albums (done), songs (done), playists (will be done) Then the app will feel way more useable!
+
+Next+4:
+Login, just add the ability to login in general
+
+future:
+Polish login. This will mean updating the home page too with actual ytm reccomendations
+Notifications! Notify on new artist releases and such (for subscribed and auto-subscribed artists)
