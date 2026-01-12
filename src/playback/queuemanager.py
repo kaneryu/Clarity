@@ -27,13 +27,13 @@ import src.wintube.winSMTC as winSMTC
 
 # Import Song and PlayingStatus without creating circular imports.
 # song.py must not import Queue; it should use g.queueInstance when needed.
-from src.innertube.song import Song, PlayingStatus
-from src.innertube import (
+from src.providerInterface.song import Song, PlayingStatus
+from src.providerInterface import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,
 )
-from src.innertube.album import Album
+from src.providerInterface.album import Album
 from playback.MediaPlayerProtocol import MediaPlayer
 from src.playback.VlcPlayer import VLCMediaPlayer
 from src.playback.MpvPlayer import MpvMediaPlayer

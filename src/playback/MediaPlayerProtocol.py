@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable, Any
 
-from src.innertube import Song
+from src.providerInterface import Song
 from src.misc.enumerations.Song import PlayingStatus
 
 

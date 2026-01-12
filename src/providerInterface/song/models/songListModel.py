@@ -8,7 +8,7 @@ from PySide6.QtCore import (
     QAbstractListModel,
 )
 
-from src.innertube.song import Song, SongProxy
+from src.providerInterface.song import Song, SongProxy
 
 
 class SongListModel(QAbstractListModel):

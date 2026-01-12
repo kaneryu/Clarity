@@ -8,7 +8,7 @@ from PySide6.QtCore import QObject, Signal, Slot, QUrl
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 
 from src import universal as universal
-from src.innertube import Song
+from src.providerInterface import Song
 from src.misc.enumerations.Song import PlayingStatus
 
 QTPLAYBACKSTATE_MAP = {

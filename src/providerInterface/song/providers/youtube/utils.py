@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from src import universal as universal
-from src.innertube.globalModels import SimpleIdentifier
-from src.innertube.song.models import (
+from src.providerInterface.globalModels import SimpleIdentifier
+from src.providerInterface.song.models import (
     PlaybackData,
     FormatData,
     YoutubeFormatData,
@@ -24,7 +24,7 @@ from src.innertube.song.models import (
     PlaybackDataThumbnail,
 )
 
-from src.innertube.song.providers.youtube.constants import FMT_DATA
+from src.providerInterface.song.providers.youtube.constants import FMT_DATA
 
 
 def convert_to_timestamp(date_str: str) -> float:

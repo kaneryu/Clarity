@@ -24,7 +24,7 @@ from PySide6.QtNetwork import QNetworkRequest
 from PySide6.QtQuick import QQuickImageProvider
 
 import dacite
-from src.innertube.song.models.playbackData import FormatData
+from src.providerInterface.song.models.playbackData import FormatData
 import ytmusicapi as ytm
 import yt_dlp as yt_dlp_module  # type: ignore[import-untyped]
 
@@ -33,7 +33,7 @@ from src import cacheManager
 from src.misc.enumerations import DataStatus
 from src.misc.enumerations.Song import PlayingStatus, DownloadState
 
-from src.innertube.song.models import (
+from src.providerInterface.song.models import (
     SongData,
     PlaybackData,
     songDataDict,
@@ -41,8 +41,12 @@ from src.innertube.song.models import (
     rawSongDataDict,
     rawPlaybackDataDict,
 )
-from src.innertube.song.providers import ProviderInterface, get_provider, list_providers
-from src.innertube.globalModels import (
+from src.providerInterface.song.providers import (
+    ProviderInterface,
+    get_provider,
+    list_providers,
+)
+from src.providerInterface.globalModels import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,

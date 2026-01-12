@@ -7,14 +7,14 @@ import yt_dlp as yt_dlp_module  # type: ignore[import-untyped]
 
 from src import universal as universal
 from src import cacheManager
-from src.innertube.song.providers.youtube.constants import ydlOpts
-from src.innertube.song.providers.youtube.utils import (
+from src.providerInterface.song.providers.youtube.constants import ydlOpts
+from src.providerInterface.song.providers.youtube.utils import (
     playback_from_raw,
     songdata_from_raw,
 )
 from src.misc.enumerations.Song import DownloadState
 
-from src.innertube.song.models import (
+from src.providerInterface.song.models import (
     SongData,
     PlaybackData,
     rawPlaybackDataDict,
@@ -22,13 +22,13 @@ from src.innertube.song.models import (
     Lyrics,
     TimedLyrics,
 )
-from src.innertube.globalModels.identifier import (
+from src.providerInterface.globalModels.identifier import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,
 )
 
-from src.innertube.song.providers.providerInterface import ProviderInterface
+from src.providerInterface.song.providers.providerInterface import ProviderInterface
 
 ytdl: yt_dlp_module.YoutubeDL
 ytdl = yt_dlp_module.YoutubeDL(ydlOpts)

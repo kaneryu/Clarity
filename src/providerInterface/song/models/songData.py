@@ -3,7 +3,7 @@ import dataclasses
 
 import dacite
 
-from src.innertube.globalModels import (
+from src.providerInterface.globalModels import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,

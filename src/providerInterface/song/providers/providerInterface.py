@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, runtime_checkable, Protocol, Union
 from collections.abc import Callable
 
-from src.innertube.song.models import (
+from src.providerInterface.song.models import (
     SongData,
     PlaybackData,
     Lyrics,
@@ -10,7 +10,7 @@ from src.innertube.song.models import (
     rawPlaybackDataDict,
 )
 
-from src.innertube.globalModels.identifier import (
+from src.providerInterface.globalModels.identifier import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,

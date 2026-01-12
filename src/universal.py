@@ -134,14 +134,14 @@ from src.cacheManager import (
     cacheManager as cacheManager_module,
     dataStore as dataStore_module,
 )
-import src.innertube as innertube_module
-from src.innertube.globalModels import (
+import src.providerInterface as innertube_module
+from src.providerInterface.globalModels import (
     NamespacedIdentifier,
     NamespacedTypedIdentifier,
     SimpleIdentifier,
 )
-from src.innertube import song as song_module
-from src.innertube import album as album_module
+from src.providerInterface import song as song_module
+from src.providerInterface import album as album_module
 from playback import queuemanager as queue_module
 
 

@@ -37,3 +37,4 @@ Login, just add the ability to login in general
 future:
 Polish login. This will mean updating the home page too with actual ytm reccomendations
 Notifications! Notify on new artist releases and such (for subscribed and auto-subscribed artists)
+we should really make the playing status more apperent. We have all these new states, but none of them are rep'ed in the ui. not done....
