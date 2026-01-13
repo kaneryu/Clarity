@@ -597,6 +597,7 @@ class Song(QObject):
 
         await self.download_with_progress(url, self.downloadsDatastore, ext)
         universal.databaseInterface.addSongToLibrary(self.ntid, self.data)
+        universal.UniversalSignals.songDownloaded.emit(str(self.nsid))
         self.checkPlaybackReady()
         self.gettingPlaybackReady = False
 

@@ -1,3 +1,10 @@
+# 0.54.0
+
+## New Features
+
+- add basic implementation for downloads page -- kaneryu on 2026-01-13
+
+
 # 0.53.0
 
 ## New Features

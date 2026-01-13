@@ -55,4 +55,39 @@ Item {
         text: Interactions.currentSong.playbackReady ? "Playback is ready" : "Playback is not ready"
         anchors.top: _title.bottom
     }
+
+    GridView {
+        id: gridView
+        anchors.top: _subtitle.bottom
+        anchors.topMargin: 16
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 16
+        cellWidth: 330
+        cellHeight: 80
+        
+        model: Backend.downloadedSongsModel
+
+        delegate: Base.Song {
+            required property var object
+            required property var id
+
+            radius: 230
+
+            width: gridView.cellWidth - 5
+            height: gridView.cellHeight - 5
+
+            song: object
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    Interactions.songPress(id)
+                }
+            }
+        }
+
+
+    }
 }

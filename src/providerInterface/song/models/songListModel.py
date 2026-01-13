@@ -141,3 +141,13 @@ class SongProxyListModel(SongListModel):
         if role == Qt.ItemDataRole.UserRole + 6:
             return self._proxyList[index.row()]
         return None
+
+    def roleNames(self):
+        return {
+            Qt.ItemDataRole.DisplayRole: b"title",
+            Qt.ItemDataRole.UserRole + 1: b"artist",
+            Qt.ItemDataRole.UserRole + 2: b"length",
+            Qt.ItemDataRole.UserRole + 4: b"id",
+            Qt.ItemDataRole.UserRole + 5: b"index",
+            Qt.ItemDataRole.UserRole + 6: b"object",
+        }

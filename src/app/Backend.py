@@ -23,6 +23,10 @@ import src.network as networking
 import src.paths as paths
 import src.misc.settings as settings
 import src.misc.logHistoryManager as logHistoryManager
+from src.providerInterface.song.models.songListModel import (
+    SongListModel,
+    SongProxyListModel,
+)
 
 
 QML_IMPORT_NAME = "Backend"
@@ -67,6 +71,8 @@ class Backend(QObject):
             universal.queueInstance.songChanged.connect(self.updateMaterialColors)
 
             universal.appUrl.urlChanged.connect(self.urlChanged)
+
+            self.downloadModel = DownloadedSongsModel()
 
     # @Property(bool, notify=onlineChanged)
 
@@ -190,6 +196,10 @@ class Backend(QObject):
     def logHistoryBridge(self):
         return logHistoryManager.bridge
 
+    @Property(QObject, constant=True)
+    def downloadedSongsModel(self):
+        return self.downloadModel
+
     @Slot(str, result=QObject)
     def getSettingsObjectByName(self, name: str) -> QObject:
         return settings.QmlSettingsInterface.instance().getSettingsObjectByName(name)
@@ -307,3 +317,14 @@ def castUb(input: typing.Any) -> typing.Union[bytes, bytearray]:
 #                 json.dump(headers_dict, f)
 
 #             bend.loginComplete.emit()
+
+
+class DownloadedSongsModel(SongProxyListModel):
+    def __init__(self, parent: QObject | None = None):
+        super().__init__()
+        self.setSongList(universal.getAllDownloadedSongs_Objects(proxy=True))
+
+        universal.UniversalSignals.songDownloaded.connect(self.downloadedSongsUpdated)
+
+    def downloadedSongsUpdated(self):
+        self.setSongList(universal.getAllDownloadedSongs_Objects())

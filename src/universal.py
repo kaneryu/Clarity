@@ -148,7 +148,7 @@ from databaseInterface import db as db_module
 
 from src.network import NetworkManager, networkManager, OnlineStatus
 
-from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG, QResource
+from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG, QResource, Signal, QObject
 
 from .AppUrl import AppUrl, appUrl
 
@@ -231,6 +231,12 @@ startupQueue: list[NamespacedTypedIdentifier] = [
 ]
 
 
+def createSongMainThread(songId: NamespacedTypedIdentifier) -> song_module.Song:
+    song = song_module.Song(songId)
+    song.moveToThread(mainThread)
+    return song
+
+
 def getAllDownloadedSongs() -> list[NamespacedTypedIdentifier]:
     downloadedSongs: list[NamespacedTypedIdentifier] = []
     i: dataStore_module.DataStore
@@ -249,11 +255,39 @@ def getAllDownloadedSongs() -> list[NamespacedTypedIdentifier]:
     return downloadedSongs
 
 
-def createSongMainThread(songId: NamespacedTypedIdentifier) -> song_module.Song:
-    song = song_module.Song(songId)
-    song.moveToThread(mainThread)
-    return song
+def getAllDownloadedSongs_Objects(proxy=False) -> list[song_module.Song]:
+    if not proxy:
+        songs: list[song_module.Song] = []
+    else:
+        songs: list[song_module.SongProxy] = []
+
+    for nsid in getAllDownloadedSongs():
+        try:
+            if not proxy:
+                song = createSongMainThread(nsid)
+            else:
+                song = song_module.SongProxy(
+                    createSongMainThread(nsid), UniversalSignals
+                )
+            songs.append(song)
+        except Exception:
+            logger.warning(
+                f"Failed to create song object for downloaded song id: {nsid}"
+            )
+    return songs
 
 
 startupQueue.extend(i for i in getAllDownloadedSongs())
 queueInstance.setQueue(startupQueue, False)
+
+
+# -- Universal Signals
+class azak(QObject):
+    def __init__(self):
+        super().__init__()
+
+    songDownloaded = Signal(str)
+    """Universal signal emitted when a song is downloaded. The signal carries the song ID (NSID) as a string."""
+
+
+UniversalSignals = azak()
