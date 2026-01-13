@@ -596,6 +596,7 @@ class Song(QObject):
         )
 
         await self.download_with_progress(url, self.downloadsDatastore, ext)
+        universal.databaseInterface.addSongToLibrary(self.ntid, self.data)
         self.checkPlaybackReady()
         self.gettingPlaybackReady = False
 
@@ -623,6 +624,10 @@ class Song(QObject):
                 else:
                     return self.playbackInfo.video_formats[0].url
             return self.playbackInfo.audio_formats[0].url
+
+    def add_to_library(self) -> None:
+        """Adds the song to the user's library in the database."""
+        universal.databaseInterface.addSongToLibrary(self.ntid, self.data)
 
     def __getattribute__(self, name):
 

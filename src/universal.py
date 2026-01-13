@@ -190,6 +190,7 @@ globalCache.integrityCheck()
 songCache.integrityCheck()
 imageCache.integrityCheck()
 
+db_module.initializeDatabase()
 databaseInterface = db_module.DatabaseInterface()
 
 queueInstance: queue_module.Queue = queue_module.Queue()

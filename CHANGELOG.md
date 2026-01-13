@@ -1,3 +1,10 @@
+# 0.53.0
+
+## New Features
+
+- add ability to store material colors in database -- kaneryu on 2026-01-13
+
+
 # 0.52.0
 
 ## New Features

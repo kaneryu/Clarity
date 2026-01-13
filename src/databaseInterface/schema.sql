@@ -6,6 +6,9 @@ PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
 PRAGMA cache_size = 10000;
 
+PRAGMA user_version = 1;
+PRAGMA application_id = 0x434C5259;  -- 'CLRY' in hex
+
 -- Songs table
 CREATE TABLE IF NOT EXISTS songs (
     id TEXT PRIMARY KEY,  -- NSID format (youtube:VIDEO_ID)

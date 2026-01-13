@@ -2,6 +2,7 @@ import sqlite3 as sq
 import time
 import os
 from typing import Optional
+import threading
 
 from src.providerInterface.globalModels import (
     NamespacedIdentifier,
@@ -15,24 +16,51 @@ from src.paths import Paths
 from src.misc import compiled
 
 
+def initializeDatabase():
+    os.makedirs(os.path.join(Paths.DATAPATH, "database"), exist_ok=True)
+    os.makedirs(os.path.join(Paths.ASSETSPATH, "database"), exist_ok=True)
+    pooledCursor = createDatabaseCursor()
+    with pooledCursor as cursor:
+        if not compiled.compiled:
+            with open("src/databaseInterface/schema.sql", "r") as f:
+                cursor.executescript(f.read())
+        else:
+            with open(
+                os.path.join(Paths.ASSETSPATH, "database", "schema.sql"), "r"
+            ) as f:
+                cursor.executescript(f.read())
+
+
+class PooledCursor:
+    def __init__(self, cursor, connection):
+        self.homeThread = threading.get_ident()
+        self.cursor = cursor
+        self.connection = connection
+
+    def __enter__(self):
+        if threading.get_ident() != self.homeThread:
+            raise RuntimeError(
+                "PooledCursor used from a different thread than it was created in."
+            )
+        return self.cursor
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if threading.get_ident() != self.homeThread:
+            raise RuntimeError(
+                "PooledCursor used from a different thread than it was created in."
+            )
+        if exc_type is not None:
+            self.connection.rollback()
+        else:
+            self.connection.commit()
+
+
 def createDatabaseCursor():
-    conn = sq.connect(os.path.join(Paths.ASSETSPATH, "database", "data"))
+    conn = sq.connect(os.path.join(Paths.DATAPATH, "database", "data"))
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.execute("PRAGMA journal_mode = WAL;")
     conn.execute("PRAGMA cache_size = 10000;")
-    return conn.cursor(), conn
-
-
-def initializeDatabase():
-    cursor, conn = createDatabaseCursor()
-    if compiled.compiled:
-        with open("src/databaseInterface/schema.sql", "r") as f:
-            cursor.executescript(f.read())
-    else:
-        with open(os.path.join(Paths.ASSETSPATH, "database", "schema.sql"), "r") as f:
-            cursor.executescript(f.read())
-    conn.commit()
-    conn.close()
+    return PooledCursor(conn.cursor(), conn)
 
 
 class ConnectionPool:
@@ -45,18 +73,43 @@ class ConnectionPool:
         return cls._instance
 
     def _initialize(self):
+        self.main_thread_id = threading.main_thread().ident
         self.connections = []
         self.max_connections = 5
 
-    def get_connection(self):
-        if self.connections:
-            return self.connections.pop()
-        else:
-            return createDatabaseCursor()[1]
+    def get_cursor(self):
+        """Get a PooledCursor for the current thread.
 
-    def return_connection(self, conn):
-        if not len(self.connections) >= self.max_connections:
-            self.connections.append(conn)
+        For main thread: returns from pool or creates new one
+        For other threads: creates temporary connection
+        """
+        current_thread_id = threading.get_ident()
+
+        if current_thread_id == self.main_thread_id:
+            # Main thread: use pool
+            if self.connections:
+                return self.connections.pop(), True  # (cursor, should_return)
+            else:
+                return createDatabaseCursor(), True
+        else:
+            # Non-main thread: create temporary connection
+            return createDatabaseCursor(), False  # Don't return to pool
+
+    def return_cursor(self, pooled_cursor, should_return):
+        """Return a PooledCursor to the pool or close it.
+
+        Args:
+            pooled_cursor: The PooledCursor to return
+            should_return: Whether to return to pool (False for non-main threads)
+        """
+        if should_return:
+            if len(self.connections) < self.max_connections:
+                self.connections.append(pooled_cursor)
+            else:
+                pooled_cursor.connection.close()
+        else:
+            # Non-main thread: close the connection
+            pooled_cursor.connection.close()
 
 
 class DatabaseInterface:
@@ -76,14 +129,14 @@ class DatabaseInterface:
             for i in params
         )
 
-        conn = self.pool.get_connection()
-        cursor = conn.cursor()
-        cursor.execute(query, params)
-        results = cursor.fetchall()
-        conn.commit()
-        self.pool.return_connection(conn)
-
-        return results
+        pooled_cursor, should_return = self.pool.get_cursor()
+        try:
+            with pooled_cursor as cursor:
+                cursor.execute(query, params)
+                results = cursor.fetchall()
+                return results
+        finally:
+            self.pool.return_cursor(pooled_cursor, should_return)
 
     def testQuery(self):
         """Fetch a list of 100 song titles ordered by duration"""

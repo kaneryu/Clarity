@@ -73,7 +73,17 @@ class Backend(QObject):
     def updateMaterialColors(self):
         def updateMaterialColors_task():
             songobj = universal.queueInstance.currentSongObject
-            thumb = songobj.smallestThumbnailUrl  # type: ignore[attr-defined]
+
+            retrievedMaterialColors = universal.databaseInterface.getSongMaterialColor(
+                songobj.ntid
+            )
+            if retrievedMaterialColors is not None:
+                materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
+                    retrievedMaterialColors
+                )
+                return
+
+            thumb = songobj.data.smallestThumbnailUrl  # type: ignore[attr-defined]
             res = networking.networkManager.get(thumb)
             if res is None:
                 return
@@ -81,11 +91,18 @@ class Backend(QObject):
                 f.write(res.content)
 
             if res is not None:
-                obj = materialInterface.Theme.getInstance().get_dynamicColorsFromImage(
-                    os.path.join(paths.Paths.DATAPATH, "currentthumb")
+                export = (
+                    materialInterface.Theme.getInstance().exportDynamicColorsFromImage(
+                        os.path.join(paths.Paths.DATAPATH, "currentthumb")
+                    )
                 )
-                if obj is not None:
-                    materialInterface.Theme.getInstance().update_dynamicColors(obj)
+                if export is not None:
+                    materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
+                        export
+                    )
+                    universal.databaseInterface.saveSongMaterialColor(
+                        songobj.ntid, export
+                    )
 
         universal.bgworker.addJob(updateMaterialColors_task)
 
