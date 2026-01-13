@@ -90,6 +90,8 @@ class Song(QObject):
 
     playingStatusChanged = Signal(int)
 
+    likedStatusChanged = Signal(bool)
+
     _instances: dict[NamespacedTypedIdentifier, "Song"] = {}
     # Dict now uses NamespacedTypedIdentifier as key
 
@@ -246,6 +248,22 @@ class Song(QObject):
         return self._downloadState == DownloadState.DOWNLOADED or (
             self.playbackInfo is not None
         )
+
+    @QProperty(bool, notify=likedStatusChanged)
+    def likedStatus(self) -> bool:
+        # return self._likedStatus
+        self._likedStatus = universal.databaseInterface.getLikedStatus(self.ntid)
+        return (
+            self._likedStatus if self._likedStatus is not None else False
+        )  # let's see how reading from the database each time works out
+
+    @likedStatus.setter
+    def likedStatus(self, value: bool) -> None:
+        self._likedStatus = value
+        if not universal.databaseInterface.checkSongInLibrary(self.ntid):
+            universal.databaseInterface.addSongToLibrary(self.ntid, self.data)
+        universal.databaseInterface.setLikedStatus(self.ntid, value)
+        self.likedStatusChanged.emit(value)
 
     def checkPlaybackReady(self, noEmit: bool = False) -> bool:
         """Checks if the song is ready for playback."""
@@ -632,6 +650,7 @@ class SongProxy(QObject):
     downloadStateChanged = Signal(int)
     downloadProgressChanged = Signal(int)
     playingStatusChanged = Signal(int)
+    likedStatusChanged = Signal(bool)
 
     infoChanged = Signal()
 
@@ -643,6 +662,7 @@ class SongProxy(QObject):
         self.target.dataStatusChanged.connect(self.dataStatusChanged)
         self.target.downloadProgressChanged.connect(self.downloadProgressChanged)
         self.target.playingStatusChanged.connect(self.playingStatusChanged)
+        self.target.likedStatusChanged.connect(self.likedStatusChanged)
 
         self.target.songInfoFetched.connect(self.infoChanged)
         self.target.downloadStateChanged.connect(lambda: self.update("downloadState"))
@@ -655,6 +675,7 @@ class SongProxy(QObject):
         self._downloadState = self.target.downloadState
         self._downloadProgress = self.target.downloadProgress
         self._playbackReady = self.target.playbackReady
+        self._likedStatus = self.target.likedStatus
 
         self.setParent(parent)
         self.moveToThread(parent.thread())
@@ -714,6 +735,10 @@ class SongProxy(QObject):
     @QProperty(bool, notify=infoChanged)
     def playbackReady(self) -> bool:
         return getattr(self, "_playbackReady")
+
+    @QProperty(bool, notify=likedStatusChanged)
+    def likedStatus(self) -> bool:
+        return getattr(self, "_likedStatus")
 
     @Slot()
     def test(self):

@@ -134,6 +134,7 @@ class SongData:
     channel: Optional[str] = None
     channelId: Optional[str] = None
     artistId: Optional[str] = None
+    albumId: Optional[str] = None
 
     # thumbnails (rich typed)
     thumbnails: Optional[Dict[str, Any]] = dataclasses.field(default_factory=dict)

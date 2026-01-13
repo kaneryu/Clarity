@@ -92,17 +92,27 @@ Item {
 
         property int iconHeight: 35
 
-        Components.Button {
-            id: likeButton
-            isIcon: true
-            isTransparent: true
-            icon: AssetsPath + "icons/songbar/fav.svg"
+        // Components.Button {
+        //     id: likeButton
+        //     isIcon: true
+        //     isTransparent: true
+        //     icon: AssetsPath + "icons/songbar/fav.svg"
+
+        //     Layout.preferredHeight: centerPanel.iconHeight
+        //     Layout.preferredWidth: height
+
+        //     onClicked: Interactions.like()
+        // }
+        Components.Checkbox {
+            id: likeCheckbox
+            checked: root.song.likedStatus
+
+            onClicked: {
+                Interactions.like(likeCheckbox.checked);
+            }
 
             Layout.preferredHeight: centerPanel.iconHeight
             Layout.preferredWidth: height
-
-            onClicked: Interactions.like()
-            enabled: false
         }
 
         Components.Button {

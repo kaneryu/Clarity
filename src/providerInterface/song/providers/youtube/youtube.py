@@ -94,7 +94,9 @@ class YoutubeProvider(ProviderInterface):
             )
             return None
 
-        return songdata_from_raw(rawData)
+        album = await api.get_song_album_id(provider_id)
+
+        return songdata_from_raw(rawData, album)
 
     @staticmethod
     def get_playback(

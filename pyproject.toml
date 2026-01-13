@@ -1,5 +1,5 @@
 [project]
-version = "0.51.1"
+version = "0.52.0"
 name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"

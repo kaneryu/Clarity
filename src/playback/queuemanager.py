@@ -22,8 +22,8 @@ from misc.enumerations import DataStatus
 from src import universal as universal
 from src.misc.enumerations.Queue import LoopType
 from src.misc.settings import getSetting
-import src.discotube.presence as presence
-import src.wintube.winSMTC as winSMTC
+import src.discordInterface.presence as presence
+import src.winInterface.winSMTC as winSMTC
 
 # Import Song and PlayingStatus without creating circular imports.
 # song.py must not import Queue; it should use g.queueInstance when needed.

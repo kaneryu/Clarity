@@ -1,3 +1,10 @@
+# 0.52.0
+
+## New Features
+
+- begin implementation of database and song liking functionality -- kaneryu on 2026-01-12
+
+
 # 0.51.0
 
 ## New Features

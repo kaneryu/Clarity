@@ -1,0 +1,132 @@
+What do we need this database to do?
+
+Pretty simple, it stores information for us. This information should be asily accessible at any time from anywhere in the appplication, just by calling a function. I want it to not be like interfacing with a database, but more like interfacing with a simple object in memory.
+We can design a simple interface.
+
+There are two ways to do this. We can have a class like SongDatabaseInterface that get or set information about songs, then the Song class will inherit those function, and automatically supply it's own ID when calling those functions. Or we can have a single DatabaseInterface class that takes an ID as a parameter for each function call. The first way is more object oriented, but the second way is simpler to implement and use.
+
+Also, async or sync? I think 99% of queries will be almost instant. If there's ever a slowdown, we can sepereate the actual database operations to a separate function, then run it in bgworker. So let's go with sync for now.
+
+Alright, now we need to define the schema.
+So, we need to store songs, playlists, artists, albums, lyrics, and stats
+
+For songs, we need to store:
+- ID (unique identifier) - NSID format (youtube:VIDEO_ID)
+- Title
+- Artist ID - NSID, nullable
+- Album ID - NSID, nullable
+- Duration (in seconds)
+- Thumbnail URL
+- Material Color (for theming, stored after first computation) - hex color, nullable
+- Liked Status (boolean)
+- Play Count (integer) - aggregated from stats
+- Date Added (ISO timestamp)
+- Last Played (ISO timestamp, nullable)
+
+For playlists, we need to store:
+- ID (unique identifier) - UUID or NSID if provider-based
+- Title
+- Description
+- Thumbnail URL (nullable)
+- Created Date (ISO timestamp)
+- Modified Date (ISO timestamp)
+- Is System Playlist (boolean) - for "Liked Songs", etc.
+- Is remote playlist (boolean) - for playlists synced from online services
+- Playlist type (string) - basic, smart, composite
+- Json rules (nullable) - for smart/composite playlists, stores the criteria or aggregation rules in JSON format
+
+Remote playlists:
+The only violation of the offline rule. Users will want to store radio playlists and stuff like that. We only use this field for dyamic playlists
+It doesn't make sense to save a radio playlist because it changes upon every fetch. So we only store the playlist ID, title, description, thumbnail, is remote flag, and type. The songs in the playlist will be fetched from the online service when the user wants to play it. However, for user-generated remote playlists the songs will be saved locally like normal playlists. and the user will manually sync them when they want to.
+To seperate the two types of remote playlists, radios will be remote + system + smart playlists, while user-generated remote playlists will be remote + non-system + basic playlists.
+
+Playlist Types:
+basic - static list of songs
+smart - dynamic list of songs based on criteria (e.g., most played)
+composite - aggregates other playlists using rules like union, exclude, intersect
+All of these could be user or system generated.
+For example, we could generate a "Top Played" smart playlist that automatically updates based on play counts, or a "Chill Vibes" composite playlist that combines several user-created playlists while excluding certain songs.
+
+For artists, we need to store:
+- ID (unique identifier) - NSID format
+- Name
+- Thumbnail URL (nullable)
+- Date Added (ISO timestamp)
+- Last Accessed (ISO timestamp, nullable)
+
+For albums, we need to store:
+- ID (unique identifier) - NSID format
+- Title
+- Artist ID - NSID for primary artist
+- Release Year (nullable)
+- Thumbnail URL (nullable)
+- Date Added (ISO timestamp)
+- Last Accessed (ISO timestamp, nullable)
+
+For lyrics, we need to store:
+- Song ID (unique identifier)
+- Lyrics Text
+
+For stats, we need to store:
+- Index (unique identifier) - autoincrement integer
+- Song ID - NSID, indexed (non-unique)
+- Play Time (ISO timestamp) - indexed
+- Play Duration (seconds) - actual duration played, as float
+
+Other features:
+Tags, I want to be able to tag songs and when searching library, it also searches tags. For example, I can tag a song as "workout" and later search for "workout" to find all songs with that tag. Playlists could accomplish this task, you may have many different workout 'moods' like upbeat, chill, intense, etc. Each mood could get it's own playlist, but every song in every playlist would be tagged as 'workout'. So, we need a tags table and a song-tag map table. In app, you could also play a tag as a playlist, which would play all songs with that tag.
+Another use case is tagging songs by genre, mood, activity, etc. This allows for more flexible organization and retrieval of songs based on user-defined criteria.
+
+Tag Group:
+- ID (unique identifier) - NSID (loca;taggroup:UUID)
+- Name (string) - unique
+- Date Created (ISO timestamp)
+- Description (string, nullable)
+
+Tags:
+- ID (unique identifier) - NSID (local:tag:UUID)
+- Name (string) - unique
+- Date Created (ISO timestamp)
+- Description (string, nullable)
+- Use Count (integer) - number of times this tag has been used
+
+Tag-Tag Group map:
+- Tag ID (unique identifier) - NSID
+- Tag Group ID (unique identifier) - NSID
+- Date Mapped (ISO timestamp)
+
+Song-Tag map:
+- Song ID (unique identifier) - NSID
+- Tag ID (unique identifier) - NSID
+- Date Tagged (ISO timestamp)
+
+A core part of this is that this only stores things saved 'in library'. For example, the artist database entry does not save every album, that will be fetched from the API or cache when needed. We only store albums that have been added to library, aka albums that are also saved in this database.
+Basically, we should be able to run from this database offline, it should have everything needed to display the library contents, but not everything needed to display all possible content.
+
+We should probably use maps, i've seen other applications use them for similar purposes.
+
+Maps (junction tables):
+Please not that not every ID in a map may exist in the main table.
+The most common example is a song saved from an unsubscribed artist, where the artist entry may not exist in the database.
+It will have to be fetched from the API when needed.
+
+Artist-Album map:
+- artistId (artist unique identifier)
+- albumId (album unique identifier)
+
+Artist-Song map:
+- artistId (artist unique identifier)
+- songId (song unique identifier)
+
+Playlist-Song map:
+- playlistId (playlist unique identifier)
+- songId (song unique identifier)
+- position (integer) - position for ordering songs in playlist
+- dateAdded (ISO timestamp)
+- dateModified (ISO timestamp) (for moving songs around in playlist)
+- Cache Generated (ISO timestamp, nullable) - when this entry was last updated in cache, for smart/composite playlists
+
+So, we should not store a list of songids in the playlist entry, but instead have a map that maps playlist IDs to song IDs. This way, we can easily add or remove songs from playlists without having to modify the playlist entry itself. Same principle applies to artist-album and artist-song relationships.
+
+
+

@@ -336,7 +336,7 @@ def playback_from_raw(raw: dict) -> Optional[YoutubePlaybackData]:
     return pd
 
 
-def songdata_from_raw(rawData: dict) -> Optional[SongData]:
+def songdata_from_raw(rawData: dict, album: Optional[str] = None) -> Optional[SongData]:
     """
     Convert the raw JSON returned by the API (same shape as the 5RQBkK..._info file)
     into a SongData instance and attach it to self.songData. Also set a few
@@ -608,6 +608,8 @@ def songdata_from_raw(rawData: dict) -> Optional[SongData]:
     sd.duration = sd.videoDetails.lengthSeconds if sd.videoDetails else None
     sd.author = sd.videoDetails.author if sd.videoDetails else None
     sd.artist = sd.author  # alias
+    if album:
+        sd.albumId = album
 
     if not sd.id:
         return None  # invalid data

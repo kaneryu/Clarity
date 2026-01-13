@@ -215,3 +215,12 @@ class Interactions(QObject):
         smodule = universal.song_module
         song = smodule.Song(id)
         return song.downloadProgress
+
+    @Slot(bool)
+    def like(self, liked: bool):
+        q = universal.queueInstance
+        song = q.currentSongObject
+        if song is None:
+            self.logger.warning("No current song to like/unlike")
+            return
+        song.likedStatus = liked

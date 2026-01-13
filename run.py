@@ -10,14 +10,15 @@
 # nuitka-project: --include-data-file=./version.txt=./version.txt
 # nuitka-project: --include-data-file=./version.txt=./compiled.txt
 # nuitka-project: --include-data-file=./phantomjs.exe=./phantomjs.exe
+# nuitka-project: --include-data-file=./src/databaseInterface/schema.sql=./assets/database/schema.sql
 # nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
 
-# nuitka-project: --file-description="Clarity v0.51.1"
+# nuitka-project: --file-description="Clarity v0.52.0"
 # nuitka-project: --copyright="This is free and open-source software — GNU GPL v3"
 # nuitka-project: --windows-product-name="Clarity"
 
-# nuitka-project: --product-version=0.51.1
-# nuitka-project: --file-version=0.51.1
+# nuitka-project: --product-version=0.52.0
+# nuitka-project: --file-version=0.52.0
 
 # nuitka-project: --output-filename=Clarity
 # nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml

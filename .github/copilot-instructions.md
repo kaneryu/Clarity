@@ -111,3 +111,7 @@ Configuration: `mypy.ini` has PySide6 plugin and ignore rules. Don't over-fix ty
 - Don't overcomment. Explain *why*, not *what*. Code should be self-documenting. Avoid redundant comments like `self.x = 5  # Set x to 5`.
 - QML live coding: Dev mode has hot-reload via `pyside6-live-coding`. Save QML files → auto-reloads. Use `Backend.qmlReload()` for full reload if needed.
 - Material You theming: Theme colors derived from song artwork via `materialyoucolor` library. QML binds to `Theme.primary`, `Theme.onPrimary`, etc. (auto-updates on song change).
+- Some abbreviations:
+- - NSID: Namespaced Identifier, like namespace:identifier
+- - NTID: Namespaced Typed Identifier, like namespace:type:identifier
+- - SID: Simple Identifier, just the identifier
