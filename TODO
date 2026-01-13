@@ -10,31 +10,37 @@ For now, a good warmup would be adding a 'downloads' page. That would be basical
 
 Playlists would be stored in a sqlite database, so i'll need to start adding database stuff (finnaly, state will be kept between appliation launches)
 
-So, the next update should be
+So, the next update should be (Alpha Release 1)
 Playlists (local only for now)
 Download page - Started on this, we have a basic model and downloads displayed on home page
 Liked songs (pretty easy now that we have a database) - Done! and the database is in place too (1/12/26)
 Add right click context menu!! (functions like add song to be next in queue, add to playlist, download, like, etc)
 
-Next+1 update:
+Next+1 update: (Alpha Release 2)
 Remote playlist support
 Radio playlist support
 Some type of stats storage? like logging each listen and stuff like that
 * video support (we techincally already support videos, just unblock them from search, but like actual support for them)
 
-Next+2 update:
+Next+2 update: (Alpha Release 3)
 Home page!
 With radio playlist support, and stats support we can start to do basic reccomandation stuff based off of past listening history
 This means adding a home page with quick picks, keep listening, similar tos, etc etc
 
-Next+3 update:
+Next+3 update: (Alpha Release 4)
 We combine it all together, and add artist support
 Artists have albums (done), songs (done), playists (will be done) Then the app will feel way more useable!
 
-Next+4:
+Next+4: (Alpha Release 5)
 Login, just add the ability to login in general
 
 future:
 Polish login. This will mean updating the home page too with actual ytm reccomendations
 Notifications! Notify on new artist releases and such (for subscribed and auto-subscribed artists)
-we should really make the playing status more apperent. We have all these new states, but none of them are rep'ed in the ui. not done....
+we should really make the playing status more apperent. We have all these new states, but none of them are rep'ed in the ui.
+
+
+note on release names:
+So we're using semver for releases, but that's not going to be the public 'marketing' name of the release.
+Since we're in alpha, we're going to use 'Alpha Release X' as the public name for releases until we hit 1.0.0
+Then it's just Clarity Release 1

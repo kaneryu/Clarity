@@ -4,6 +4,10 @@
 
 - add basic implementation for downloads page -- kaneryu on 2026-01-13
 
+## Bugfixes
+
+- add temporary fix for goToOrAdd in queue by modifying logic in queueIdsList -- kaneryu on 2026-01-13
+
 
 # 0.53.0
 

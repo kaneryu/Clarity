@@ -37,6 +37,30 @@ class NamespacedTypedIdentifier:
             type=type_,
         )
 
+    def __eq__(self, other):
+        # even if the other is just a NamespacedIdentifier, compare only that part
+        if isinstance(other, str):
+            try:
+                other = NamespacedTypedIdentifier.from_string(other)
+                try:
+                    other = NamespacedIdentifier.from_string(other)
+                    try:
+                        other = SimpleIdentifier(id=str(other))
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+            except Exception:
+                return False
+            
+        if isinstance(other, NamespacedTypedIdentifier):
+            return self.namespacedIdentifier == other and self.type == other.type
+        elif isinstance(other, NamespacedIdentifier):
+            return self.namespacedIdentifier == other
+        elif isinstance(other, SimpleIdentifier):
+            return self.namespacedIdentifier.id == other
+        return False
+
 
 @dataclass(frozen=True, eq=True)
 class NamespacedIdentifier:
@@ -66,6 +90,28 @@ class NamespacedIdentifier:
             namespace=namespace,
             id=SimpleIdentifier(id=id_),
         )
+    
+    def __eq__(self, other):
+        # even if the other is just a SimpleIdentifier, compare only that part
+        if isinstance(other, str):
+            try:
+                other = NamespacedTypedIdentifier.from_string(other)
+            except Exception:
+                try:
+                    other = NamespacedIdentifier.from_string(other)
+                except Exception:
+                    try:
+                        other = SimpleIdentifier(id=str(other))
+                    except Exception:
+                        return False
+            
+        if isinstance(other, NamespacedTypedIdentifier):
+            return self == other.namespacedIdentifier
+        elif isinstance(other, NamespacedIdentifier):
+            return self.namespace == other.namespace and self.id == other.id
+        elif isinstance(other, SimpleIdentifier):
+            return self.id == other
+        return False
 
 
 @dataclass(frozen=True, eq=True)
@@ -81,3 +127,24 @@ class SimpleIdentifier:
 
     def __repr__(self):
         return f"SimpleIdentifier({self.id})"
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            try:
+                other = NamespacedTypedIdentifier.from_string(other)
+            except Exception:
+                try:
+                    other = NamespacedIdentifier.from_string(other)
+                except Exception:
+                    try:
+                        other = SimpleIdentifier(id=str(other))
+                    except Exception:
+                        return False
+            
+        if isinstance(other, NamespacedTypedIdentifier):
+            return self == other.namespacedIdentifier.id
+        elif isinstance(other, NamespacedIdentifier):
+            return self == other.id
+        elif isinstance(other, SimpleIdentifier):
+            return self.id == other.id
+        return False
