@@ -191,3 +191,4 @@ debug_album+*.json
 starthere.txt
 *.aprof
 /src/temp.py
+src/databaseInterface/database

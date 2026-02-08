@@ -10,18 +10,14 @@ import "../colobjs" as ColObjs
 Item {
     id: root
 
-    property string text: "Button"
     property bool enabled: true
-
-    signal clicked
+    signal internalClicked()
 
     property real radius: (state == "base") ? 5 : (state == "hover") ? 10 : (state == "pressed") ? 0 : 0
 
     property string colortype: "primary"
     property string state: "base" // base, hover, pressed, disabled
-    property bool isIcon: false
-    property string icon: AssetsPath + "icons/logo.svg"
-    
+
     property bool isTransparent: false
 
     property color bgcolor: (isTransparent) ? "transparent" : (colortype === "primary") ? (state == "base" ? Theme.primaryContainer : (state == "hover" ? Theme.primaryContainer : (state == "pressed" ? Theme.primaryContainer : Theme.surfaceVariant)))
@@ -84,119 +80,21 @@ Item {
     }
 
     Rectangle {
-        id: buttonBackground
+        id: background
         width: parent.width
         height: parent.height
         color: root.bgcolor
         radius: root.radius
     }
 
-    MultiEffect {
-        id: dropShadow
-        source: buttonBackground
-
-        anchors.fill: buttonBackground
-
-        shadowScale: 0
-        shadowHorizontalOffset: 0
-        shadowVerticalOffset: 5
-        shadowBlur: 0.7
-
-        shadowEnabled: (isTransparent) ? false : (shadowScale > 0) ? true : false
-
-
-        shadowColor: "#71000000"
-
-        states: [
-            State {
-                name: "hover"
-                when: root.state == "hover"
-                PropertyChanges {
-                    target: dropShadow
-                    shadowColor: "#71000000"
-                }
-            },
-            State {
-                name: "base"
-                when: root.state == "base" || root.state == "pressed"
-                PropertyChanges {
-                    target: dropShadow
-                    // shadowEnabled: false
-                }
-            }
-        ]
-
-        transitions: [
-            Transition {
-                from: "*"
-                to: "hover"
-                NumberAnimation {
-                    target: dropShadow
-                    property: "shadowScale"
-                    duration: 100
-                    from: 0
-                    to: 1
-                }
-            },
-            Transition {
-                from: "hover"
-                to: "base"
-                NumberAnimation {
-                    target: dropShadow
-                    property: "shadowScale"
-                    duration: 100
-                    from: 1
-                    to: 0
-                }
-            }
-        ]
-
-
-        // SequentialAnimation on shadowEnabled {
-        //     NumberAnimation {
-        //         duration: 100
-        //         target: dropShadow.shadowScale
-        //         from: 0
-        //         to: 1
-        //     }
-        // }
-    }
-    
-    
-    TextVariant.Default {
-        id: buttonText
-        text: root.text
-        color: root.textcolor
-        anchors.centerIn: parent
-        visible: !root.isIcon
-    }
-
-
-    ColObjs.ColImg {
-        id: buttonIcon
-        source: root.icon
-
-        anchors.centerIn: parent
-        visible: root.isIcon
-
-        width: parent.width
-        height: parent.height
-
-        sourceSize: Qt.size(Math.max(width, height) * 1.2, Math.max(width, height) * 1.2)
-
-        fillMode: Image.PreserveAspectFit
-
-        color: root.textcolor
-    }
-
-
     MouseArea {
-        id: buttonMouseArea
+        id: mouse_
         anchors.fill: parent
         hoverEnabled: true
+
         onClicked: {
             if (root.enabled) {
-                root.clicked()
+                root.internalClicked();
             }
         }
 
@@ -208,7 +106,7 @@ Item {
         
         onReleased: {
             if (root.enabled) {
-                if (buttonMouseArea.containsMouse) {
+                if (mouse_.containsMouse) {
                     root.state = "hover"
                 } else {
                     root.state = "base"

@@ -1,4 +1,4 @@
-from src.innertube.song import (
+from src.providerInterface.song import (
     Song,
     SongProxy,
     SongImageProvider,
@@ -6,10 +6,14 @@ from src.innertube.song import (
     SongListModel,
     SongProxyListModel,
 )
-from src.innertube.search import search, search_suggestions, BasicSearchResultsModel
+from src.providerInterface.search import (
+    search,
+    search_suggestions,
+    BasicSearchResultsModel,
+)
 from src.misc.enumerations.Search import SearchFilters
 
-from src.innertube.globalModels import (
+from src.providerInterface.globalModels import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,

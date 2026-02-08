@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from src import universal as universal
-from src.innertube.globalModels import SimpleIdentifier
-from src.innertube.song.models import (
+from src.providerInterface.globalModels import SimpleIdentifier
+from src.providerInterface.song.models import (
     PlaybackData,
     FormatData,
     YoutubeFormatData,
@@ -24,7 +24,7 @@ from src.innertube.song.models import (
     PlaybackDataThumbnail,
 )
 
-from src.innertube.song.providers.youtube.constants import FMT_DATA
+from src.providerInterface.song.providers.youtube.constants import FMT_DATA
 
 
 def convert_to_timestamp(date_str: str) -> float:
@@ -336,7 +336,7 @@ def playback_from_raw(raw: dict) -> Optional[YoutubePlaybackData]:
     return pd
 
 
-def songdata_from_raw(rawData: dict) -> Optional[SongData]:
+def songdata_from_raw(rawData: dict, album: Optional[str] = None) -> Optional[SongData]:
     """
     Convert the raw JSON returned by the API (same shape as the 5RQBkK..._info file)
     into a SongData instance and attach it to self.songData. Also set a few
@@ -608,6 +608,8 @@ def songdata_from_raw(rawData: dict) -> Optional[SongData]:
     sd.duration = sd.videoDetails.lengthSeconds if sd.videoDetails else None
     sd.author = sd.videoDetails.author if sd.videoDetails else None
     sd.artist = sd.author  # alias
+    if album:
+        sd.albumId = album
 
     if not sd.id:
         return None  # invalid data

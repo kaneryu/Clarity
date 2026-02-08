@@ -23,11 +23,59 @@ import src.network as networking
 import src.paths as paths
 import src.misc.settings as settings
 import src.misc.logHistoryManager as logHistoryManager
+from src.providerInterface.song.models.songListModel import (
+    SongListModel,
+    SongProxyListModel,
+)
 
 
 QML_IMPORT_NAME = "Backend"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
+
+
+class TabManager(QObject):
+
+    activeTabIndexChanged = QSignal(int, name="activeTabIndexChanged")
+
+    def __init__(self):
+        super().__init__()
+
+        self._tabs = [  # type: ignore[assignment]
+            {"name": "home", "title": "Home", "path": "pages/home"},
+            {"name": "explore", "title": "Explore"},
+            {"name": "library", "title": "Library"},
+            {"name": "downloads", "title": "Downloads(temporary)"},
+        ]
+
+        self._activeTabIndex = 0
+
+    @Property(list, constant=True)
+    def tabs(self):
+        return self._tabs
+
+    @Property(int, constant=True)
+    def tabCount(self):
+        return len(self._tabs)
+
+    @Property(list, constant=True)
+    def tabNames(self):
+        return [tab["name"] for tab in self.tabs]
+
+    @Property(int)
+    def activeTabIndex(self):
+        return self._activeTabIndex
+
+    @activeTabIndex.setter
+    def activeTabIndex(self, index):
+        if index < 0 or index >= len(self.tabs):
+            return
+        self._activeTabIndex = index
+        self.activeTabIndexChanged.emit(index)
+
+    @Property(str)
+    def activeTabName(self):
+        return self.tabs[self._activeTabIndex]["name"]
 
 
 @QmlElement
@@ -68,12 +116,28 @@ class Backend(QObject):
 
             universal.appUrl.urlChanged.connect(self.urlChanged)
 
-    # @Property(bool, notify=onlineChanged)
+            self.downloadModel = DownloadedSongsModel()
+
+            self.tabmanager = TabManager()
+
+    @Property(list, constant=True)
+    def tabs(self):
+        return self.tabmanager.tabs
 
     def updateMaterialColors(self):
         def updateMaterialColors_task():
             songobj = universal.queueInstance.currentSongObject
-            thumb = songobj.smallestThumbnailUrl  # type: ignore[attr-defined]
+
+            retrievedMaterialColors = universal.databaseInterface.getSongMaterialColor(
+                songobj.ntid
+            )
+            if retrievedMaterialColors is not None:
+                materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
+                    retrievedMaterialColors
+                )
+                return
+
+            thumb = songobj.data.smallestThumbnailUrl  # type: ignore[attr-defined]
             res = networking.networkManager.get(thumb)
             if res is None:
                 return
@@ -81,11 +145,18 @@ class Backend(QObject):
                 f.write(res.content)
 
             if res is not None:
-                obj = materialInterface.Theme.getInstance().get_dynamicColorsFromImage(
-                    os.path.join(paths.Paths.DATAPATH, "currentthumb")
+                export = (
+                    materialInterface.Theme.getInstance().exportDynamicColorsFromImage(
+                        os.path.join(paths.Paths.DATAPATH, "currentthumb")
+                    )
                 )
-                if obj is not None:
-                    materialInterface.Theme.getInstance().update_dynamicColors(obj)
+                if export is not None:
+                    materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
+                        export
+                    )
+                    universal.databaseInterface.saveSongMaterialColor(
+                        songobj.ntid, export
+                    )
 
         universal.bgworker.addJob(updateMaterialColors_task)
 
@@ -172,6 +243,10 @@ class Backend(QObject):
     @Property(QObject, constant=True)
     def logHistoryBridge(self):
         return logHistoryManager.bridge
+
+    @Property(QObject, constant=True)
+    def downloadedSongsModel(self):
+        return self.downloadModel
 
     @Slot(str, result=QObject)
     def getSettingsObjectByName(self, name: str) -> QObject:
@@ -290,3 +365,14 @@ def castUb(input: typing.Any) -> typing.Union[bytes, bytearray]:
 #                 json.dump(headers_dict, f)
 
 #             bend.loginComplete.emit()
+
+
+class DownloadedSongsModel(SongProxyListModel):
+    def __init__(self, parent: QObject | None = None):
+        super().__init__()
+        self.setSongList(universal.getAllDownloadedSongs_Objects(proxy=True))
+
+        universal.UniversalSignals.songDownloaded.connect(self.downloadedSongsUpdated)
+
+    def downloadedSongsUpdated(self):
+        self.setSongList(universal.getAllDownloadedSongs_Objects())

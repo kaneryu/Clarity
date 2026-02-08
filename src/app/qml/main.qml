@@ -409,7 +409,7 @@ ApplicationWindow {
             z: 1
             spacing: 5
             
-            model: Backend.getqueueModel()
+            model: Backend.queueModel
 
             delegate: Base.Song {
                 required property var qobject

@@ -200,6 +200,19 @@ class Theme(QObject):
         selected = Score.score(colors)
         return self.get_dynamicColorObject(selected[0], True, 0)
 
+    def exportDynamicColorsFromImage(self, path: str) -> str:
+        colors: dict = materialQuantize.ImageQuantizeCelebi(
+            path, 1, 128
+        )  # Get colors from image, quality=1 (only use every pixel), max_colors=128
+        return json.dumps(colors)
+
+    def loadDynamicColorsFromExport(self, export: str) -> DynamicScheme:
+        colors: dict = json.loads(export)
+        colors = {int(k): v for k, v in colors.items()}
+
+        selected = Score.score(colors)
+        return self.get_dynamicColorObject(selected[0], True, 0)
+
     def update_dynamicColors(self, colors: DynamicScheme):
         for attrName in vars(MaterialDynamicColors).keys():
             attr: DynamicColor = getattr(MaterialDynamicColors, attrName)

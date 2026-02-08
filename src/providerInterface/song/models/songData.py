@@ -3,7 +3,7 @@ import dataclasses
 
 import dacite
 
-from src.innertube.globalModels import (
+from src.providerInterface.globalModels import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,
@@ -134,6 +134,7 @@ class SongData:
     channel: Optional[str] = None
     channelId: Optional[str] = None
     artistId: Optional[str] = None
+    albumId: Optional[str] = None
 
     # thumbnails (rich typed)
     thumbnails: Optional[Dict[str, Any]] = dataclasses.field(default_factory=dict)

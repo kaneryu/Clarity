@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Optional
 from PySide6.QtCore import QObject, Signal, Slot, QTimer
 
 from src import universal as universal
-from src.innertube import Song
+from src.providerInterface import Song
 from src.misc.enumerations.Song import PlayingStatus
 from src.paths import Paths
 

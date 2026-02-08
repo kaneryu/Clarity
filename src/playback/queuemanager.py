@@ -22,28 +22,61 @@ from misc.enumerations import DataStatus
 from src import universal as universal
 from src.misc.enumerations.Queue import LoopType
 from src.misc.settings import getSetting
-import src.discotube.presence as presence
-import src.wintube.winSMTC as winSMTC
+import src.discordInterface.presence as presence
+import src.winInterface.winSMTC as winSMTC
 
 # Import Song and PlayingStatus without creating circular imports.
 # song.py must not import Queue; it should use g.queueInstance when needed.
-from src.innertube.song import Song, PlayingStatus
-from src.innertube import (
+from src.providerInterface.song import Song, PlayingStatus
+from src.providerInterface import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,
 )
-from src.innertube.album import Album
+from src.providerInterface.album import Album
 from playback.MediaPlayerProtocol import MediaPlayer
 from src.playback.VlcPlayer import VLCMediaPlayer
 from src.playback.MpvPlayer import MpvMediaPlayer
 from src.playback.QtMediaPlayer import QtMediaPlayer
 
 
+def str_to_identifer(
+    id_str: str,
+) -> Union[NamespacedTypedIdentifier, NamespacedIdentifier, SimpleIdentifier]:
+    try:
+        return NamespacedTypedIdentifier.from_string(id_str)
+    except ValueError:
+        try:
+            return NamespacedIdentifier.from_string(id_str)
+        except ValueError:
+            return SimpleIdentifier(id=id_str)
+
+
+class QueueIdsList(list):
+    def __init__(self):
+        super().__init__()
+
+    def index(self, item, start=1, stop=1):  # type: ignore[override]
+        for i, existing in enumerate(self):
+            if existing == str_to_identifer(
+                item
+            ):  # most likely not the best way to do this, rework in the future
+                return i  # we do this so we get the equality check of the custom identifiers
+        raise ValueError(f"{item} is not in list")
+
+    def __contains__(self, item):
+        for existing in self:
+            if existing == str_to_identifer(
+                item
+            ):  # most likely not the best way to do this, rework in the future
+                return True  # we do this so we get the equality check of the custom identifiers
+        return False
+
+
 class QueueModel(QAbstractListModel):
     def __init__(self):
         super().__init__()
-        self._queueIds = []
+        self._queueIds = QueueIdsList()
         self._queue: list[Song] = []
 
     def rowCount(self, parent=QModelIndex()):

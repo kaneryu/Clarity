@@ -24,13 +24,16 @@ import yt_dlp as yt_dlp_module  # type: ignore[import-untyped]
 
 from src import universal as universal
 from src import cacheManager
-from src.innertube import song
+from src.providerInterface import song
 from src.misc.enumerations.Album import DownloadStatus
 from src.misc.enumerations.Song import DownloadState as SongDownloadState
 from src.misc.enumerations import DataStatus
 
-from src.innertube.song import SongListModel, SongProxyListModel
-from src.innertube.globalModels import NamespacedTypedIdentifier, SimpleIdentifier
+from src.providerInterface.song import SongListModel, SongProxyListModel
+from src.providerInterface.globalModels import (
+    NamespacedTypedIdentifier,
+    SimpleIdentifier,
+)
 
 
 def run_sync(func, *args, **kwargs):
