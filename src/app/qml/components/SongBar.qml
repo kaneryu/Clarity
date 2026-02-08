@@ -106,7 +106,9 @@ Item {
         Components.Checkbox {
             id: likeCheckbox
             checked: root.song.likedStatus
-
+            uncheckedText: ""
+            checkedText: ""
+            
             onClicked: {
                 Interactions.like(likeCheckbox.checked);
             }

@@ -44,3 +44,18 @@ note on release names:
 So we're using semver for releases, but that's not going to be the public 'marketing' name of the release.
 Since we're in alpha, we're going to use 'Alpha Release X' as the public name for releases until we hit 1.0.0
 Then it's just Clarity Release 1
+
+
+
+
+Alright, how will tabs work?
+We already got the appurl system, it's been a long while since i touched it, but basically it takes a url like clarity:///page/home, and maps it to a qml file, typically in the pages directory, so in this case litteraly 'pages/home'
+
+This isn't that extensible imo because the url *has* to exist on disk, and I can see some cases where it would be useful to have dynamic urls that don't actually map to a path on disk.
+
+In addition, i've started work on a tabmanager system, this system stores json definitions of the tabs, and it keeps track of the actively open tab. I was planning to add a history mechanism, but AppUrl already does that. So, really, I need to unify them? Or maybe just make it so AppUrl is 'open' enough that it can handle tabmanager.
+
+So, the plan is to have TabManager handle the tabs, and AppUrl handle the actual url to qml mapping and history.
+Alright, we can add url handlers to AppUrl, so when a url is requested, it checks if any handler wants to handle it, if not it falls back to the disk based system.
+
+Then TabManager can just request AppUrl to open urls, and AppUrl will handle the rest
