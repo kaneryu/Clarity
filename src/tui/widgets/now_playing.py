@@ -56,7 +56,7 @@ class NowPlayingBar(urwid.WidgetWrap):
     def _update_status(self):
         """Update playing status icon."""
         from src.misc.enumerations.Song import PlayingStatus
-        status = self.interactions.currentPlayingStatus
+        status = self.interactions.playingStatus
         
         if status == PlayingStatus.Playing.value:
             icon = "▶ Playing"
@@ -65,9 +65,8 @@ class NowPlayingBar(urwid.WidgetWrap):
         else:
             icon = "⏹ Stopped"
         
-        volume = self.interactions.volume
-        text = f"{icon}      Vol: {volume}%"
-        self.status_text.set_text(text)
+        # Volume control not implemented yet, so we'll just show status
+        self.status_text.set_text(icon)
     
     def _update_duration(self):
         """Update duration display."""

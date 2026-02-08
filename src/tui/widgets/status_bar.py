@@ -10,7 +10,7 @@ class StatusBar(urwid.WidgetWrap):
             ('key', '[Space]'), ' Play/Pause  ',
             ('key', '[N]'), ' Next  ',
             ('key', '[P]'), ' Prev  ',
-            ('key', '[+/-]'), ' Volume  ',
+            ('key', '[Tab]'), ' Switch  ',
             ('key', '[Q]'), ' Quit'
         ])
         

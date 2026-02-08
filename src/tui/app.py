@@ -44,7 +44,6 @@ class ClarityTUI:
             header=header,
             footer=self.status_bar
         )
-    
     def handle_input(self, key):
         """Global unhandled input handler."""
         # Let current screen handle first
@@ -71,16 +70,10 @@ class ClarityTUI:
             self._toggle_playback()
             return True
         elif key == 'n':  # Next track
-            self.interactions.nextSong()
+            self.interactions.next()
             return True
         elif key == 'p':  # Previous track
-            self.interactions.previousSong()
-            return True
-        elif key in ('+', '='):  # Volume up
-            self._change_volume(+5)
-            return True
-        elif key == '-':  # Volume down
-            self._change_volume(-5)
+            self.interactions.back()
             return True
         elif key == 'q':  # Quit
             raise urwid.ExitMainLoop()
@@ -100,15 +93,4 @@ class ClarityTUI:
     
     def _toggle_playback(self):
         """Toggle play/pause."""
-        from src.misc.enumerations.Song import PlayingStatus
-        status = self.interactions.currentPlayingStatus
-        if status == PlayingStatus.Playing.value:
-            self.interactions.pause()
-        else:
-            self.interactions.play()
-    
-    def _change_volume(self, delta):
-        """Change volume by delta."""
-        current = self.interactions.volume
-        new_volume = max(0, min(100, current + delta))
-        self.interactions.setVolume(new_volume)
+        self.interactions.togglePlayback()
