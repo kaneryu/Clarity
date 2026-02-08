@@ -33,6 +33,15 @@
 # setup app
 # run app
 
+import sys
+
+# Check for TUI mode
+if "--tui" in sys.argv:
+    import src.universal  # noqa: F401 (importing universal runs setup code)
+    from src.tui import main as tui_main
+    sys.exit(tui_main.main())
+
+# Otherwise continue with GUI
 import src.universal  # noqa: F401 (importing universal runs setup code)
 from src.app import main
 from src.misc.compiled import __compiled__
