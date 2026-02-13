@@ -1,5 +1,6 @@
 # Changes Since Last Release
 
+- (0.55.0) add basic implementation for checkboxes -- kaneryu on 2026-02-13
 - (0.54.0) add basic implementation for downloads page -- kaneryu on 2026-01-13
 add temporary fix for goToOrAdd in queue by modifying logic in queueIdsList -- kaneryu on 2026-01-13
 - (0.53.0) add ability to store material colors in database -- kaneryu on 2026-01-13

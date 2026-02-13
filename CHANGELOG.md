@@ -1,3 +1,10 @@
+# 0.55.0
+
+## New Features
+
+- add basic implementation for checkboxes -- kaneryu on 2026-02-13
+
+
 # 0.54.0
 
 ## New Features

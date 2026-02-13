@@ -34,6 +34,50 @@ QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0
 
 
+class TabManager(QObject):
+
+    activeTabIndexChanged = QSignal(int, name="activeTabIndexChanged")
+
+    def __init__(self):
+        super().__init__()
+
+        self._tabs = [  # type: ignore[assignment]
+            {"name": "home", "title": "Home", "path": "pages/home"},
+            {"name": "explore", "title": "Explore"},
+            {"name": "library", "title": "Library"},
+            {"name": "downloads", "title": "Downloads(temporary)"},
+        ]
+
+        self._activeTabIndex = 0
+
+    @Property(list, constant=True)
+    def tabs(self):
+        return self._tabs
+
+    @Property(int, constant=True)
+    def tabCount(self):
+        return len(self._tabs)
+
+    @Property(list, constant=True)
+    def tabNames(self):
+        return [tab["name"] for tab in self.tabs]
+
+    @Property(int)
+    def activeTabIndex(self):
+        return self._activeTabIndex
+
+    @activeTabIndex.setter
+    def activeTabIndex(self, index):
+        if index < 0 or index >= len(self.tabs):
+            return
+        self._activeTabIndex = index
+        self.activeTabIndexChanged.emit(index)
+
+    @Property(str)
+    def activeTabName(self):
+        return self.tabs[self._activeTabIndex]["name"]
+
+
 @QmlElement
 class Backend(QObject):
     loadComplete = QSignal(name="loadComplete")
@@ -74,7 +118,11 @@ class Backend(QObject):
 
             self.downloadModel = DownloadedSongsModel()
 
-    # @Property(bool, notify=onlineChanged)
+            self.tabmanager = TabManager()
+
+    @Property(list, constant=True)
+    def tabs(self):
+        return self.tabmanager.tabs
 
     def updateMaterialColors(self):
         def updateMaterialColors_task():
