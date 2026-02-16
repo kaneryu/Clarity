@@ -124,13 +124,48 @@ class SongData:
 
     source: str = "full"
 
-    # core identity
     title: Optional[str] = None
+    artist: Optional[str] = None
+    album: Optional[str] = None
+
     duration: Optional[int] = None
+    thumbnailUrl: Optional[str] = None
+
+    releaseDate: Optional[str] = None
+    genre: Optional[list[str]] = None
+
+    @staticmethod
+    def from_dict(data: songDataDict) -> "SongData":
+        """
+        Create a SongData instance from a dictionary.
+
+        NOTE: The data *MUST* have been created from a SongData instance originally.
+        This means that if you're getting raw data from the server, DO NOT use it with this method
+        Instead, use the provider's parsing methods to first sanitize/convert the raw data into a SongData instance.
+
+        The main use for this is loading from cached data that was stored as a dictionary.
+        """
+        return dacite.from_dict(
+            data_class=SongData,
+            data=data,
+            config=dacite.Config(
+                cast=[str, SimpleIdentifier]
+            ),  # pretty self explanatory, but this ensures that str IDs are converted to SimpleIdentifier instances
+        )
+
+    def as_dict(self) -> Dict[str, Any]:
+        """
+        Convert the SongData instance to a dictionary.
+        """
+        data = dataclasses.asdict(self)
+        data["id"] = str(data["id"])  # ensure SimpleIdentifier is converted to string
+        return data
+
+
+@dataclasses.dataclass
+class YoutubeSongData(SongData):
 
     # artists / channel info
-    author: Optional[str] = None
-    artist: Optional[str] = None
     channel: Optional[str] = None
     channelId: Optional[str] = None
     artistId: Optional[str] = None
@@ -184,30 +219,3 @@ class SongData:
 
     # preserve any extra fields present
     extra: Dict[str, Any] = dataclasses.field(default_factory=dict)
-
-    @staticmethod
-    def from_dict(data: songDataDict) -> "SongData":
-        """
-        Create a SongData instance from a dictionary.
-
-        NOTE: The data *MUST* have been created from a SongData instance originally.
-        This means that if you're getting raw data from the server, DO NOT use it with this method
-        Instead, use the provider's parsing methods to first sanitize/convert the raw data into a SongData instance.
-
-        The main use for this is loading from cached data that was stored as a dictionary.
-        """
-        return dacite.from_dict(
-            data_class=SongData,
-            data=data,
-            config=dacite.Config(
-                cast=[str, SimpleIdentifier]
-            ),  # pretty self explanatory, but this ensures that str IDs are converted to SimpleIdentifier instances
-        )
-
-    def as_dict(self) -> Dict[str, Any]:
-        """
-        Convert the SongData instance to a dictionary.
-        """
-        data = dataclasses.asdict(self)
-        data["id"] = str(data["id"])  # ensure SimpleIdentifier is converted to string
-        return data

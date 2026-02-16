@@ -1,0 +1,4 @@
+A few kinks in the system...
+
+
+What is our data model, anyway? We have the new, fancy Song/Playlist/Album/Data models but what are they really? Should they store dynamic data, or just static. Also, why is the ID that they take just a SimpleIdentifier, meaning that without the context of a Song or Album etc object holding them, we don't know what Namespace they're from? Also, how will this work now that they can be fed into and come out of the database? - The SimpleID thing isn't an issue anymore beauase it can only be fed into and come out of through the Song Object.

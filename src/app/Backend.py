@@ -128,9 +128,7 @@ class Backend(QObject):
         def updateMaterialColors_task():
             songobj = universal.queueInstance.currentSongObject
 
-            retrievedMaterialColors = universal.databaseInterface.getSongMaterialColor(
-                songobj.ntid
-            )
+            retrievedMaterialColors = songobj.materialColor
             if retrievedMaterialColors is not None:
                 materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
                     retrievedMaterialColors
@@ -154,9 +152,7 @@ class Backend(QObject):
                     materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
                         export
                     )
-                    universal.databaseInterface.saveSongMaterialColor(
-                        songobj.ntid, export
-                    )
+                    songobj.materialColor = export
 
         universal.bgworker.addJob(updateMaterialColors_task)
 

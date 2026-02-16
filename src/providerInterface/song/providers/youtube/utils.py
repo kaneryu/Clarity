@@ -13,6 +13,7 @@ from src.providerInterface.song.models import (
     DataFragment,
     HeatmapEntry,
     SongData,
+    YoutubeSongData,
     PlaybackUrl,
     PlaybackUrlHeader,
     PlaybackTracking,
@@ -336,7 +337,9 @@ def playback_from_raw(raw: dict) -> Optional[YoutubePlaybackData]:
     return pd
 
 
-def songdata_from_raw(rawData: dict, album: Optional[str] = None) -> Optional[SongData]:
+def songdata_from_raw(
+    rawData: dict, album: Optional[str] = None
+) -> Optional[YoutubeSongData]:
     """
     Convert the raw JSON returned by the API (same shape as the 5RQBkK..._info file)
     into a SongData instance and attach it to self.songData. Also set a few
@@ -353,7 +356,7 @@ def songdata_from_raw(rawData: dict, album: Optional[str] = None) -> Optional[So
         return None
 
     if sid := rd.get("videoDetails", {}).get("videoId"):
-        sd = SongData(id=sid)
+        sd = YoutubeSongData(id=sid)
     else:
         return None  # invalid data
 

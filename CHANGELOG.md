@@ -4,6 +4,10 @@
 
 - add basic implementation for checkboxes -- kaneryu on 2026-02-13
 
+## Bugfixes
+
+- refactor database -- kaneryu on 2026-02-16
+
 
 # 0.54.0
 

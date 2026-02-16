@@ -10,10 +10,9 @@ from src.providerInterface.globalModels import (
     SimpleIdentifier,
 )
 
-from src.providerInterface.song.models.songData import SongData
-
 from src.paths import Paths
 from src.misc import compiled
+import src.misc.cleanup as cleanup_module
 
 
 def initializeDatabase():
@@ -111,13 +110,24 @@ class ConnectionPool:
             # Non-main thread: close the connection
             pooled_cursor.connection.close()
 
+    def cleanup(self):
+        """Close all connections in the pool. Should be called at application exit."""
+        for pooled_cursor in self.connections:
+            pooled_cursor.connection.close()
+        self.connections.clear()
+
 
 class DatabaseInterface:
     def __init__(self):
         self.pool = ConnectionPool()
+        cleanup_module.addCleanup(self.pool.cleanup)
 
-    def execute_query(self, query, params=()):
-        params = tuple(
+    def cleanup(self):
+        """runs at application exit"""
+        self.pool.cleanup()
+
+    def _fixIdsInParams(self, params):
+        return tuple(
             (
                 str(i)
                 if isinstance(
@@ -129,101 +139,32 @@ class DatabaseInterface:
             for i in params
         )
 
+    def query(self, sql, params=()) -> list:
         pooled_cursor, should_return = self.pool.get_cursor()
         try:
             with pooled_cursor as cursor:
-                cursor.execute(query, params)
-                results = cursor.fetchall()
-                return results
+                cursor.execute(sql, self._fixIdsInParams(params))
+                return cursor.fetchall()
         finally:
             self.pool.return_cursor(pooled_cursor, should_return)
 
-    def testQuery(self):
-        """Fetch a list of 100 song titles ordered by duration"""
-        query = "SELECT title FROM songs ORDER BY duration LIMIT 100;"
-        results = self.execute_query(query)
-        return [row[0] for row in results]
+    def execute(self, sql, params=()) -> int:
+        pooled_cursor, should_return = self.pool.get_cursor()
+        try:
+            with pooled_cursor as cursor:
+                cursor.execute(sql, self._fixIdsInParams(params))
+                return cursor.rowcount
+        finally:
+            self.pool.return_cursor(pooled_cursor, should_return)
 
-    ## Song Functions
-    def getLikedStatus(self, id: NamespacedTypedIdentifier) -> Optional[bool]:
-        if id.type != "song":
-            raise ValueError("ID type must be 'song' to get liked status.")
-
-        query = "SELECT liked FROM songs WHERE id = ?;"
-        results = self.execute_query(query, (id.namespacedIdentifier,))
-        if results:
-            return results[0][0]
-        return None
-
-    def setLikedStatus(self, id: NamespacedTypedIdentifier, likedStatus: bool):
-        if id.type != "song":
-            raise ValueError("ID type must be 'song' to set liked status.")
-
-        query = "UPDATE songs SET liked = ? WHERE id = ?;"
-        self.execute_query(query, (likedStatus, id.namespacedIdentifier))
-
-    def addSongToLibrary(self, id: NamespacedTypedIdentifier, songData: SongData):
-        if id.type != "song":
-            raise ValueError("ID type must be 'song' to add to songs table.")
-
-        query = """
-        INSERT INTO songs (id, title, album_id, duration, thumbnail_url, liked, play_count, date_added)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-        """
-
-        id: NamespacedIdentifier = id.namespacedIdentifier
-
-        title = songData.title if songData.title else ""
-        album_id = songData.albumId if songData.albumId else ""
-        duration = songData.duration if songData.duration else 0
-        thumbnail_url = (
-            songData.largestThumbnailUrl if songData.largestThumbnailUrl else ""
-        )
-
-        liked = 0  # default to not liked
-        play_count = 0
-        date_added = int(time.time())
-
-        # There should be code to automatically add the artist to the artists table here in the future
-
-        self.execute_query(
-            query,
-            (
-                id,
-                title,
-                album_id,
-                duration,
-                thumbnail_url,
-                liked,
-                play_count,
-                date_added,
-            ),
-        )
-
-    def checkSongInLibrary(self, id: NamespacedTypedIdentifier) -> bool:
-        if id.type != "song":
-            raise ValueError("ID type must be 'song' to check in songs table.")
-
-        query = "SELECT 1 FROM songs WHERE id = ?;"
-        results = self.execute_query(query, (id.namespacedIdentifier,))
-        return len(results) > 0
-
-    def saveSongMaterialColor(self, id: NamespacedTypedIdentifier, color: str):
-        if id.type != "song":
-            raise ValueError("ID type must be 'song' to save material color.")
-
-        query = "UPDATE songs SET material_color = ? WHERE id = ?;"
-        self.execute_query(query, (color, id.namespacedIdentifier))
-
-    def getSongMaterialColor(self, id: NamespacedTypedIdentifier) -> Optional[str]:
-        if id.type != "song":
-            raise ValueError("ID type must be 'song' to get material color.")
-
-        query = "SELECT material_color FROM songs WHERE id = ?;"
-        results = self.execute_query(query, (id.namespacedIdentifier,))
-        if results:
-            return results[0][0]
-        return None
+    def execute_returning_id(self, sql, params=()) -> Optional[int]:
+        pooled_cursor, should_return = self.pool.get_cursor()
+        try:
+            with pooled_cursor as cursor:
+                cursor.execute(sql, self._fixIdsInParams(params))
+                return cursor.lastrowid
+        finally:
+            self.pool.return_cursor(pooled_cursor, should_return)
 
 
 if __name__ == "__main__":

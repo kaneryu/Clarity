@@ -144,7 +144,8 @@ from src.providerInterface import song as song_module
 from src.providerInterface import album as album_module
 from playback import queuemanager as queue_module
 
-from databaseInterface import db as db_module
+from databaseInterface import dbcore as dbCore
+from databaseInterface.Repositories import SongRepository
 
 from src.network import NetworkManager, networkManager, OnlineStatus
 
@@ -190,8 +191,9 @@ globalCache.integrityCheck()
 songCache.integrityCheck()
 imageCache.integrityCheck()
 
-db_module.initializeDatabase()
-databaseInterface = db_module.DatabaseInterface()
+dbCore.initializeDatabase()
+globalDbInterface = dbCore.DatabaseInterface()
+songRepository = SongRepository(globalDbInterface)
 
 queueInstance: queue_module.Queue = queue_module.Queue()
 search = innertube_module.search

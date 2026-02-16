@@ -91,6 +91,9 @@ class Song(QObject):
     playingStatusChanged = Signal(int)
 
     likedStatusChanged = Signal(bool)
+    playCountChanged = Signal(int)
+    inLibraryChanged = Signal(bool)
+    materialColorChanged = Signal(str)
 
     _instances: dict[NamespacedTypedIdentifier, "Song"] = {}
     # Dict now uses NamespacedTypedIdentifier as key
@@ -179,6 +182,15 @@ class Song(QObject):
         self._id = str(self.nsid)
         self._dataStatus = DataStatus.NOTLOADED
 
+        self._likedStatus: bool | None = universal.songRepository.get_liked_status(
+            self.ntid
+        )
+        self._materialColor: str | None = universal.songRepository.get_material_color(
+            self.ntid
+        )
+        self._playCount = universal.songRepository.get_play_count(self.ntid) or 0
+        self._inLibrary = universal.songRepository.get(self.ntid) is not None
+
         self._downloadProgress = 0
         self._downloadState = DownloadState.NOT_DOWNLOADED
         self.downloadStateChanged.connect(lambda: self.checkPlaybackReady())
@@ -251,8 +263,6 @@ class Song(QObject):
 
     @QProperty(bool, notify=likedStatusChanged)
     def likedStatus(self) -> bool:
-        # return self._likedStatus
-        self._likedStatus = universal.databaseInterface.getLikedStatus(self.ntid)
         return (
             self._likedStatus if self._likedStatus is not None else False
         )  # let's see how reading from the database each time works out
@@ -260,10 +270,37 @@ class Song(QObject):
     @likedStatus.setter
     def likedStatus(self, value: bool) -> None:
         self._likedStatus = value
-        if not universal.databaseInterface.checkSongInLibrary(self.ntid):
-            universal.databaseInterface.addSongToLibrary(self.ntid, self.data)
-        universal.databaseInterface.setLikedStatus(self.ntid, value)
+        universal.songRepository.put(self.ntid, self.data)
+        universal.songRepository.set_liked_status(self.ntid, value)
         self.likedStatusChanged.emit(value)
+
+    @QProperty(int, notify=playCountChanged)
+    def playCount(self) -> int:
+        return self._playCount
+
+    @playCount.setter
+    def playCount(self, value: int) -> None:
+        self._playCount = value
+        universal.songRepository.set_play_count(self.ntid, value)
+        self.playCountChanged.emit(value)
+
+    @Slot()
+    def incrementPlayCount(self) -> None:
+        self.playCount += 1
+
+    @QProperty(bool, notify=inLibraryChanged)
+    def inLibrary(self) -> bool:
+        return self._inLibrary
+
+    @QProperty(str, notify=materialColorChanged)
+    def materialColor(self) -> str | None:
+        return self._materialColor
+
+    @materialColor.setter
+    def materialColor(self, value: str) -> None:
+        self._materialColor = value
+        universal.songRepository.set_material_color(self.ntid, value)
+        self.materialColorChanged.emit(value)
 
     def checkPlaybackReady(self, noEmit: bool = False) -> bool:
         """Checks if the song is ready for playback."""
@@ -596,7 +633,7 @@ class Song(QObject):
         )
 
         await self.download_with_progress(url, self.downloadsDatastore, ext)
-        universal.databaseInterface.addSongToLibrary(self.ntid, self.data)
+        universal.songRepository.put(self.ntid, self.data)
         universal.UniversalSignals.songDownloaded.emit(str(self.nsid))
         self.checkPlaybackReady()
         self.gettingPlaybackReady = False
@@ -627,8 +664,8 @@ class Song(QObject):
             return self.playbackInfo.audio_formats[0].url
 
     def add_to_library(self) -> None:
-        """Adds the song to the user's library in the database."""
-        universal.databaseInterface.addSongToLibrary(self.ntid, self.data)
+        """Adds the song to tshe user's library in the database."""
+        universal.songRepository.put(self.ntid, self.data)
 
     def __getattribute__(self, name):
 

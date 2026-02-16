@@ -16,6 +16,7 @@ from src.misc.enumerations.Song import DownloadState
 
 from src.providerInterface.song.models import (
     SongData,
+    YoutubeSongData,
     PlaybackData,
     rawPlaybackDataDict,
     rawSongDataDict,
@@ -71,7 +72,9 @@ class YoutubeProvider(ProviderInterface):
         )
 
     @staticmethod
-    async def get_info(provider_id: SimpleIdentifier_or_Str) -> Optional[SongData]:
+    async def get_info(
+        provider_id: SimpleIdentifier_or_Str,
+    ) -> Optional[YoutubeSongData]:
         """
         Gets the info of the song.
         """

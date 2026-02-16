@@ -19,6 +19,7 @@ from .songData import (
     PlaybackTracking,
     MicroformatDataRenderer,
     SongData,
+    YoutubeSongData,
     songDataDict,
     rawSongDataDict,
 )
