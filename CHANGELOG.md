@@ -7,6 +7,7 @@
 ## Bugfixes
 
 - refactor database -- kaneryu on 2026-02-16
+- Temporarily increase default task timeout -- kaneryu on 2026-02-22
 
 
 # 0.54.0

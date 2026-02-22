@@ -425,7 +425,7 @@ class AsyncBackgroundWorker(QThread):
         self.job_queue: asyncio.Queue = asyncio.Queue()
         self.logger = logging.getLogger("AsyncBackgroundWorker")
         self.running = False
-        self.default_timeout: typing.Optional[float] = 30.0  # seconds
+        self.default_timeout: typing.Optional[float] = 3000.0  # seconds
         self.long_running_threshold: float = 30.0  # seconds before logging warning
 
         self.task_metadata: typing.Dict[asyncio.Task, typing.Tuple[str, float]] = (
