@@ -8,6 +8,7 @@
 
 - refactor database -- kaneryu on 2026-02-16
 - Temporarily increase default task timeout -- kaneryu on 2026-02-22
+- Add fallback image for presence so it doesn't error 100 times a second -- kaneryu on 2026-02-23
 
 
 # 0.54.0

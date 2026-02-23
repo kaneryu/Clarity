@@ -3,6 +3,7 @@
 - (0.55.0) add basic implementation for checkboxes -- kaneryu on 2026-02-13
 refactor database -- kaneryu on 2026-02-16
 Temporarily increase default task timeout -- kaneryu on 2026-02-22
+Add fallback image for presence so it doesn't error 100 times a second -- kaneryu on 2026-02-23
 - (0.54.0) add basic implementation for downloads page -- kaneryu on 2026-01-13
 add temporary fix for goToOrAdd in queue by modifying logic in queueIdsList -- kaneryu on 2026-01-13
 - (0.53.0) add ability to store material colors in database -- kaneryu on 2026-01-13

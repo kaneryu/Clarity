@@ -212,7 +212,10 @@ class PresenceManagerThread(QThread):
             song_time: int = self.queue_instance.currentSongTime  # type: ignore
             duration: int = self.queue_instance.currentSongDuration  # type: ignore
             song_id: str = self.queue_instance.currentSongId  # type: ignore
-            cover: str = self.queue_instance.currentSongObject.largestThumbnailUrl  # type: ignore
+            try:
+                cover: str = self.queue_instance.currentSongObject.largestThumbnailUrl  # type: ignore
+            except AttributeError:
+                cover = "https://files.catbox.moe/0dnkr0.png"  # Fallback image
 
             self.currentDetails = {
                 "title": title,
