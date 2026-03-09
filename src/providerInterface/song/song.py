@@ -35,6 +35,7 @@ from src.misc.enumerations.Song import PlayingStatus, DownloadState
 
 from src.providerInterface.song.models import (
     SongData,
+    YoutubeSongData,
     PlaybackData,
     songDataDict,
     playbackDataDict,
@@ -213,7 +214,7 @@ class Song(QObject):
 
         universal.bgworker.addJob(_lazy_init)
 
-        self.data = SongData(
+        self.data: Union[SongData, YoutubeSongData] = SongData(
             source="placeholder",
             id=self.sid,
             title="Loading...",
@@ -301,6 +302,13 @@ class Song(QObject):
         self._materialColor = value
         universal.songRepository.set_material_color(self.ntid, value)
         self.materialColorChanged.emit(value)
+
+    @QProperty(str)
+    def bestThumbnailUrl(self) -> str:
+        return (
+            self.data.thumbnailUrl
+            or universal.Paths.ASSETSPATH + "/placeholders/generic.png"
+        )
 
     def checkPlaybackReady(self, noEmit: bool = False) -> bool:
         """Checks if the song is ready for playback."""
@@ -668,14 +676,10 @@ class Song(QObject):
         universal.songRepository.put(self.ntid, self.data)
 
     def __getattribute__(self, name):
-
-        if name in SongData(SimpleIdentifier("null")).as_dict().keys():
-            # logger = super().__getattribute__("logger")
-            # logger.warning(
-            #     f"Accessing Song.{name} directly is deprecated, use Song.data.{name} instead."
-            # )
+        # get what type of SongData we're using. This could be any inheritor of SongData.
+        try:
             return getattr(super().__getattribute__("data"), name)
-        else:
+        except AttributeError:
             return super().__getattribute__(name)
 
     async def get_lyrics(self, api) -> dict:
@@ -896,7 +900,7 @@ class SongImageProvider(QQuickImageProvider):
             skipCache = True
         else:
             try:
-                thumbUrl = song.data.largestThumbnailUrl
+                thumbUrl = song.bestThumbnailUrl
                 if thumbUrl is None:
                     raise TypeError
             except (AttributeError, TypeError):

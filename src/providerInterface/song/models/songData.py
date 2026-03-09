@@ -130,6 +130,8 @@ class SongData:
 
     duration: Optional[int] = None
     thumbnailUrl: Optional[str] = None
+    highestThumbnailUrl: Optional[str] = None
+    lowestThumbnailUrl: Optional[str] = None
 
     releaseDate: Optional[str] = None
     genre: Optional[list[str]] = None

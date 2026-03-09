@@ -9,6 +9,7 @@
 - refactor database -- kaneryu on 2026-02-16
 - Temporarily increase default task timeout -- kaneryu on 2026-02-22
 - Add fallback image for presence so it doesn't error 100 times a second -- kaneryu on 2026-02-23
+- update thumbnail URL references and add bestThumbnailUrl property to ensure images work everywhere -- kaneryu on 2026-03-09
 
 
 # 0.54.0

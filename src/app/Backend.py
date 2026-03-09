@@ -135,7 +135,7 @@ class Backend(QObject):
                 )
                 return
 
-            thumb = songobj.data.smallestThumbnailUrl  # type: ignore[attr-defined]
+            thumb = songobj.bestThumbnailUrl  # type: ignore[attr-defined]
             res = networking.networkManager.get(thumb)
             if res is None:
                 return

@@ -424,7 +424,7 @@ class Queue(QObject):
             title=self.currentSongTitle,  # type: ignore
             artist=self.currentSongChannel,  # type: ignore
             album_title="",
-            art_uri=self.currentSongObject.largestThumbnailUrl,  # type: ignore
+            art_uri=self.currentSongObject.bestThumbnailUrl,  # type: ignore
         )
         if self.queue and self.pointer < len(self.queue) - 1:
             winSMTC.set_next_enabled(True)
@@ -658,11 +658,18 @@ class Queue(QObject):
             }
 
         song_ = self.queue[pointer]
-        return {
-            "title": song_.title,
-            "uploader": song_.artist,
-            "description": song_.description,
-        }
+        try:
+            return {
+                "title": song_.title,
+                "uploader": song_.artist,
+                "description": song_.description,
+            }
+        except AttributeError:
+            return {
+                "title": song_.title,
+                "uploader": song_.artist,
+                "description": "No Description",
+            }
 
     def add(
         self,

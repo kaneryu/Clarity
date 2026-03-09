@@ -465,7 +465,6 @@ def songdata_from_raw(
     )
     # thumbnails from videoDetails
     thumbs = (vd.get("thumbnail") or {}).get("thumbnails", []) or []
-    sd.thumbnails = {"videoDetails": thumbs}
 
     # convert thumbnails to typed ThumbnailSet if desired for microformat usage
     # pick smallest & largest by width (fallback to height then by length)
@@ -486,6 +485,14 @@ def songdata_from_raw(
         sd.largestThumbnail = largest
         sd.smallestThumbnailUrl = smallest.get("url")
         sd.largestThumbnailUrl = largest.get("url")
+
+    sd.thumbnails = {"videoDetails": thumbs}
+    sd.thumbnailUrl = (
+        thumbs[-1].get("url") if thumbs else None
+    )  # pick last thumbnail as default (usually highest res)
+
+    sd.highestThumbnailUrl = thumbs[-1].get("url") if thumbs else None
+    sd.lowestThumbnailUrl = thumbs[0].get("url") if thumbs else None
 
     sd.videoDetails = video_details_obj
 
