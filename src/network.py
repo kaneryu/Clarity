@@ -6,6 +6,7 @@ import urllib3
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 import enum
 import os
 
@@ -70,6 +71,10 @@ class NetworkManager(QObject):
                 dynamic=True, base_interval=10, max_interval=60, growth_factor=1.5
             ),
         )  # Max interval of 1 minute, run every 10 seconds to start
+
+        self._file_write_locks: Dict[str, Lock] = (
+            {}
+        )  # To manage concurrent writes to the same file (key filepath)
 
     def occasionally_test_onlinemode(self) -> bool:
         self.test_onlinemode()
@@ -227,7 +232,6 @@ class NetworkManager(QObject):
                 file_obj.seek(start)  # Ensure we start writing at the correct position
 
                 total_size = int(response.headers.get("content-length", 0))
-
                 downloaded = 0
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:  # filter out keep-alive chunks
@@ -270,6 +274,7 @@ class NetworkManager(QObject):
         """
         request_headers = {**self.default_headers, **(headers or {})}
         request_headers["Range"] = f"bytes={start}-{end}"
+        lock = self._file_write_locks[file_obj.name]
 
         bytes_downloaded = 0
 
@@ -281,11 +286,13 @@ class NetworkManager(QObject):
 
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:  # filter out keep-alive chunks
-                        file_obj.seek(start + bytes_downloaded)
-                        file_obj.write(chunk)
-                        bytes_downloaded += len(chunk)
-                        if progress_callback:
-                            progress_callback(start + bytes_downloaded)
+                        # Ensure only one thread writes to the file at a time
+                        with lock:
+                            file_obj.seek(start + bytes_downloaded)
+                            file_obj.write(chunk)
+                            bytes_downloaded += len(chunk)
+                            if progress_callback:
+                                progress_callback(start + bytes_downloaded)
 
             self.logger.debug(f"Downloaded chunk {start}-{end} from {url}")
             return bytes_downloaded
@@ -321,6 +328,9 @@ class NetworkManager(QObject):
         """
         request_headers = {**self.default_headers, **(headers or {})}
         downloaded_size = file_obj.tell()  # Get current position for resuming
+        self._file_write_locks.setdefault(
+            file_obj.name, Lock()
+        )  # Ensure there's a lock for this file
 
         # Get file size with HEAD request
         try:
