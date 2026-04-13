@@ -205,9 +205,7 @@ class Song(QObject):
         )
         self._prev_playbackreadyresult: bool | None = None
 
-        # Schedule cache check and file existence check on background thread
-        # This avoids blocking UI during Song creation
-        def _lazy_init():
+        def initdata():
             if self.downloadsDatastore.checkFileExists(self.downloadIdentifier):
                 self.downloadState = DownloadState.DOWNLOADED._value_
             self.get_info_cache_only()
@@ -224,7 +222,7 @@ class Song(QObject):
         )
 
         # universal.bgworker.addJob(_lazy_init)
-        _lazy_init()
+        initdata()
 
         if self.dataStatus == DataStatus.NOTLOADED:
             universal.asyncBgworker.addJob(self.get_info)
