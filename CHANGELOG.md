@@ -4,6 +4,10 @@
 
 - add first tabs implementation. -- kaneryu on 2026-04-12
 
+## Bugfixes
+
+- Move lazyload away from bgworker to speed up application load -- kaneryu on 2026-04-13
+
 
 # 0.55.0
 

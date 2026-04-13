@@ -142,3 +142,7 @@ class YoutubeProvider(ProviderInterface):
     @staticmethod
     def playback_from_raw(raw_data: rawPlaybackDataDict) -> Optional[PlaybackData]:
         return playback_from_raw(raw_data)
+
+
+YoutubeProvider.CACHE.integrityCheck()
+YoutubeProvider.DATASTORE.integrityCheck()

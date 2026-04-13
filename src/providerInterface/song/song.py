@@ -211,8 +211,9 @@ class Song(QObject):
             if self.downloadsDatastore.checkFileExists(self.downloadIdentifier):
                 self.downloadState = DownloadState.DOWNLOADED._value_
             self.get_info_cache_only()
-
-        universal.bgworker.addJob(_lazy_init)
+            print(
+                f"Initialized song {self.nsid} with data status {self.dataStatus} and download state {self.downloadState}"
+            )
 
         self.data: Union[SongData, YoutubeSongData] = SongData(
             source="placeholder",
@@ -221,8 +222,12 @@ class Song(QObject):
             artist="Loading...",
             duration=0,
         )
-        # 99% of the time, the UI tries to fetch these immediately
-        # So we set them to some default values to avoid attribute errors
+
+        # universal.bgworker.addJob(_lazy_init)
+        _lazy_init()
+
+        if self.dataStatus == DataStatus.NOTLOADED:
+            universal.asyncBgworker.addJob(self.get_info)
 
     @QProperty(str, constant=True)
     def id(self) -> str:
@@ -362,11 +367,14 @@ class Song(QObject):
         if cachedData := self.songsCache.get(identifier):  # type: ignore[assignment]
             rawData = songDataDict(json.loads(cachedData))
             if rawData.get("playabilityStatus", {}).get("status") == "ERROR":
+                self.dataStatus = DataStatus.NOTLOADED
                 raise Exception(
                     f"Song cannot be retrieved due to playability issues. id: {self.id} "
                     + rawData.get("playabilityStatus", {}).get("reason")
                 )
+
         else:
+            self.dataStatus = DataStatus.NOTLOADED
             return
 
         self._set_info(rawData)

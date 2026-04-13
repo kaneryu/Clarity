@@ -1,6 +1,7 @@
 # Changes Since Last Release
 
 - (0.56.0) add first tabs implementation. -- kaneryu on 2026-04-12
+Move lazyload away from bgworker to speed up application load -- kaneryu on 2026-04-13
 - (0.55.0) add basic implementation for checkboxes -- kaneryu on 2026-02-13
 refactor database -- kaneryu on 2026-02-16
 Temporarily increase default task timeout -- kaneryu on 2026-02-22

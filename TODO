@@ -64,3 +64,6 @@ Then TabManager can just request AppUrl to open urls, and AppUrl will handle the
 
 Instead of the above, that TabManger is now just a list of tab definitions. We then dynamically check which tab is loaded by checking the current URL with
 the TabManger's list of tab urls.
+
+
+Downloaded song data should be stored somewhere more permanent, likley in the db.
