@@ -450,11 +450,12 @@ class Song(QObject):
                         self.downloadIdentifier + "_downloadMeta"
                     )
                 )
+
+                meta["url"] = pathlib.Path(fp).resolve().absolute().as_uri()
                 meta = dacite.from_dict(
                     data_class=FormatData,
                     data=meta,
                 )
-                meta.url = pathlib.Path(fp).resolve().absolute().as_uri()
                 self.playbackInfo = PlaybackData(
                     id=SimpleIdentifier(str(self.nsid)),
                     title=self.data.title,
@@ -582,7 +583,7 @@ class Song(QObject):
         Downloads the song.
         """
         if self.downloadState == DownloadState.DOWNLOADED:
-            return  # This behavior will be more complex; ask the user for confirmation or something like that
+            pass  # This behavior will be more complex; ask the user for confirmation or something like that
         # or require a call to delete_download or a similar method first.
         # for now, do nothing.
 

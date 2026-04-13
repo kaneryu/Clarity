@@ -195,7 +195,9 @@ dbCore.initializeDatabase()
 globalDbInterface = dbCore.DatabaseInterface()
 songRepository = SongRepository(globalDbInterface)
 
+
 queueInstance: queue_module.Queue = queue_module.Queue()
+
 search = innertube_module.search
 
 searchModel = innertube_module.BasicSearchResultsModel()

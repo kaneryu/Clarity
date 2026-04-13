@@ -99,11 +99,12 @@ class SongRepository:
             raise ValueError("SongData must have a title.")
 
         title = songData.title
-        album_id = songData.albumId if songData.albumId else None
+        try:
+            album_id = songData.albumId if songData.albumId else None
+        except AttributeError:
+            album_id = None
         duration = songData.duration if songData.duration else 0
-        thumbnail_url = (
-            songData.largestThumbnailUrl if songData.largestThumbnailUrl else None
-        )
+        thumbnail_url = songData.thumbnailUrl if songData.thumbnailUrl else None
 
         query = """
         INSERT INTO songs (id, title, album_id, duration, thumbnail_url, liked, play_count, date_added)
@@ -112,7 +113,7 @@ class SongRepository:
             title=excluded.title,
             album_id=excluded.album_id,
             duration=excluded.duration,
-            thumbnail_url=excluded.thumbnail_url;         
+            thumbnail_url=excluded.thumbnail_url;   
         """
 
         self.db.execute(

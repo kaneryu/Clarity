@@ -192,3 +192,5 @@ starthere.txt
 *.aprof
 /src/temp.py
 src/databaseInterface/database
+/headers
+/browser.json

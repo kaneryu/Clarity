@@ -11,6 +11,7 @@
 - Add fallback image for presence so it doesn't error 100 times a second -- kaneryu on 2026-02-23
 - update thumbnail URL references and add bestThumbnailUrl property to ensure images work everywhere -- kaneryu on 2026-03-09
 - race condition in song downloads -- kaneryu on 2026-04-12
+- add temporary login, fix some bugs, some misc housekeeping -- kaneryu on 2026-04-12
 
 
 # 0.54.0

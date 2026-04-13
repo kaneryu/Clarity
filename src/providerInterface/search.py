@@ -426,6 +426,7 @@ async def search(
             )
             return model
     except Exception as e:
+        print(traceback.format_exc())
         logging.getLogger("SearchLogger").error(
             f"Failed searching for {query}, Error: " + str(e)
         )
