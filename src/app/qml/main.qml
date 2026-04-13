@@ -23,14 +23,6 @@ ApplicationWindow {
 
     title: "Clarity" + " | " + Interactions.currentSongTitle + " (" + Interactions.playingStatusString + ")"
 
-    Shortcut {
-        sequence: "Ctrl+Shift+R"
-        onActivated: {
-            console.log("Reloading QML page...")
-            Backend.qmlReload()
-        }
-    }
-
     Connections {
         target: Backend
         function onLoadComplete() {
@@ -85,38 +77,93 @@ ApplicationWindow {
         radius: 5
 
         color: Theme.surfaceContainerLow
-
-        Image {
-            id: logo
-            anchors.left: parent.left
-            anchors.leftMargin: 5
-            anchors.verticalCenter: parent.verticalCenter
-
-            source: AssetsPath + "clarityLogo.png"
-            mipmap: true
-            fillMode: Image.PreserveAspectFit
-            width: 35
+        
+        RowLayout {
+            id: headerLayout
+            anchors.fill: parent
             height: 35
-            
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    Backend.setUrl("page/album?id=MPREb_qCpqRdQhMVT")
+            spacing: 10
+
+            Image {
+                id: logo
+
+                source: AssetsPath + "clarityLogo.png"
+                mipmap: true
+                fillMode: Image.PreserveAspectFit
+                Layout.preferredWidth: 35
+                Layout.preferredHeight: 35
+                
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        Backend.setUrl("page/album?id=MPREb_qCpqRdQhMVT")
+                    }
                 }
             }
-        }
 
-        Components.SearchBar {
-            id: searchbar
-            anchors.left: logo.right
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.leftMargin: 10
-            anchors.rightMargin: 5
-            visible: true
+            Components.SearchBar {
+                id: searchbar
 
-            onSettingsClick: {
-                Backend.setUrl("page/settings")
+                Layout.fillWidth: true
+                height: 35
+
+                visible: true
+
+                onSettingsClick: {
+                    Backend.setUrl("page/settings")
+                }
+            }
+
+            Components.CheckboxGroup {
+                id: tabbox
+
+                Connections {
+                    target: Backend
+                    function onActiveTabChanged() {
+                        var newIdx = Backend.activeNavTabIndex
+                        tabbox.activeCheckboxIndex = newIdx
+                        
+                        tabbox.triggerCheckboxUpdate()
+                    }
+                }
+
+                Layout.preferredWidth: (Backend.navTabs.length * 150) + 15
+                Layout.fillHeight: true
+                Layout.alignment: Qt.AlignRight
+
+                Component.onCompleted: {
+                    function checkboxFactory(text, icon) {
+                        var checkbox = Qt.createComponent("components/Checkbox.qml").createObject(tabbox)
+                        console.log("running factory")
+                        if (text !== "") {
+                            checkbox.text = text
+                        }
+                        if (icon !== "") {
+                            checkbox.icon = icon
+                        }
+
+                        checkbox.implicitWidth = 150
+
+                        return checkbox
+                    }
+                    
+                    let tablist = Backend.navTabs
+
+                    for (let i = 0; i < tablist.length; i++) {
+                        let tab = tablist[i]
+                        var cb = checkboxFactory(tab.title, "")
+                        tabbox.addCheckboxObject(cb, tab.name, function() {
+                            Backend.setUrl(tab.path)
+                        })
+                    }
+
+                    tabbox.activeCheckboxIndex = Backend.activeNavTabIndex
+                    
+                    tabbox.activeCheckboxChanged.connect(function() {
+                    })
+
+                    tabbox.triggerCheckboxUpdate() // Trigger an update to set the correct active tab on startup
+                }
             }
         }
 

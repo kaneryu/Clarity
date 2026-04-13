@@ -15,6 +15,7 @@ Item {
 
     property alias checkboxes: checkboxColumn.children
     property var checkgroupData: ({})
+    property int count: checkboxColumn.children.length
 
     signal activeCheckboxChanged()
 
@@ -103,6 +104,17 @@ Item {
         }
 
         checkboxObject.parent = checkboxColumn
+    }
+
+    function triggerCheckboxUpdate() {
+        for (var i = 0; i < checkboxColumn.children.length; i++) {
+            var checkbox = checkboxColumn.children[i]
+            if (root.activeCheckboxIndex === i) {
+                checkbox.checkState = true
+            } else {
+                checkbox.checkState = false
+            }
+        }
     }
 
 }

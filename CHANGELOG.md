@@ -1,3 +1,10 @@
+# 0.56.0
+
+## New Features
+
+- add first tabs implementation. -- kaneryu on 2026-04-12
+
+
 # 0.55.0
 
 ## New Features

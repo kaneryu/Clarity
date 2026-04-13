@@ -16,6 +16,7 @@ Item {
     property alias color: textItem.color
     property alias font: textItem.font
     
+    
     clip: true
 
     width: textItem.width + spacing

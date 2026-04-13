@@ -59,3 +59,8 @@ So, the plan is to have TabManager handle the tabs, and AppUrl handle the actual
 Alright, we can add url handlers to AppUrl, so when a url is requested, it checks if any handler wants to handle it, if not it falls back to the disk based system.
 
 Then TabManager can just request AppUrl to open urls, and AppUrl will handle the rest
+
+
+
+Instead of the above, that TabManger is now just a list of tab definitions. We then dynamically check which tab is loaded by checking the current URL with
+the TabManger's list of tab urls.

@@ -1,5 +1,6 @@
 # Changes Since Last Release
 
+- (0.56.0) add first tabs implementation. -- kaneryu on 2026-04-12
 - (0.55.0) add basic implementation for checkboxes -- kaneryu on 2026-02-13
 refactor database -- kaneryu on 2026-02-16
 Temporarily increase default task timeout -- kaneryu on 2026-02-22

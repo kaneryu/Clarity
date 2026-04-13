@@ -21,7 +21,7 @@ Components.ReactiveItem {
 
     property bool checkState: false
     colortype: (root.checkState) ? "primary" : "secondary"
-    property alias checked: root.checkState
+    property alias checked: root.checkState 
     property string uncheckedText: "Unchecked"
     property string checkedText: "Checked"
     property string text: "_unused$disabled$checkbox_"

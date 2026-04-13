@@ -35,20 +35,57 @@ QML_IMPORT_MINOR_VERSION = 0
 
 
 class TabManager(QObject):
+    """
+    Okay, so this is just going to be a simple object that holds the available tabs and their root paths
+    It will not keep track of tabs itself, combining a tab manager and the URL system would be weird
+    So, we will just check if the root of the URL matches the path of a tab, and if it does, we will set that tab as active
+    This is checked every time the variable is polled, not stored.
+    """
 
     activeTabIndexChanged = QSignal(int, name="activeTabIndexChanged")
 
     def __init__(self):
         super().__init__()
 
-        self._tabs = [  # type: ignore[assignment]
-            {"name": "home", "title": "Home", "path": "pages/home"},
-            {"name": "explore", "title": "Explore"},
-            {"name": "library", "title": "Library"},
-            {"name": "downloads", "title": "Downloads(temporary)"},
-        ]
+        # TODO TODO TODO: Three todos is important:
+        # Right after i fininsh this commit, i need to change it so the root url for tabs is simply /[tabname]
+        # No need for /page/[tabname]
 
-        self._activeTabIndex = 0
+        self.defualtTabIndex = 0  # Home for now
+
+        self._tabs = [  # type: ignore[assignment]
+            {"name": "home", "title": "Home", "path": "page/home", "showInNav": True},
+            {
+                "name": "explore",
+                "title": "Explore",
+                "path": "page/explore",
+                "showInNav": False,  # NotImplemented
+            },
+            {
+                "name": "library",
+                "title": "Library",
+                "path": "page/library",
+                "showInNav": False,  # NotImplemented
+            },
+            {
+                "name": "downloads",
+                "title": "Downloads",  # Temp, will be rolled into the Library eventually
+                "path": "page/downloads",
+                "showInNav": True,
+            },
+            {
+                "name": "search",
+                "title": "Search",
+                "path": "page/search",
+                "showInNav": False,  # Perm, it's a special tab
+            },
+            {
+                "name": "settings",
+                "title": "Settings",
+                "path": "page/settings",
+                "showInNav": False,  # Perm, navigate to it using settings button, not tabbar
+            },
+        ]
 
     @Property(list, constant=True)
     def tabs(self):
@@ -61,21 +98,6 @@ class TabManager(QObject):
     @Property(list, constant=True)
     def tabNames(self):
         return [tab["name"] for tab in self.tabs]
-
-    @Property(int)
-    def activeTabIndex(self):
-        return self._activeTabIndex
-
-    @activeTabIndex.setter
-    def activeTabIndex(self, index):
-        if index < 0 or index >= len(self.tabs):
-            return
-        self._activeTabIndex = index
-        self.activeTabIndexChanged.emit(index)
-
-    @Property(str)
-    def activeTabName(self):
-        return self.tabs[self._activeTabIndex]["name"]
 
 
 @QmlElement
@@ -92,7 +114,6 @@ class Backend(QObject):
 
     onlineChanged = QSignal(name="onlineChanged")
 
-    qmlReload = QSignal(name="qmlReload")
     _instance: "Backend"
 
     def __new__(cls) -> "Backend":
@@ -120,41 +141,66 @@ class Backend(QObject):
 
             self.tabmanager = TabManager()
 
+            self._activeTabIndex = self.tabmanager.defualtTabIndex
+            self.urlChanged.connect(self.urlUpdateTabChecker)
+
     @Property(list, constant=True)
     def tabs(self):
         return self.tabmanager.tabs
 
-    def updateMaterialColors(self):
-        def updateMaterialColors_task():
-            songobj = universal.queueInstance.currentSongObject
+    @Property(list, constant=True)
+    def navTabs(self):
+        return [tab for tab in self.tabmanager.tabs if tab["showInNav"]]
 
-            retrievedMaterialColors = songobj.materialColor
-            if retrievedMaterialColors is not None:
-                materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
-                    retrievedMaterialColors
-                )
-                return
+    @Property(int, notify=activeTabChanged)
+    def activeNavTabIndex(self):
+        navTabs = self.navTabs
+        activeTabName = self.activeTabName
+        for i in range(len(navTabs)):
+            if navTabs[i]["name"] == activeTabName:
+                return i
+        return -1  # Return -1 if no matching tab is found
 
-            thumb = songobj.bestThumbnailUrl  # type: ignore[attr-defined]
-            res = networking.networkManager.get(thumb)
-            if res is None:
-                return
-            with open(os.path.join(paths.Paths.DATAPATH, "currentthumb"), "wb") as f:
-                f.write(res.content)
+    @Property(object, constant=True)
+    def tabManager(self):
+        return self.tabmanager
 
-            if res is not None:
-                export = (
-                    materialInterface.Theme.getInstance().exportDynamicColorsFromImage(
-                        os.path.join(paths.Paths.DATAPATH, "currentthumb")
-                    )
-                )
-                if export is not None:
-                    materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
-                        export
-                    )
-                    songobj.materialColor = export
+    @Property(int, notify=activeTabChanged)
+    def activeTabIndex(self):
+        tabpaths = [self.tabs[i]["path"] for i in range(self.tabmanager.tabCount)]
+        currentPath = universal.appUrl.getUrl().strip("clarity:///")
+        for i in range(len(tabpaths)):
+            if currentPath.startswith(tabpaths[i]):
+                if not self._activeTabIndex == i:
+                    self._activeTabIndex = i
+                    self.activeTabChanged.emit()  # Emit the signal to notify of the change
+                    # This miiiight be dangerous, maybe an edge case where there could be an infinite loop of checks
+                    # I'm not sure how that would happen though...
+                    # Tally times when it happened: 1
+                return i
 
-        universal.bgworker.addJob(updateMaterialColors_task)
+        return -1  # Return -1 if no matching tab is found
+
+    @Property(str, notify=activeTabChanged)
+    def activeTabName(self):
+        index = self.activeTabIndex
+        if index == -1:
+            return ""
+        return self.tabs[index]["name"]
+
+    @Property(str, notify=activeTabChanged)
+    def activeTabTitle(self):
+        index = self.activeTabIndex
+        if index == -1:
+            return ""
+        return self.tabs[index]["title"]
+
+    def urlUpdateTabChecker(self):
+        # This function is called every time the URL changes, and it checks if the active tab should be changed
+        newActiveTabIndex = self.activeTabIndex
+        if newActiveTabIndex != self._activeTabIndex:
+            self._activeTabIndex = newActiveTabIndex
+            self.activeTabChanged.emit()
 
     @Property(str, notify=urlChanged)
     def url(self):
@@ -203,6 +249,38 @@ class Backend(QObject):
                 "Error in getCurrentPageFilePath: %s", e
             )
             return ""
+
+    def updateMaterialColors(self):
+        def updateMaterialColors_task():
+            songobj = universal.queueInstance.currentSongObject
+
+            retrievedMaterialColors = songobj.materialColor
+            if retrievedMaterialColors is not None:
+                materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
+                    retrievedMaterialColors
+                )
+                return
+
+            thumb = songobj.bestThumbnailUrl  # type: ignore[attr-defined]
+            res = networking.networkManager.get(thumb)
+            if res is None:
+                return
+            with open(os.path.join(paths.Paths.DATAPATH, "currentthumb"), "wb") as f:
+                f.write(res.content)
+
+            if res is not None:
+                export = (
+                    materialInterface.Theme.getInstance().exportDynamicColorsFromImage(
+                        os.path.join(paths.Paths.DATAPATH, "currentthumb")
+                    )
+                )
+                if export is not None:
+                    materialInterface.Theme.getInstance().loadDynamicColorsFromExport(
+                        export
+                    )
+                    songobj.materialColor = export
+
+        universal.bgworker.addJob(updateMaterialColors_task)
 
     @Slot(str)
     def setSearchURL(self, query):
@@ -287,80 +365,9 @@ class Backend(QObject):
     def ping(self) -> str:
         return "pong"
 
-    # @Slot()
-    # def oauth(self) -> None:
-    #     ytmusicapi.setup_oauth()
-
 
 def castUb(input: typing.Any) -> typing.Union[bytes, bytearray]:
     return typing.cast(typing.Union[bytes, bytearray], input)
-
-
-# class ProfileInterfaceManager:
-#     def __init__(self, profile: QWebEngineProfile | QQuickWebEngineProfile):
-#         self.profile = profile
-#         urlInterceptor = UrlInterceptor()
-#         self.profile.setUrlRequestInterceptor(urlInterceptor)
-
-#         cookiestore = self.profile.cookieStore()
-#         cookiestore.cookieAdded.connect(self.newCookie)
-#         cookiestore.cookieRemoved.connect(self.remCookie)
-
-#     def newCookie(self, cookie: QNetworkCookie):
-
-#         prep = f"""
-#         New cookie:
-#         Name: {castUb(cookie.name().data()).decode("utf-8")}
-#         Value: {castUb(cookie.value().data()).decode("utf-8")}
-#         Domain: {cookie.domain()}
-#         Path: {cookie.path()}
-#         """
-#         print(prep)
-
-#     def remCookie(self, cookie: QNetworkCookie):
-#         prep = f"""
-#         Removed cookie:
-#         Name: {castUb(cookie.name().data()).decode("utf-8")}
-#         Value: {castUb(cookie.value().data()).decode("utf-8")}
-#         Domain: {cookie.domain()}
-#         Path: {cookie.path()}
-#         """
-#         print(prep)
-
-# class UrlInterceptor(QWebEngineUrlRequestInterceptor):
-#     def __init__(self):
-#         super().__init__()
-
-#     def interceptRequest(self, info: QWebEngineUrlRequestInfo):
-#         url = info.requestUrl().toString()
-#         headers = info.httpHeaders()
-
-#         if "Cookie" in headers.keys():
-#             print("url", url)
-#             print("headers", headers)
-
-#         if url == "https://music.youtube.com":
-#             bend = Backend()
-#             bend.loginRedirect.emit()
-
-
-#         if url.startswith("https://music.youtube.com/youtubei/v1/browse"):
-#             bend = Backend()
-#             print("url", url)
-#             # Iterate through headers and convert QByteArray to strings
-#             headers_dict = {}
-#             for key, value in headers.items():
-#                 headers_dict[castUb(key.data()).decode("utf-8")] = castUb(value.data()).decode("utf-8")
-#             print(headers_dict)
-
-#             if not "Cookie" in headers_dict.keys() or not "X-Goog-Authuser" in headers_dict.keys():
-#                 print("bad request")
-#                 return
-
-#             with open("ytheaders.json", "w") as f:
-#                 json.dump(headers_dict, f)
-
-#             bend.loginComplete.emit()
 
 
 class DownloadedSongsModel(SongProxyListModel):
