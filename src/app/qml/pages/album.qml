@@ -100,13 +100,6 @@ Item {
             model: album.getSongsProxyModel()
             delegate: Base.Song {
                 song: model.object
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        Interactions.songPress(model.id)
-                    }
-                }
             }
 
         }

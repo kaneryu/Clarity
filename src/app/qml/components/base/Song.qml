@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt.labs.platform
+// import Qt.labs.platform
 import QtQuick.Effects
 
 import "../../colobjs" as ColObjs
@@ -31,6 +31,8 @@ Item {
     property int songDownloadState: song.downloadState
     property int songPlayingStatus: song.playingStatus
     property color textColor: Theme.onSurface
+
+    property string clickFlavor: "default"
 
     // property bool songIsSelected: false
 
@@ -118,6 +120,42 @@ Item {
             // }
         }
         
+    }
+
+    ContextMenu.menu: Menu {
+        MenuItem {
+            text: "Play"
+            onTriggered: Interactions.songPress(root.song.id, "default")
+        }
+        MenuItem {
+            text: "Go to in queue"
+            onTriggered: Interactions.songPress(root.song.id, "queue")
+        }
+        MenuItem {
+            text: "Add to queue"
+            onTriggered: Interactions.songPress(root.song.id, "forceAdd")
+        }
+        MenuItem {
+            text: "Go to album"
+            onTriggered: Interactions.goToAlbumPageFromSongID(root.song.id)
+        }
+        MenuItem {
+            text: "Download"
+            enabled: root.songDownloadState === 0
+            onTriggered: Interactions.downloadSong(root.song.id)
+        }
+        MenuItem {
+            text: root.song.likedStatus == true ? "Unlike" : "Like"
+            onTriggered: Interactions.likeById(root.song.id, root.song.likedStatus == true ? false : true)
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        onClicked: {
+            Interactions.songPress(root.song.id, root.clickFlavor)
+        }
     }
 
     // Rectangle {

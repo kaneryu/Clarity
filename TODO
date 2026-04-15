@@ -1,5 +1,3 @@
-update finnaly done! ai turned out to be useless...
-
 anyway, new todo:
 we gotta add artists
 and also playlists
@@ -12,7 +10,7 @@ Playlists would be stored in a sqlite database, so i'll need to start adding dat
 
 So, the next update should be (Alpha Release 1)
 Playlists (local only for now)
-Download page - Started on this, we have a basic model and downloads displayed on home page
+Download page - Started on this, we have a basic model and downloads displayed on home page - Done....
 Liked songs (pretty easy now that we have a database) - Done! and the database is in place too (1/12/26)
 Add right click context menu!! (functions like add song to be next in queue, add to playlist, download, like, etc)
 

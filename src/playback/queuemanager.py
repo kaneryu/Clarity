@@ -163,7 +163,9 @@ class QueueModel(QAbstractListModel):
 
 
 class Queue(QObject):
-    """Queue managing the list, Discord presence, and WinSMTC; playback is delegated to MediaPlayer."""
+    """Queue managing the list, Discord presence, and WinSMTC; playback is delegated to MediaPlayer.
+    Note: All Ids in queueIds are NamespacedTypedIdentifiers in string form.
+    """
 
     queueChanged = Signal()
     songChanged = Signal(int)  # emits PREVIOUS song index
@@ -540,17 +542,27 @@ class Queue(QObject):
         self.play()
 
     @Slot(str)
-    def goToSong(self, id: Union[str, NamespacedTypedIdentifier]):
+    def goToSong(self, id: Union[str, NamespacedTypedIdentifier, NamespacedIdentifier]):
         if isinstance(id, str):
-            id = NamespacedTypedIdentifier.from_string(id)
-        if str(id) in self.queueIds:
+
+            id = str_to_identifer(id)  # type: ignore[assignment]
+            if isinstance(id, SimpleIdentifier):
+                raise ValueError(
+                    "ID string must be in the format 'namespace:id' or 'namespace:type:id'"
+                )
+            if isinstance(id, NamespacedIdentifier):
+                id = NamespacedTypedIdentifier(namespacedIdentifier=id, type="song")
+
+        if str(id) not in self.queueIds:
             self.add(id)
+
         self.pointer = self.queueIds.index(str(id))  # type: ignore[attr-defined]
         self.play()
 
     @Slot()
     def pause(self):
         self._player.pause()
+        print(self.queueIds)
 
     @Slot()
     def resume(self):

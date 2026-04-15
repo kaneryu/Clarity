@@ -1,3 +1,10 @@
+# 0.57.0
+
+## New Features
+
+- add right click menu with a few functions -- kaneryu on 2026-04-15
+
+
 # 0.56.0
 
 ## New Features

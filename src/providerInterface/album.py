@@ -288,9 +288,10 @@ def albumFromSong(song: song.Song) -> Union[Album, None]:
         return None
     albumInstance = Album(albumInfo)
     if albumInstance.dataStatus is not DataStatus.LOADED:
-        universal.asyncBgworker.addJob(
+        getinfo = universal.asyncargfuncFactory(
             albumInstance.get_info, universal.asyncBgworker.API
         )
+        universal.asyncBgworker.addJob(getinfo)
     return albumInstance
 
 
@@ -300,9 +301,10 @@ def albumFromSongID(songID: str) -> Union[Album, None]:
     ).result()
     albumInstance = Album(albumID) if albumID is not None else None
     if albumInstance is not None and albumInstance.dataStatus is not DataStatus.LOADED:
-        universal.asyncBgworker.addJob(
+        getinfo = universal.asyncargfuncFactory(
             albumInstance.get_info, universal.asyncBgworker.API
         )
+        universal.asyncBgworker.addJob(getinfo)
     return albumInstance
 
 

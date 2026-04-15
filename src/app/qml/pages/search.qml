@@ -89,13 +89,6 @@ Item {
 
                         anchors.fill: parent
                         anchors.margins: 5
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                Interactions.songPress(songContainer.ytid)
-                            }
-                        }
                     }
                 }
             }

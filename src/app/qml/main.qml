@@ -462,17 +462,11 @@ ApplicationWindow {
                 required property var qobject
                 required property var index
                 required property var id
+                clickFlavor: "queue"
                 radius: 230
                 width: queueList.width
                 height: 80
                 song: Interactions.getSong(id)
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        Interactions.setQueueIndex(index)
-                    }
-                }
             }
         }
     }

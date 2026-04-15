@@ -71,13 +71,6 @@ Item {
             height: gridView.cellHeight - 5
 
             song: object
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    Interactions.songPress(id)
-                }
-            }
         }
     }
 }

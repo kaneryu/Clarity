@@ -4,3 +4,5 @@ bug in download. Saving the download metadata has to be reworked completely.
 As of right now, it still saves the network URL it fetched the download from, which is Bad. This means that when the application tries to play the song, It will still use the network URL (or at least, it should, it doesn't sometimes.) We should probably rework the MRL fetching mechanism again, it's still spagetti. One more rework will fix it. Just one more. One more. Please
 
 Also you can't actaully redownload a song if it's already playing....
+
+    Songs may not load when you open an album page, usually when you right click and their album.

@@ -1,7 +1,7 @@
 # stdlib imports
 import json
 import logging
-from typing import overload
+from typing import Union, overload
 
 # library imports
 from PySide6.QtCore import (
@@ -9,11 +9,16 @@ from PySide6.QtCore import (
 )
 
 from PySide6.QtCore import Signal as Signal
-from PySide6.QtCore import Slot as Slot, QMetaObject, Qt, QMutexLocker, QMutex
+from PySide6.QtCore import Slot as Slot, QMutexLocker
 from PySide6.QtQml import (
     QmlElement,
 )
 from PySide6.QtCore import Property
+from providerInterface.globalModels.identifier import (
+    NamespacedIdentifier,
+    NamespacedTypedIdentifier,
+    SimpleIdentifier,
+)
 
 import src.universal as universal
 import src.misc.enumerations.Song as song_enums
@@ -34,6 +39,18 @@ class loggingMutexLocker(QMutexLocker):
     def __exit__(self, *args):
         print("unlocked")
         super().__exit__(*args)
+
+
+def str_to_identifer(
+    id_str: str,
+) -> Union[NamespacedTypedIdentifier, NamespacedIdentifier, SimpleIdentifier]:
+    try:
+        return NamespacedTypedIdentifier.from_string(id_str)
+    except ValueError:
+        try:
+            return NamespacedIdentifier.from_string(id_str)
+        except ValueError:
+            return SimpleIdentifier(id=id_str)
 
 
 @QmlElement
@@ -167,13 +184,27 @@ class Interactions(QObject):
         )
         return True
 
-    @Slot(str)
-    def songPress(self, id: str):
-        q = universal.queueInstance
-        q.gotoOrAdd(id)
+    @Slot(str, str)
+    def songPress(self, id: str, clickFlavor: str = "default"):
+        if clickFlavor == "default":
+            q = universal.queueInstance
+            q.gotoOrAdd(id)
+        elif clickFlavor == "queue":
+            universal.queueInstance.goToSong(id)
+        elif clickFlavor == "forceAdd":
+            universal.queueInstance.add(id)
 
     @Slot(str, result=QObject)
     def getAlbumFromSongID(self, id: str):
+        nId = str_to_identifer(id)  # type: ignore[assignment]
+        if isinstance(nId, SimpleIdentifier):
+            self.logger.warning(f"ID {id} is a simple identifier, we need a namespace!")
+            return None
+        id = (
+            nId.id
+            if isinstance(nId, NamespacedIdentifier)
+            else nId.namespacedIdentifier.id
+        )
         album = universal.album_module.albumFromSongID(id)
         if album is None:
             self.logger.warning(f"Album not found for song ID: {id}")
@@ -194,6 +225,24 @@ class Interactions(QObject):
             self.logger.warning(f"Album not found for album ID: {id}")
             return
         universal.appUrl.setUrl(f"clarity:///page/album?id={id}")
+
+    @Slot(str)  # temporary!
+    def goToAlbumPageFromSongID(self, id: str):
+        nId = str_to_identifer(id)  # type: ignore[assignment]
+        if isinstance(nId, SimpleIdentifier):
+            self.logger.warning(f"ID {id} is a simple identifier, we need a namespace!")
+            return None
+        id = str(
+            nId.id
+            if isinstance(nId, NamespacedIdentifier)
+            else nId.namespacedIdentifier.id
+        )
+
+        album = universal.album_module.albumFromSongID(id)
+        if album is None:
+            self.logger.warning(f"Album not found for song ID: {id}")
+            return
+        universal.appUrl.setUrl(f"clarity:///page/album?id={album.id}")
 
     @Slot(QObject)
     def addAlbumToQueue(self, album: universal.album_module.AlbumProxy):
