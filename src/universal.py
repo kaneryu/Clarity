@@ -267,17 +267,39 @@ def getAllDownloadedSongs_Objects(proxy=False) -> list[song_module.Song]:
     return songs
 
 
+def getAllLikedSongs_Objects(proxy=False) -> list[song_module.Song]:
+    if not proxy:
+        songs: list[song_module.Song] = []
+    else:
+        songs: list[song_module.SongProxy] = []
+
+    for nsid in songRepository.get_all_liked_song_ids():
+        try:
+            if not proxy:
+                song = createSongMainThread(nsid)
+            else:
+                song = song_module.SongProxy(
+                    createSongMainThread(nsid), UniversalSignals
+                )
+            songs.append(song)
+        except Exception:
+            logger.warning(f"Failed to create song object for liked song id: {nsid}")
+    return songs
+
+
 startupQueue.extend(i for i in getAllDownloadedSongs())
 queueInstance.setQueue(startupQueue, False)
 
 
 # -- Universal Signals
-class azak(QObject):
+class __universalSignals(QObject):
     def __init__(self):
         super().__init__()
 
     songDownloaded = Signal(str)
     """Universal signal emitted when a song is downloaded. The signal carries the song ID (NSID) as a string."""
+    songLikeStateChanged = Signal(str)
+    """Universal signal emitted when a song's like state changes. The signal carries the song ID (NSID) as a string."""
 
 
-UniversalSignals = azak()
+UniversalSignals = __universalSignals()

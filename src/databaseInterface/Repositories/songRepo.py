@@ -196,6 +196,26 @@ class SongRepository:
         query = "UPDATE songs SET liked = ? WHERE id = ?;"
         self.db.execute(query, (int(liked_status), id.namespacedIdentifier))
 
+    def get_all_liked_song_ids(self) -> list[NamespacedTypedIdentifier]:
+        query = "SELECT id FROM songs WHERE liked = 1;"
+        results = self.db.query(query)
+
+        liked_songs: list[NamespacedTypedIdentifier] = []
+        for (raw_id,) in results:
+            try:
+                liked_songs.append(
+                    NamespacedTypedIdentifier(
+                        namespacedIdentifier=NamespacedIdentifier.from_string(
+                            str(raw_id)
+                        ),
+                        type="song",
+                    )
+                )
+            except ValueError:
+                continue
+
+        return liked_songs
+
     @idTypeMustBeSong
     def get_download_status(self, id: NamespacedTypedIdentifier) -> Optional[int]:
         query = "SELECT download_status FROM songs WHERE id = ?;"

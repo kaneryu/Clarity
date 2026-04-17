@@ -1,3 +1,10 @@
+# 0.59.0
+
+## New Features
+
+- add temporary liked songs page -- kaneryu on 2026-04-16
+
+
 # 0.58.0
 
 ## New Features

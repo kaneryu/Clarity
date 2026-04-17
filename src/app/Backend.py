@@ -47,10 +47,6 @@ class TabManager(QObject):
     def __init__(self):
         super().__init__()
 
-        # TODO TODO TODO: Three todos is important:
-        # Right after i fininsh this commit, i need to change it so the root url for tabs is simply /[tabname]
-        # No need for /page/[tabname]
-
         self.defualtTabIndex = 0  # Home for now
 
         self._tabs = [  # type: ignore[assignment]
@@ -71,6 +67,12 @@ class TabManager(QObject):
                 "name": "downloads",
                 "title": "Downloads",  # Temp, will be rolled into the Library eventually
                 "path": "page/downloads",
+                "showInNav": True,
+            },
+            {
+                "name": "liked",
+                "title": "Liked Songs",  # Temp, will be rolled into the Library eventually
+                "path": "page/liked",
                 "showInNav": True,
             },
             {
@@ -138,6 +140,7 @@ class Backend(QObject):
             universal.appUrl.urlChanged.connect(self.urlChanged)
 
             self.downloadModel = DownloadedSongsModel()
+            self.likedModel = LikedSongsModel()
 
             self.tabmanager = TabManager()
 
@@ -322,6 +325,10 @@ class Backend(QObject):
     def downloadedSongsModel(self):
         return self.downloadModel
 
+    @Property(QObject, constant=True)
+    def likedSongsModel(self):
+        return self.likedModel
+
     @Slot(str, result=QObject)
     def getSettingsObjectByName(self, name: str) -> QObject:
         return settings.QmlSettingsInterface.instance().getSettingsObjectByName(name)
@@ -379,3 +386,14 @@ class DownloadedSongsModel(SongProxyListModel):
 
     def downloadedSongsUpdated(self):
         self.setSongList(universal.getAllDownloadedSongs_Objects())
+
+
+class LikedSongsModel(SongProxyListModel):
+    def __init__(self, parent: QObject | None = None):
+        super().__init__()
+        self.setSongList(universal.getAllLikedSongs_Objects(proxy=True))
+
+        universal.UniversalSignals.songLikeStateChanged.connect(self.likedSongsUpdated)
+
+    def likedSongsUpdated(self):
+        self.setSongList(universal.getAllLikedSongs_Objects())

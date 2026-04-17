@@ -195,6 +195,10 @@ class Song(QObject):
         self._downloadProgress = 0
         self.downloadStateChanged.connect(lambda: self.checkPlaybackReady())
 
+        self.likedStatusChanged.connect(
+            lambda: universal.UniversalSignals.songLikeStateChanged.emit(str(self.nsid))
+        )
+
         self.playbackInfo: PlaybackData | None = None
         self.gettingPlaybackReady = False
         self.playbackReadyChanged.connect(
@@ -204,12 +208,6 @@ class Song(QObject):
         )
         self._prev_playbackreadyresult: bool | None = None
 
-        def initdata():
-            self.get_info_cache_only()
-            print(
-                f"Initialized song {self.nsid} with data status {self.dataStatus} and download state {self.downloadState}"
-            )
-
         self.data: Union[SongData, YoutubeSongData] = SongData(
             source="placeholder",
             id=self.sid,
@@ -218,8 +216,7 @@ class Song(QObject):
             duration=0,
         )
 
-        # universal.bgworker.addJob(_lazy_init)
-        initdata()
+        self.get_info_cache_only()
 
         if self.dataStatus == DataStatus.NOTLOADED:
             universal.asyncBgworker.addJob(self.get_info)
