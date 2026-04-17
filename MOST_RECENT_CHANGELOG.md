@@ -1,6 +1,7 @@
 # Changes Since Last Release
 
 - (0.59.0) add temporary liked songs page -- kaneryu on 2026-04-16
+bug where playingstatus wouldn't update -- kaneryu on 2026-04-17
 - (0.58.0) add download status management to  SongRepository, and migrate song to use it. -- kaneryu on 2026-04-16
 Also migrate downloadpage to use database also -- kaneryu on 2026-04-16
 - (0.57.0) add right click menu with a few functions -- kaneryu on 2026-04-15

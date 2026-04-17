@@ -4,6 +4,10 @@
 
 - add temporary liked songs page -- kaneryu on 2026-04-16
 
+## Bugfixes
+
+- bug where playingstatus wouldn't update -- kaneryu on 2026-04-17
+
 
 # 0.58.0
 

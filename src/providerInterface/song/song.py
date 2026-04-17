@@ -797,7 +797,7 @@ class SongProxy(QObject):
     @QProperty(int, notify=playingStatusChanged)
     def playingStatus(self) -> int:
         q = universal.queueInstance
-        if q.currentSongId == self.id:
+        if str(q.currentSongId).replace(":song", "") == str(self.id):
             return q.playingStatus  # type: ignore[return-value]
         else:
             return PlayingStatus.NOT_PLAYING
