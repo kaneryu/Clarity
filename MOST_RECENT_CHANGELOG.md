@@ -1,6 +1,7 @@
 # Changes Since Last Release
 
 - (0.58.0) add download status management to  SongRepository, and migrate song to use it. -- kaneryu on 2026-04-16
+Also migrate downloadpage to use database also -- kaneryu on 2026-04-16
 - (0.57.0) add right click menu with a few functions -- kaneryu on 2026-04-15
 - (0.56.0) add first tabs implementation. -- kaneryu on 2026-04-12
 Move lazyload away from bgworker to speed up application load -- kaneryu on 2026-04-13

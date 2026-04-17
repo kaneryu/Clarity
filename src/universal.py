@@ -242,21 +242,7 @@ def createSongMainThread(songId: NamespacedTypedIdentifier) -> song_module.Song:
 
 
 def getAllDownloadedSongs() -> list[NamespacedTypedIdentifier]:
-    downloadedSongs: list[NamespacedTypedIdentifier] = []
-    i: dataStore_module.DataStore
-    j: str
-    for i in dataStore_module.dataStores.values():
-        if not i.tag == "songDonwnloads":
-            continue
-        for j in i.getAll().keys():
-            try:
-                if j.endswith("_downloadMeta"):
-                    continue
-                nsid = NamespacedTypedIdentifier.from_string(f"youtube:song:{j}")
-                downloadedSongs.append(nsid)
-            except Exception:
-                logger.warning(f"Invalid downloaded song id in datastore: {j}")
-    return downloadedSongs
+    return songRepository.get_all_downloaded_song_ids()
 
 
 def getAllDownloadedSongs_Objects(proxy=False) -> list[song_module.Song]:

@@ -216,6 +216,26 @@ class SongRepository:
         query = "UPDATE songs SET download_status = ? WHERE id = ?;"
         self.db.execute(query, (download_status, id.namespacedIdentifier))
 
+    def get_all_downloaded_song_ids(self) -> list[NamespacedTypedIdentifier]:
+        query = "SELECT id FROM songs WHERE download_status = 2;"
+        results = self.db.query(query)
+
+        downloaded_songs: list[NamespacedTypedIdentifier] = []
+        for (raw_id,) in results:
+            try:
+                downloaded_songs.append(
+                    NamespacedTypedIdentifier(
+                        namespacedIdentifier=NamespacedIdentifier.from_string(
+                            str(raw_id)
+                        ),
+                        type="song",
+                    )
+                )
+            except ValueError:
+                continue
+
+        return downloaded_songs
+
     @idTypeMustBeSong
     def get_material_color(self, id: NamespacedTypedIdentifier) -> Optional[str]:
         """Gets a song's material color

@@ -206,7 +206,6 @@ class Song(QObject):
 
         def initdata():
             self.get_info_cache_only()
-            self._reconcile_download_state_from_storage()
             print(
                 f"Initialized song {self.nsid} with data status {self.dataStatus} and download state {self.downloadState}"
             )
@@ -254,21 +253,6 @@ class Song(QObject):
 
         if emit_signal:
             self.downloadStateChanged.emit(state.value)
-
-    def _reconcile_download_state_from_storage(self) -> None:
-        file_exists = self.downloadsDatastore.checkFileExists(self.downloadIdentifier)
-        desired_state = (
-            DownloadState.DOWNLOADED if file_exists else DownloadState.NOT_DOWNLOADED
-        )
-        stored_state = universal.songRepository.get_download_status(self.ntid)
-
-        if stored_state is None:
-            if desired_state == DownloadState.DOWNLOADED:
-                self._store_download_state(desired_state, emit_signal=False)
-            return
-
-        if stored_state != desired_state.value:
-            self._store_download_state(desired_state, emit_signal=False)
 
     @QProperty(int, notify=downloadStateChanged)
     def downloadState(self) -> int:
@@ -508,6 +492,7 @@ class Song(QObject):
                 return
             except (FileNotFoundError, KeyError, json.JSONDecodeError):
                 # Metadata missing or corrupted - fall through to re-download playback info
+                self.downloadState = DownloadState.NOT_DOWNLOADED
                 self.logger.warning(
                     f"Download metadata missing for {self.id}, will re-fetch playback info"
                 )
@@ -700,6 +685,7 @@ class Song(QObject):
             if result := self.downloadsDatastore.getFilePath(self.downloadIdentifier):
                 return result
             else:
+                self.downloadState = DownloadState.NOT_DOWNLOADED
                 self.logger.error(
                     f"File for song {self.downloadIdentifier} not found in datastore, returning empty None."
                 )
