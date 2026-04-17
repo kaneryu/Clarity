@@ -193,7 +193,6 @@ class Song(QObject):
         self._inLibrary = universal.songRepository.get(self.ntid) is not None
 
         self._downloadProgress = 0
-        self._downloadState = DownloadState.NOT_DOWNLOADED
         self.downloadStateChanged.connect(lambda: self.checkPlaybackReady())
 
         self.playbackInfo: PlaybackData | None = None
@@ -206,9 +205,8 @@ class Song(QObject):
         self._prev_playbackreadyresult: bool | None = None
 
         def initdata():
-            if self.downloadsDatastore.checkFileExists(self.downloadIdentifier):
-                self.downloadState = DownloadState.DOWNLOADED._value_
             self.get_info_cache_only()
+            self._reconcile_download_state_from_storage()
             print(
                 f"Initialized song {self.nsid} with data status {self.dataStatus} and download state {self.downloadState}"
             )
@@ -240,14 +238,50 @@ class Song(QObject):
         self._dataStatus = DataStatus(value) if isinstance(value, int) else value
         self.dataStatusChanged.emit(value if isinstance(value, int) else value.value)
 
+    def _store_download_state(
+        self, value: Union[int, DownloadState], emit_signal: bool = True
+    ) -> None:
+        state = DownloadState(value)
+        if universal.songRepository.get(self.ntid) is None:
+            universal.songRepository.put(
+                self.ntid, self.data, download_status=state.value
+            )
+            if not self._inLibrary:
+                self._inLibrary = True
+                self.inLibraryChanged.emit(True)
+        else:
+            universal.songRepository.set_download_status(self.ntid, state.value)
+
+        if emit_signal:
+            self.downloadStateChanged.emit(state.value)
+
+    def _reconcile_download_state_from_storage(self) -> None:
+        file_exists = self.downloadsDatastore.checkFileExists(self.downloadIdentifier)
+        desired_state = (
+            DownloadState.DOWNLOADED if file_exists else DownloadState.NOT_DOWNLOADED
+        )
+        stored_state = universal.songRepository.get_download_status(self.ntid)
+
+        if stored_state is None:
+            if desired_state == DownloadState.DOWNLOADED:
+                self._store_download_state(desired_state, emit_signal=False)
+            return
+
+        if stored_state != desired_state.value:
+            self._store_download_state(desired_state, emit_signal=False)
+
     @QProperty(int, notify=downloadStateChanged)
     def downloadState(self) -> int:
-        return self._downloadState._value_
+        stored_state = universal.songRepository.get_download_status(self.ntid)
+        return (
+            stored_state
+            if stored_state is not None
+            else DownloadState.NOT_DOWNLOADED.value
+        )
 
     @downloadState.setter
     def downloadState(self, value: int) -> None:
-        self._downloadState = DownloadState(value)
-        self.downloadStateChanged.emit(self._downloadState._value_)
+        self._store_download_state(value)
 
     @QProperty(int, notify=downloadProgressChanged)
     def downloadProgress(self) -> int:
@@ -261,7 +295,7 @@ class Song(QObject):
     @QProperty(bool, notify=playbackReadyChanged)
     def playbackReady(self) -> bool:
         """Returns whether the song is ready for playback or not."""
-        return self._downloadState == DownloadState.DOWNLOADED or (
+        return self.downloadState == DownloadState.DOWNLOADED or (
             self.playbackInfo is not None
         )
 
@@ -315,7 +349,7 @@ class Song(QObject):
 
     def checkPlaybackReady(self, noEmit: bool = False) -> bool:
         """Checks if the song is ready for playback."""
-        new_playbackReady = self._downloadState == DownloadState.DOWNLOADED or (
+        new_playbackReady = self.downloadState == DownloadState.DOWNLOADED or (
             self.playbackInfo is not None
         )
         if new_playbackReady is not self._prev_playbackreadyresult and not noEmit:
@@ -342,6 +376,9 @@ class Song(QObject):
             self.data = SongData.from_dict(rawData)
             self.dataStatus = DataStatus.LOADED
             self.songInfoFetched.emit()
+
+        if universal.songRepository.get(self.ntid) is not None:
+            universal.songRepository.put(self.ntid, self.data)
 
     def _set_playback_info(
         self, rawData: Union[rawPlaybackDataDict, PlaybackData, playbackDataDict]
@@ -799,7 +836,7 @@ class SongProxy(QObject):
         print("test")
 
     def update(self, name):
-        setattr(self, "_" + name, getattr(self.target, "_" + name))
+        setattr(self, "_" + name, getattr(self.target, name))
         exec(f"self.{name}Changed.emit(getattr(self, '_{name}'))")
 
 

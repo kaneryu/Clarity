@@ -78,7 +78,7 @@ Tags, I want to be able to tag songs and when searching library, it also searche
 Another use case is tagging songs by genre, mood, activity, etc. This allows for more flexible organization and retrieval of songs based on user-defined criteria.
 
 Tag Group:
-- ID (unique identifier) - NSID (loca;taggroup:UUID)
+- ID (unique identifier) - NSID (local:taggroup:UUID)
 - Name (string) - unique
 - Date Created (ISO timestamp)
 - Description (string, nullable)

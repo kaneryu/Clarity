@@ -1,3 +1,10 @@
+# 0.58.0
+
+## New Features
+
+- add download status management to  SongRepository, and migrate song to use it. -- kaneryu on 2026-04-16
+
+
 # 0.57.0
 
 ## New Features

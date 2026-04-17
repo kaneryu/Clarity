@@ -6,7 +6,7 @@ PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
 PRAGMA cache_size = 10000;
 
-PRAGMA user_version = 1;
+PRAGMA user_version = 1; -- Increment on non-backwards compatible changes
 PRAGMA application_id = 0x434C5259;  -- 'CLRY' in hex
 
 -- Songs table
@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS songs (
     liked INTEGER NOT NULL DEFAULT 0,  -- boolean
     play_count INTEGER NOT NULL DEFAULT 0,  -- aggregated from stats
     date_added TEXT NOT NULL,  -- ISO timestamp
-    last_played TEXT  -- ISO timestamp, nullable
+    last_played TEXT,  -- ISO timestamp, nullable
+    download_status INTEGER NOT NULL DEFAULT 0  -- 0: not_downloaded, 1: downloading, 2: downloaded
 );
 
 -- Playlists table

@@ -39,6 +39,7 @@ class SongRow:
     play_count: int
     date_added: str
     last_played: Optional[str]
+    download_status: int = 0  # 0: not_downloaded, 1: downloading, 2: downloaded
 
 
 class SongRepository:
@@ -55,7 +56,7 @@ class SongRepository:
         Returns:
             Optional[SongRow]: The SongRow object if found, or None if not found.
         """
-        query = "SELECT title, album_id, duration, thumbnail_url, material_color, liked, play_count, date_added, last_played FROM songs WHERE id = ?;"
+        query = "SELECT title, album_id, duration, thumbnail_url, material_color, liked, play_count, date_added, last_played, download_status FROM songs WHERE id = ?;"
         results = self.db.query(query, (id.namespacedIdentifier,))
         if results:
             (
@@ -68,6 +69,7 @@ class SongRepository:
                 play_count,
                 date_added,
                 last_played,
+                download_status,
             ) = results[0]
             return SongRow(
                 id=id.namespacedIdentifier,
@@ -80,16 +82,24 @@ class SongRepository:
                 play_count=play_count,
                 date_added=date_added,
                 last_played=last_played,
+                download_status=download_status,
             )
         return None
 
     @idTypeMustBeSong
-    def put(self, id: NamespacedTypedIdentifier, songData: SongData) -> None:
+    def put(
+        self,
+        id: NamespacedTypedIdentifier,
+        songData: SongData,
+        download_status: Optional[int] = None,
+    ) -> None:
         """Adds or updates a song in the database with the given SongData.
 
         Args:
             id (NamespacedTypedIdentifier): The ID, must be of type "song". Any namespace.
             songData (SongData): The SongData to add or update in the database.
+            download_status (Optional[int]): The download status of the song. If None,
+                preserves the current database value or uses 0 for new rows.
 
         Returns:
             Always None.
@@ -106,14 +116,32 @@ class SongRepository:
         duration = songData.duration if songData.duration else 0
         thumbnail_url = songData.thumbnailUrl if songData.thumbnailUrl else None
 
+        existing_row = self.get(id)
+        resolved_download_status = (
+            download_status
+            if download_status is not None
+            else existing_row.download_status if existing_row is not None else 0
+        )
+
         query = """
-        INSERT INTO songs (id, title, album_id, duration, thumbnail_url, liked, play_count, date_added)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO songs (
+            id,
+            title,
+            album_id,
+            duration,
+            thumbnail_url,
+            liked,
+            play_count,
+            date_added,
+            download_status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             title=excluded.title,
             album_id=excluded.album_id,
             duration=excluded.duration,
-            thumbnail_url=excluded.thumbnail_url;   
+            thumbnail_url=excluded.thumbnail_url,
+            download_status=excluded.download_status;
         """
 
         self.db.execute(
@@ -127,6 +155,7 @@ class SongRepository:
                 0,  # liked status
                 0,  # play_count
                 datetimeNow(),  # date_added
+                resolved_download_status,  # download_status
             ),
         )
 
@@ -166,6 +195,26 @@ class SongRepository:
 
         query = "UPDATE songs SET liked = ? WHERE id = ?;"
         self.db.execute(query, (int(liked_status), id.namespacedIdentifier))
+
+    @idTypeMustBeSong
+    def get_download_status(self, id: NamespacedTypedIdentifier) -> Optional[int]:
+        query = "SELECT download_status FROM songs WHERE id = ?;"
+        results = self.db.query(query, (id.namespacedIdentifier,))
+        if results:
+            return int(results[0][0])
+        return None
+
+    @idTypeMustBeSong
+    def set_download_status(
+        self, id: NamespacedTypedIdentifier, download_status: int
+    ) -> None:
+        try:
+            download_status = int(download_status)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Download status must be an integer value.") from exc
+
+        query = "UPDATE songs SET download_status = ? WHERE id = ?;"
+        self.db.execute(query, (download_status, id.namespacedIdentifier))
 
     @idTypeMustBeSong
     def get_material_color(self, id: NamespacedTypedIdentifier) -> Optional[str]:
@@ -258,3 +307,16 @@ class SongRepository:
             Always None.
         """
         self.set_play_count(id, 0)
+
+    @idTypeMustBeSong
+    def update_last_played(self, id: NamespacedTypedIdentifier):
+        """Updates a song's last played timestamp to the current time
+
+        Args:
+            id (NamespacedTypedIdentifier): The ID. Must be of type song. Any namespace.
+
+        Returns:
+            Always None.
+        """
+        query = "UPDATE songs SET last_played = ? WHERE id = ?;"
+        self.db.execute(query, (datetimeNow(), id.namespacedIdentifier))
