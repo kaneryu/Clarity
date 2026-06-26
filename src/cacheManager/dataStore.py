@@ -502,10 +502,10 @@ class DataStore:
         return os.path.exists(p)
 
     def getAll(self) -> dict:
-        """Get all items in the dataStore
+        """Get the paths of all items in the dataStore
 
         Returns:
-            dict: All items in the dataStore
+            dict: All items in the dataStore, {key: path}
         """
         return self.__dataStore_path_map
 

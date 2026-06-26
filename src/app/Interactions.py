@@ -283,3 +283,34 @@ class Interactions(QObject):
             return False
         song.likedStatus = liked
         return True
+
+    @Slot()
+    def repairDownloadedSongs(self):
+        """Repair the downloaded songs list by checking the song repository and provider downloads."""
+
+        # Combine both lists and remove duplicates
+        combined_list = universal.getAllDownloadedSongs()
+
+        # Create song objects for each downloaded song
+        for nsid in combined_list:
+            try:
+                universal.createSongMainThread(
+                    nsid
+                )  # This will create the song object and ensure it's in the repository
+            except Exception:
+                self.logger.warning(
+                    f"Failed to create song object for downloaded song id: {nsid}"
+                )
+
+        # Set the downloaded state to true
+        for nsid in combined_list:
+            try:
+                song = universal.createSongMainThread(nsid)
+                song.downloadState = song_enums.DownloadState.DOWNLOADED
+                universal.songRepository.put(nsid, song)
+            except Exception:
+                self.logger.warning(
+                    f"Failed to add downloaded song id: {nsid} to the database."
+                )
+
+        self.logger.info("Downloaded songs list repaired successfully.")

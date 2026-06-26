@@ -1,3 +1,4 @@
 from .songRepo import SongRepository
+from .listenRepo import ListenRepository
 
-__all__ = ["SongRepository"]
+__all__ = ["SongRepository", "ListenRepository"]

@@ -142,10 +142,14 @@ from src.providerInterface.globalModels import (
 )
 from src.providerInterface import song as song_module
 from src.providerInterface import album as album_module
+from src.providerInterface.song.providers import providerUtils as providerUtils_module
 from playback import queuemanager as queue_module
 
-from databaseInterface import dbcore as dbCore
-from databaseInterface.Repositories import SongRepository
+from src.databaseInterface.repoHost import (
+    globalDbInterface,
+    songRepository,
+    listenRepository,
+)
 
 from src.network import NetworkManager, networkManager, OnlineStatus
 
@@ -160,7 +164,6 @@ from .misc import logHistoryManager
 from .misc.enumerations.Search import SearchFilters
 
 from src.qt import resources
-
 
 mainThread: QThread = QThread.currentThread()
 
@@ -190,10 +193,6 @@ songDataStore.integrityCheck(True)
 globalCache.integrityCheck()
 songCache.integrityCheck()
 imageCache.integrityCheck()
-
-dbCore.initializeDatabase()
-globalDbInterface = dbCore.DatabaseInterface()
-songRepository = SongRepository(globalDbInterface)
 
 
 queueInstance: queue_module.Queue = queue_module.Queue()
@@ -242,7 +241,12 @@ def createSongMainThread(songId: NamespacedTypedIdentifier) -> song_module.Song:
 
 
 def getAllDownloadedSongs() -> list[NamespacedTypedIdentifier]:
-    return songRepository.get_all_downloaded_song_ids()
+    songRepoList = songRepository.get_all_downloaded_song_ids()
+    providerList = providerUtils_module.get_all_downloads()
+
+    return list(
+        set(songRepoList + providerList)
+    )  # set conversion to remove duplicates.
 
 
 def getAllDownloadedSongs_Objects(proxy=False) -> list[song_module.Song]:

@@ -32,24 +32,15 @@ from src.providerInterface import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,
+    allIdTypes,
+    str_to_identifer,
 )
 from src.providerInterface.album import Album
 from playback.MediaPlayerProtocol import MediaPlayer
 from src.playback.VlcPlayer import VLCMediaPlayer
 from src.playback.MpvPlayer import MpvMediaPlayer
 from src.playback.QtMediaPlayer import QtMediaPlayer
-
-
-def str_to_identifer(
-    id_str: str,
-) -> Union[NamespacedTypedIdentifier, NamespacedIdentifier, SimpleIdentifier]:
-    try:
-        return NamespacedTypedIdentifier.from_string(id_str)
-    except ValueError:
-        try:
-            return NamespacedIdentifier.from_string(id_str)
-        except ValueError:
-            return SimpleIdentifier(id=id_str)
+from src.playback.listenTracker import ListenTracker
 
 
 class QueueIdsList(list):
@@ -173,10 +164,16 @@ class Queue(QObject):
     playingStatusChanged = Signal(int)
     durationChanged = Signal()
     timeChanged = Signal(int)
+    paused = Signal()
+    resumed = Signal()
+    stopped = Signal()
 
     nextSongSignal = Signal()
     prevSongSignal = Signal()
     gotoSignal = Signal(int)
+    pauseSignal = Signal()
+    resumeSignal = Signal()
+    stopSignal = Signal()
 
     singleton: Union["Queue", None] = None
 
@@ -242,6 +239,9 @@ class Queue(QObject):
         self.songChanged.connect(self.songChangedPlaybackStatusUpdate)
         self.nextSongSignal.connect(lambda: self.next())
         self.prevSongSignal.connect(lambda: self.prev())
+        self.pauseSignal.connect(lambda: self.pause())
+        self.resumeSignal.connect(lambda: self.resume())
+        self.stopSignal.connect(lambda: self.stop())
         self.gotoSignal.connect(lambda index: self.goto(index))
 
         # Debounce state for Next presses
@@ -256,6 +256,18 @@ class Queue(QObject):
         self._prev_timer = QTimer(self)
         self._prev_timer.setSingleShot(True)
         self._prev_timer.timeout.connect(self._finalize_prev_sequence)
+
+        self.listenTracker = ListenTracker()
+
+        def _listenTrackerTick(song_id: Union[allIdTypes, str]) -> None:
+            if round(self.currentSongTime) % 2:  # type: ignore[call-overload]
+                self.listenTracker.listen_tick(song_id)
+            print(self.listenTracker.info())
+
+        self.timeChanged.connect(lambda: _listenTrackerTick(self.currentSongId))  # type: ignore[arg-type]
+        # self.paused.connect(self.listenTracker.pause_tracking)
+        self.resumed.connect(self.listenTracker.resume_tracking)
+        self.songChanged.connect(self.listenTracker.finalize_listen)
 
     @Slot(int)
     def songChangedPlaybackStatusUpdate(self, prevpointer):
@@ -562,11 +574,12 @@ class Queue(QObject):
     @Slot()
     def pause(self):
         self._player.pause()
-        print(self.queueIds)
+        self.paused.emit()
 
     @Slot()
     def resume(self):
         self._player.resume()
+        self.resumed.emit()
 
     @Slot()
     def play(self):
@@ -582,6 +595,7 @@ class Queue(QObject):
     def stop(self):
         self._player.stop()
         winSMTC.playback_stop()
+        self.stopped.emit()
 
     @Slot()
     def reload(self):

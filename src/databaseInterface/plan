@@ -65,9 +65,11 @@ For albums, we need to store:
 
 For lyrics, we need to store:
 - Song ID (unique identifier)
+- Lyric ID (unique identifier) - NSID (probably in format lyrics:SOURCE:(Song NSID), e.g., lyrics:genius:youtube:VIDEO_ID)
+- Source (string) - e.g., "genius", "musixmatch"
 - Lyrics Text
 
-For stats, we need to store:
+For stats, we need to store: ( updated below! )
 - Index (unique identifier) - autoincrement integer
 - Song ID - NSID, indexed (non-unique)
 - Play Time (ISO timestamp) - indexed
@@ -129,4 +131,37 @@ Playlist-Song map:
 So, we should not store a list of songids in the playlist entry, but instead have a map that maps playlist IDs to song IDs. This way, we can easily add or remove songs from playlists without having to modify the playlist entry itself. Same principle applies to artist-album and artist-song relationships.
 
 
+Another table! We're going to add two event-log type tables. One only for listens, and another for other interactions.
 
+Listen Events:
+- ID (unique identifier) - autoincrement integer
+- Song ID - NSID, indexed
+- Timestamp (ISO timestamp) - indexed
+- Duration (float) - duration of the listen in seconds
+- Liked (boolean) - whether the song was at the start of this listen event
+- Downloaded (boolean) - whether the song was downloaded at the start of this listen event
+- Skipped (boolean) - whether the song was at the end of this listen event (e.g., user skipped to the next song before this one finished)
+- Complete (boolean) - whether the song was played to completion during this listen event
+
+And for interactions. We'll track:
+Likes, downloads, playlist additions/removals, tag additions/removals
+
+Interaction Events:
+- ID (unique identifier) - autoincrement integer
+- Type (string) - "like", "download", "playlist_add", "playlist_remove", "tag_add", "tag_remove", etc.
+- Primary Id (NSID) - entity involved (e.g., song ID for likes/downloads, playlist ID for playlist additions/removals, tag ID for tag additions/removals)
+- Involved Entity Ids (string, nullable) - a JSON array of other entities involved in this interaction, e.g., for a playlist addition, this would be the song ID being added. For a tag addition, this would be the song ID being tagged. For a playlist removal, this would be the song ID being removed. For a tag removal, this would be the song ID being untagged. For likes and downloads, this would be null.
+- Interaction ID (NSID) - a unique identifier for this interaction, in the format "interaction:TYPE:PRIMARY_ID,TIMESTAMP", e.g., "interaction:like:youtube:VIDEO_ID,2024-01-01T12:00:00Z". This allows us to easily reference specific interactions and ensures uniqueness across all interactions.
+- Extra Field (string, nullable) - misc....
+- Timestamp (ISO timestamp) - indexed
+
+We should also track song skips and repeats... They'll just be a type of interaction event though, no new table.
+
+In addition, we'll also track search history:
+
+Search History:
+- ID (unique identifier) - autoincrement integer
+- Query (string)
+- Timestamp (ISO timestamp) - indexed
+- Result Count (integer) - number of results returned for this search query
+- Results Sample (string, nullable) - a JSON array that returns every ID in the first page of results.

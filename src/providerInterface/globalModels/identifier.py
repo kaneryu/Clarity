@@ -3,6 +3,11 @@ Stores dataclasses for Identifier formats used across Innertube.
 """
 
 from dataclasses import dataclass
+from typing import Union
+
+allIdTypes = Union[
+    "NamespacedTypedIdentifier", "NamespacedIdentifier", "SimpleIdentifier"
+]
 
 
 @dataclass(frozen=True, eq=True)
@@ -37,6 +42,19 @@ class NamespacedTypedIdentifier:
             type=type_,
         )
 
+    @staticmethod
+    def from_parts(namespace: str, type_: str, id_: str) -> "NamespacedTypedIdentifier":
+        """
+        Create a NamespacedTypedIdentifier from its individual parts.
+        """
+        return NamespacedTypedIdentifier(
+            namespacedIdentifier=NamespacedIdentifier(
+                namespace=namespace,
+                id=SimpleIdentifier(id=id_),
+            ),
+            type=type_,
+        )
+
     def __eq__(self, other):
         # even if the other is just a NamespacedIdentifier, compare only that part
         if isinstance(other, str):
@@ -52,9 +70,12 @@ class NamespacedTypedIdentifier:
                     pass
             except Exception:
                 return False
-            
+
         if isinstance(other, NamespacedTypedIdentifier):
-            return self.namespacedIdentifier == other and self.type == other.type
+            return (
+                self.namespacedIdentifier == other.namespacedIdentifier
+                and self.type == other.type
+            )
         elif isinstance(other, NamespacedIdentifier):
             return self.namespacedIdentifier == other
         elif isinstance(other, SimpleIdentifier):
@@ -90,7 +111,17 @@ class NamespacedIdentifier:
             namespace=namespace,
             id=SimpleIdentifier(id=id_),
         )
-    
+
+    @staticmethod
+    def from_parts(namespace: str, id_: str) -> "NamespacedIdentifier":
+        """
+        Create a NamespacedIdentifier from its individual parts.
+        """
+        return NamespacedIdentifier(
+            namespace=namespace,
+            id=SimpleIdentifier(id=id_),
+        )
+
     def __eq__(self, other):
         # even if the other is just a SimpleIdentifier, compare only that part
         if isinstance(other, str):
@@ -104,7 +135,7 @@ class NamespacedIdentifier:
                         other = SimpleIdentifier(id=str(other))
                     except Exception:
                         return False
-            
+
         if isinstance(other, NamespacedTypedIdentifier):
             return self == other.namespacedIdentifier
         elif isinstance(other, NamespacedIdentifier):
@@ -128,6 +159,20 @@ class SimpleIdentifier:
     def __repr__(self):
         return f"SimpleIdentifier({self.id})"
 
+    @staticmethod
+    def from_string(s: str) -> "SimpleIdentifier":
+        """
+        Create a SimpleIdentifier from a string.
+        """
+        return SimpleIdentifier(id=s)
+
+    @staticmethod
+    def from_parts(id_: str) -> "SimpleIdentifier":
+        """
+        Create a SimpleIdentifier from its individual part.
+        """
+        return SimpleIdentifier(id=id_)
+
     def __eq__(self, other):
         if isinstance(other, str):
             try:
@@ -140,7 +185,7 @@ class SimpleIdentifier:
                         other = SimpleIdentifier(id=str(other))
                     except Exception:
                         return False
-            
+
         if isinstance(other, NamespacedTypedIdentifier):
             return self == other.namespacedIdentifier.id
         elif isinstance(other, NamespacedIdentifier):
@@ -148,3 +193,15 @@ class SimpleIdentifier:
         elif isinstance(other, SimpleIdentifier):
             return self.id == other.id
         return False
+
+
+def str_to_identifer(
+    id_str: str,
+) -> Union["NamespacedTypedIdentifier", "NamespacedIdentifier", "SimpleIdentifier"]:
+    try:
+        return NamespacedTypedIdentifier.from_string(id_str)
+    except ValueError:
+        try:
+            return NamespacedIdentifier.from_string(id_str)
+        except ValueError:
+            return SimpleIdentifier(id=id_str)

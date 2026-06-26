@@ -63,45 +63,17 @@ Item {
         height: 50
     }
 
-    Components.CheckboxGroup {
-        id: checkboxGroup
+    Components.Button {
+        id: testButton2
         anchors.top: testButton.bottom
         anchors.topMargin: 16
-        anchors.left: parent.left
-        anchors.leftMargin: 16
-
-        height: 200
-        Component.onCompleted: {
-            
-            function checkboxFactory(text, icon) {
-                var checkbox = Qt.createComponent("../components/Checkbox.qml").createObject(checkboxGroup)
-
-                if (text !== "") {
-                    checkbox.text = text
-                }
-                if (icon !== "") {
-                    checkbox.icon = icon
-                }
-
-                return checkbox
-            }
-            
-
-            // checkboxGroup.addCheckbox("Option 1", false, "t1", checkboxGroup.t1Callback)
-            // checkboxGroup.addCheckbox("Option 2", true, "t2", checkboxGroup.t2Callback)
-            // checkboxGroup.addCheckbox("Option 3", false, "t3", checkboxGroup.t3Callback)
-
-            var cb1 = checkboxFactory("Home Tab", "")
-            checkboxGroup.addCheckboxObject(cb1, "t1", function (){})
-            var cb2 = checkboxFactory("Downloads View", AssetsPath + "icons/songbar/fav.svg")
-            checkboxGroup.addCheckboxObject(cb2, "t2", function (){})
-            var cb3 = checkboxFactory("Other", "")
-            checkboxGroup.addCheckboxObject(cb3, "t3", function (){})
-            
-            checkboxGroup.activeCheckboxChanged.connect(function() {
-                console.log("Active checkbox index: " + checkboxGroup.activeCheckboxIndex)
-            })
+        width: 200
+        height: 50
+        text: "Repair Downloaded Songs"
+        onClicked: {
+            Interactions.repairDownloadedSongs()
         }
+
     }
 
     // GridView {

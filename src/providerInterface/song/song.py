@@ -32,6 +32,7 @@ from src import universal as universal
 from src import cacheManager
 from src.misc.enumerations import DataStatus
 from src.misc.enumerations.Song import PlayingStatus, DownloadState
+from src.misc.utils import ghash
 
 from src.providerInterface.song.models import (
     SongData,
@@ -893,7 +894,7 @@ class SongImageProvider(QQuickImageProvider):
         # ID will be in the format songID/radius
 
         skipCache = False
-        cacheIdentifier = universal.ghash(
+        cacheIdentifier = ghash(
             f"songimage_{id}_{requestedSize.width()}x{requestedSize.height()}"
         )
         if cachedData := universal.imageCache.get(cacheIdentifier):
@@ -934,7 +935,7 @@ class SongImageProvider(QQuickImageProvider):
                 usePlaceholder()
                 skipCache = True
             else:  # No exception
-                if cachedData := universal.imageCache.get(universal.ghash(thumbUrl)):
+                if cachedData := universal.imageCache.get(ghash(thumbUrl)):
                     img.loadFromData(cachedData)
                 else:
                     request = universal.networkManager.get(thumbUrl)
@@ -948,7 +949,7 @@ class SongImageProvider(QQuickImageProvider):
 
                         img.loadFromData(request.content)
                         universal.imageCache.put(
-                            universal.ghash(thumbUrl), request.content, byte=True
+                            ghash(thumbUrl), request.content, byte=True
                         )
 
         if requestedSize.width() < 0 or requestedSize.height() < 0:

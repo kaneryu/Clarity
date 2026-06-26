@@ -17,6 +17,8 @@ from src.providerInterface.globalModels import (
     SimpleIdentifier,
     NamespacedIdentifier,
     NamespacedTypedIdentifier,
+    allIdTypes,
+    str_to_identifer,
 )
 
 """
@@ -41,4 +43,6 @@ __all__ = [
     "SimpleIdentifier",
     "NamespacedIdentifier",
     "NamespacedTypedIdentifier",
+    "allIdTypes",
+    "str_to_identifer",
 ]
