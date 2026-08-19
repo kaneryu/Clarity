@@ -199,3 +199,5 @@ src/app/assets/libs/vlc/
 
 *.DS_Store
 uv.lock
+
+docs/
