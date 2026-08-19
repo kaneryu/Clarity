@@ -194,3 +194,8 @@ starthere.txt
 src/databaseInterface/database
 /headers
 /browser.json
+src/app/assets/libs/vlc-mac/
+src/app/assets/libs/vlc/
+
+*.DS_Store
+uv.lock

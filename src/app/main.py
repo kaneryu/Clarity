@@ -45,13 +45,13 @@ def engineSetup(engine: QQmlApplicationEngine, theme, backend, interactions):
     engine.rootContext().setContextProperty("Interactions", interactions)
 
     engine.rootContext().setContextProperty(
-        "AssetsPath", "file:///" + universal.Paths.ASSETSPATH.replace("\\", "/") + "/"
+        "AssetsPath", QUrl.fromLocalFile(universal.Paths.ASSETSPATH + os.sep).toString()
     )
     engine.rootContext().setContextProperty(
-        "QMLPath", "file:///" + universal.Paths.QMLPATH.replace("\\", "/") + "/"
+        "QMLPath", QUrl.fromLocalFile(universal.Paths.QMLPATH + os.sep).toString()
     )
     engine.rootContext().setContextProperty(
-        "RootPath", "file:///" + universal.Paths.ROOTPATH.replace("\\", "/") + "/"
+        "RootPath", QUrl.fromLocalFile(universal.Paths.ROOTPATH + os.sep).toString()
     )
 
     sip = universal.song_module.SongImageProvider()
@@ -85,7 +85,8 @@ def main():
     engineSetup(engine, theme, backend, interactions)
 
     myappid = "oss.clarity.music_player"
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    if universal.platform == universal.Platform.Windows:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     engine.quit.connect(app.quit)
     engine.load(qml)
@@ -122,7 +123,8 @@ def debug():
     engineSetup(engine, theme, backend, interactions)
 
     myappid = "oss.clarity.music_player"
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    if universal.platform == universal.Platform.Windows:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     engine.quit.connect(app.quit)
 

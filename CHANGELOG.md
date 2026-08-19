@@ -1,3 +1,14 @@
+# 0.60.0
+
+## New Features
+
+- Implement ListenRepository and ListenEvent for tracking listening sessions, add ability to restore downloads -- kaneryu on 2026-06-26
+
+## Bugfixes
+
+- MacOS port, part one. -- kaneryu on 2026-08-19
+
+
 # 0.59.0
 
 ## New Features

@@ -17,13 +17,12 @@ from PySide6.QtCore import (
     QMutexLocker,
     QTimer,
 )
-from misc.enumerations import DataStatus
+from src.misc.enumerations import DataStatus
 
 from src import universal as universal
 from src.misc.enumerations.Queue import LoopType
 from src.misc.settings import getSetting
 import src.discordInterface.presence as presence
-import src.winInterface.winSMTC as winSMTC
 
 # Import Song and PlayingStatus without creating circular imports.
 # song.py must not import Queue; it should use g.queueInstance when needed.
@@ -36,7 +35,7 @@ from src.providerInterface import (
     str_to_identifer,
 )
 from src.providerInterface.album import Album
-from playback.MediaPlayerProtocol import MediaPlayer
+from src.playback.MediaPlayerProtocol import MediaPlayer
 from src.playback.VlcPlayer import VLCMediaPlayer
 from src.playback.MpvPlayer import MpvMediaPlayer
 from src.playback.QtMediaPlayer import QtMediaPlayer
@@ -62,6 +61,9 @@ class QueueIdsList(list):
             ):  # most likely not the best way to do this, rework in the future
                 return True  # we do this so we get the equality check of the custom identifiers
         return False
+
+from src.nowPlaying.entrypoint import NowPlayingHandler
+from src.nowPlaying.HandlerEnum import HandlerType
 
 
 class QueueModel(QAbstractListModel):
@@ -212,21 +214,17 @@ class Queue(QObject):
             lambda: self.updateMediaPlayer(True)
         )
 
-        # WinSMTC integration
-        self.winPlayer = winSMTC._get_player()
-        self.songChanged.connect(self.updateWinPlayer)
-        winSMTC.Handlers.setHandler(
-            winSMTC.HandlerType.PLAY, lambda x, y: self.resume()
+        self.nowPlaying = NowPlayingHandler()
+
+        self.songChanged.connect(self.updateNowPlaying)
+        self.nowPlaying.set_handler(HandlerType.PLAY, lambda x, y: self.resume())
+        self.nowPlaying.set_handler(HandlerType.PAUSE, lambda x, y: self.pause())
+        self.nowPlaying.set_handler(HandlerType.STOP, lambda x, y: self.stop())
+        self.nowPlaying.set_handler(
+            HandlerType.NEXT, lambda x, y: self.nextSongSignal.emit()
         )
-        winSMTC.Handlers.setHandler(
-            winSMTC.HandlerType.PAUSE, lambda x, y: self.pause()
-        )
-        winSMTC.Handlers.setHandler(winSMTC.HandlerType.STOP, lambda x, y: self.stop())
-        winSMTC.Handlers.setHandler(
-            winSMTC.HandlerType.NEXT, lambda x, y: self.nextSongSignal.emit()
-        )
-        winSMTC.Handlers.setHandler(
-            winSMTC.HandlerType.PREVIOUS, lambda x, y: self.prevSongSignal.emit()
+        self.nowPlaying.set_handler(
+            HandlerType.PREVIOUS, lambda x, y: self.prevSongSignal.emit()
         )
 
         # Presence and state
@@ -386,7 +384,7 @@ class Queue(QObject):
     # ---------- Internal handlers delegating from MediaPlayer ----------
     def _on_time_changed(self, seconds: int):
         # Update SMTC timeline and bubble the signal
-        winSMTC.update_timeline(
+        self.nowPlaying.update_timeline(
             duration_s=self.currentSongDuration,  # type: ignore[arg-type]
             position_s=self.currentSongTime,  # type: ignore[arg-type]
         )
@@ -397,12 +395,12 @@ class Queue(QObject):
         self.playingStatusChanged.emit(status)
         # Sync SMTC basic state
         if status == PlayingStatus.PLAYING:
-            winSMTC.playback_play()
+            self.nowPlaying.playback_play()
         elif status == PlayingStatus.PAUSED:
-            winSMTC.playback_pause()
+            self.nowPlaying.playback_pause()
 
     def _on_end_reached(self):
-        winSMTC.playback_stop()
+        self.nowPlaying.playback_stop()
         self.next()
 
     def _on_error(self, event):
@@ -433,22 +431,22 @@ class Queue(QObject):
     def songMrlChanged(self, song: Song):
         self._player.onSongMrlChanged(song)
 
-    def updateWinPlayer(self):
-        winSMTC.set_now_playing(
+    def updateNowPlaying(self):
+        self.nowPlaying.set_now_playing(
             title=self.currentSongTitle,  # type: ignore
             artist=self.currentSongChannel,  # type: ignore
-            album_title="",
-            art_uri=self.currentSongObject.bestThumbnailUrl,  # type: ignore
+            album="",
+            artwork=self.currentSongObject.bestThumbnailUrl,  # type: ignore
         )
         if self.queue and self.pointer < len(self.queue) - 1:
-            winSMTC.set_next_enabled(True)
+            self.nowPlaying.set_next_enabled(True)
         else:
-            winSMTC.set_next_enabled(False)
+            self.nowPlaying.set_next_enabled(False)
 
         if self.queue and self.pointer > 0:
-            winSMTC.set_previous_enabled(True)
+            self.nowPlaying.set_previous_enabled(True)
         else:
-            winSMTC.set_previous_enabled(False)
+            self.nowPlaying.set_previous_enabled(False)
 
     @QProperty(bool, notify=playingStatusChanged)
     def isPlaying(self):
@@ -594,7 +592,7 @@ class Queue(QObject):
     @Slot()
     def stop(self):
         self._player.stop()
-        winSMTC.playback_stop()
+        self.nowPlaying.playback_stop()
         self.stopped.emit()
 
     @Slot()

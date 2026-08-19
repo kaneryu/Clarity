@@ -1,5 +1,7 @@
 # Changes Since Last Release
 
+- (0.60.0) Implement ListenRepository and ListenEvent for tracking listening sessions, add ability to restore downloads -- kaneryu on 2026-06-26
+MacOS port, part one. -- kaneryu on 2026-08-19
 - (0.59.0) add temporary liked songs page -- kaneryu on 2026-04-16
 bug where playingstatus wouldn't update -- kaneryu on 2026-04-17
 - (0.58.0) add download status management to  SongRepository, and migrate song to use it. -- kaneryu on 2026-04-16

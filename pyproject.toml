@@ -1,5 +1,5 @@
 [project]
-version = "0.59.1"
+version = "0.60.1"
 name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -26,7 +26,6 @@ dependencies = [
   "importlib-resources",
   "jedi",
   "jinxed",
-  "just_playback",
   "log-symbols",
   "lxml",
   "materialyoucolor",
@@ -47,7 +46,7 @@ dependencies = [
   "pudb",
   "pycparser",
   "Pygments",
-  "pypresence @ https://github.com/kaneryu/pypresence/archive/master.zip",
+  "pypresence",
   "PySide6",
   "PySide6-stubs @ https://github.com/kaneryu/PySide6-stubs/archive/main.zip",
   "PySide6_Addons",
@@ -67,15 +66,16 @@ dependencies = [
   "urwid_readline",
   "userpath",
   "wcwidth",
-  "windows-curses",
   "yarl",
   "yt-dlp",
   "ytmusicapi @ https://github.com/kaneryu/ytmusicapi/archive/async-new.zip",
   "zstandard",
   "pyside6-live-coding",
   "python-qt-live-coding",
-  "ffpyplayer",
   "python-mpv",
+  "dacite",
+  "winrt-Windows.Media.Control; sys_platform == 'win32'",
+  "pyobjc-framework-MediaPlayer; sys_platform == 'darwin'",
 ]
 
 [project.optional-dependencies]

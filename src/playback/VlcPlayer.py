@@ -16,6 +16,8 @@ from PySide6.QtCore import QObject, Signal, Slot, QTimer
 from src import universal as universal
 from src.providerInterface import Song
 from src.misc.enumerations.Song import PlayingStatus
+from src.misc.platform import platform as system, Platform
+from src.misc.compiled import compiled
 from src.paths import Paths
 
 if TYPE_CHECKING:
@@ -23,27 +25,30 @@ if TYPE_CHECKING:
 
 
 def _import_vlc():
-    os.environ["PYTHON_VLC_LIB_PATH"] = os.path.join(
-        Paths.ASSETSPATH, "libs", "vlc", "libvlc.dll"
-    )
-    os.environ["PYTHON_VLC_MODULE_PATH"] = os.path.join(
-        Paths.ASSETSPATH, "libs", "vlc", "plugins"
-    )
+    if system == Platform.Windows and compiled:
+        os.environ["PYTHON_VLC_LIB_PATH"] = os.path.join(
+            Paths.ASSETSPATH, "libs", "vlc", "libvlc.dll"
+        )
+        os.environ["PYTHON_VLC_MODULE_PATH"] = os.path.join(
+            Paths.ASSETSPATH, "libs", "vlc", "plugins"
+        )
 
-    cache_gen_path = os.path.join(Paths.ASSETSPATH, "libs", "vlc", "vlc-cache-gen.exe")
-    if os.path.exists(cache_gen_path):
-        try:
-            subprocess.run(
-                [
-                    cache_gen_path,
-                    os.path.abspath(
-                        os.path.join(Paths.ASSETSPATH, "libs", "vlc", "plugins")
-                    ),
-                ],
-                check=True,
-            )
-        except subprocess.CalledProcessError as e:
-            logging.error("Failed to generate VLC plugin cache: %s", e)
+        cache_gen_path = os.path.join(
+            Paths.ASSETSPATH, "libs", "vlc", "vlc-cache-gen.exe"
+        )
+        if os.path.exists(cache_gen_path):
+            try:
+                subprocess.run(
+                    [
+                        cache_gen_path,
+                        os.path.abspath(
+                            os.path.join(Paths.ASSETSPATH, "libs", "vlc", "plugins")
+                        ),
+                    ],
+                    check=True,
+                )
+            except subprocess.CalledProcessError as e:
+                logging.error("Failed to generate VLC plugin cache: %s", e)
 
     import vlc
 

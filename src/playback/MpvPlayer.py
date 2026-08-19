@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Optional
 
@@ -9,6 +10,17 @@ from PySide6.QtCore import QObject, Signal, Slot, QTimer
 from src import universal as universal
 from src.providerInterface import Song
 from src.misc.enumerations.Song import PlayingStatus
+from src.misc.platform import isMac
+
+if isMac:
+    # ctypes.util.find_library() on macOS only searches dyld's hardcoded
+    # fallback path (~/lib:/usr/local/lib:/lib:/usr/lib), which predates
+    # Apple Silicon Homebrew's /opt/homebrew prefix. Without this,
+    # python-mpv can't find a brew-installed libmpv on arm64 Macs.
+    _existing_fallback = os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "")
+    os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = ":".join(
+        p for p in ("/opt/homebrew/lib", "/usr/local/lib", _existing_fallback) if p
+    )
 
 try:
     import mpv as _mpv

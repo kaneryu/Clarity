@@ -7,6 +7,15 @@ from src.misc.version import (
     version,
     release,
 )
+from src.misc.platform import (
+    isWindows,
+    isMac,
+    isLinux,
+    isUndefined,
+    Platform,
+    platform,
+)
+
 import threading
 from hashlib import md5
 import time
@@ -143,7 +152,7 @@ from src.providerInterface.globalModels import (
 from src.providerInterface import song as song_module
 from src.providerInterface import album as album_module
 from src.providerInterface.song.providers import providerUtils as providerUtils_module
-from playback import queuemanager as queue_module
+from .playback import queuemanager as queue_module
 
 from src.databaseInterface.repoHost import (
     globalDbInterface,

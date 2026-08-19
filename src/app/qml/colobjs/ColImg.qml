@@ -4,24 +4,30 @@ import QtQuick.Layouts
 import Qt.labs.platform
 import QtQuick.Effects
 
-// ColorImage {
-//     Behavior on color {
-//         ColorAnimation {
-//             easing.type: Easing.InOutQuad
-//             duration: 200
-//         }
-//     }
-// }
-
-Image {
+Item {
     id: root
-    property alias color: mfe.colorizationColor
-    property alias colorization: mfe.colorization
-    antialiasing: true
+    property alias source: sourceImage.source
+    property alias fillMode: sourceImage.fillMode
+    property alias sourceSize: sourceImage.sourceSize
+    property alias status: sourceImage.status
+    property alias asynchronous: sourceImage.asynchronous
+    property alias cache: sourceImage.cache
+    property color color: "transparent"
+    property real colorization: 1.0
+
+    Image {
+        id: sourceImage
+        anchors.fill: parent
+        antialiasing: true
+        visible: false
+        layer.enabled: true
+        layer.smooth: true
+    }
+
     MultiEffect {
-        id: mfe
-        source: root
-        anchors.fill: root
-        colorization: 1.0
-    }  
+        anchors.fill: sourceImage
+        source: sourceImage
+        colorization: root.colorization
+        colorizationColor: root.color
+    }
 }

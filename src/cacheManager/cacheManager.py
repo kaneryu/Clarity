@@ -87,7 +87,7 @@ class CacheManager:
         self.metadata: dict[str, dict] = {}
         self.last_used: collections.OrderedDict = collections.OrderedDict()
         self.name = name or ""
-        self.event_loop = asyncio.get_event_loop()
+        # self.event_loop = asyncio.get_event_loop()
         if directory == "":
             self.directory = os.path.abspath(
                 f"{os.pathsep}{name}-cache"

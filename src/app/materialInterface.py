@@ -3,7 +3,7 @@ from materialyoucolor.dynamiccolor.dynamic_color import DynamicColor
 from materialyoucolor.utils import color_utils
 from materialyoucolor.hct import Hct
 from materialyoucolor.scheme.scheme_tonal_spot import SchemeTonalSpot
-from materialyoucolor.scheme.dynamic_scheme import DynamicScheme
+from materialyoucolor.scheme import Scheme as DynamicScheme
 from materialyoucolor.score.score import Score
 import materialyoucolor.quantize as materialQuantize
 from PySide6.QtCore import QObject, Qt, Slot, Property, Signal

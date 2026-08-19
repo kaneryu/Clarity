@@ -17,7 +17,7 @@ from pypresence import (
     DiscordNotFound,
     PipeClosed,
 )
-import workers
+import src.workers as workers
 
 
 class PresenceManagerThread(QThread):
