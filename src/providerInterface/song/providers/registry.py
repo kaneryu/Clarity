@@ -1,5 +1,5 @@
-from . import ProviderInterface
-from .youtube import YoutubeProvider
+from src.providerInterface.song.providers import ProviderInterface
+from src.providerInterface.song.providers.youtube import YoutubeProvider
 
 PROVIDERS: dict[str, type[ProviderInterface]] = {
     YoutubeProvider.NAME: YoutubeProvider,

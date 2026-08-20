@@ -30,7 +30,7 @@ from livecoding import start_livecoding_gui
 # local imports
 import src.app.materialInterface as materialInterface
 import src.universal as universal
-from . import Backend, Interactions, fonts
+from src.app import Backend, Interactions, fonts
 from src.misc import cleanup
 from src.misc.compiled import __compiled__
 

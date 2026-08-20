@@ -116,7 +116,7 @@ def install_json_logging(level=logging.INFO):
 
 install_json_logging()
 logger = logging.getLogger("Clarity")
-from .paths import Paths
+from src.paths import Paths
 
 os.environ["PATH"] = (
     (os.path.abspath(os.path.join(Paths.ASSETSPATH, "libs")))
@@ -124,7 +124,7 @@ os.environ["PATH"] = (
     + os.environ["PATH"]
 )
 
-from .workers import (
+from src.workers import (
     bgworker,
     asyncBgworker,
     TimedJobSettings,
@@ -135,7 +135,7 @@ from .workers import (
 bgworker.start()
 asyncBgworker.start()
 
-from .misc import settings as settings_module
+from src.misc import settings as settings_module
 
 settings = settings_module.Settings()
 
@@ -152,7 +152,7 @@ from src.providerInterface.globalModels import (
 from src.providerInterface import song as song_module
 from src.providerInterface import album as album_module
 from src.providerInterface.song.providers import providerUtils as providerUtils_module
-from .playback import queuemanager as queue_module
+from src.playback import queuemanager as queue_module
 
 from src.databaseInterface.repoHost import (
     globalDbInterface,
@@ -164,13 +164,13 @@ from src.network import NetworkManager, networkManager, OnlineStatus
 
 from PySide6.QtCore import QThread, QMetaObject, Qt, Q_ARG, QResource, Signal, QObject
 
-from .AppUrl import AppUrl, appUrl
+from src.AppUrl import AppUrl, appUrl
 
 
 from io import StringIO
 
-from .misc import logHistoryManager
-from .misc.enumerations.Search import SearchFilters
+from src.misc import logHistoryManager
+from src.misc.enumerations.Search import SearchFilters
 
 from src.qt import resources
 

@@ -1,4 +1,4 @@
-from .registry import list_providers, get_provider
+from src.providerInterface.song.providers.registry import list_providers, get_provider
 from src.providerInterface.globalModels.identifier import NamespacedTypedIdentifier
 
 

@@ -1,5 +1,5 @@
 import os
-from .misc.compiled import __compiled__
+from src.misc.compiled import __compiled__
 
 
 class Paths:

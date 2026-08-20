@@ -7,6 +7,7 @@
 ## Bugfixes
 
 - MacOS port, part one. -- kaneryu on 2026-08-19
+- update import paths to use absolute references -- kaneryu on 2026-08-20
 
 
 # 0.59.0

@@ -1,7 +1,7 @@
-from .song import Song, SongProxy, SongImageProvider, PlayingStatus
-from .providers.providerInterface import ProviderInterface
+from src.providerInterface.song.song import Song, SongProxy, SongImageProvider, PlayingStatus
+from src.providerInterface.song.providers.providerInterface import ProviderInterface
 
-from .models.songListModel import SongListModel, SongProxyListModel
+from src.providerInterface.song.models.songListModel import SongListModel, SongProxyListModel
 
 __all__ = [
     Song,

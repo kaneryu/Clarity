@@ -1,7 +1,7 @@
-from .cacheManager import CacheManager, cacheExists, getCache
-from .dataStore import DataStore, getdataStore, dataStoreExists
+from src.cacheManager.cacheManager import CacheManager, cacheExists, getCache
+from src.cacheManager.dataStore import DataStore, getdataStore, dataStoreExists
 
-from ..misc.enumerations.Cache import EvictionMethod, Btypes
+from src.misc.enumerations.Cache import EvictionMethod, Btypes
 
 __all__ = [
     "CacheManager",

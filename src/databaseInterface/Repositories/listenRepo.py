@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime, timezone
 from dataclasses import dataclass
 
-from providerInterface.song import song
+from src.providerInterface.song import song
 
 from src.providerInterface.globalModels import (
     NamespacedIdentifier,

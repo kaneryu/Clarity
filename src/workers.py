@@ -25,7 +25,6 @@ from src.misc.compiled import __compiled__
 import src.misc.cleanup as cleanup
 from src.paths import Paths
 
-
 mainThread: QThread = QThread.currentThread()
 
 
@@ -464,13 +463,19 @@ class AsyncBackgroundWorker(QThread):
         self.logger.info("AsyncBackgroundWorker started, alive: %s", self.isRunning())
         self.session = aiohttp.ClientSession()
 
+        headers = None
+
         if os.path.exists("headers"):
             self.logger.info("Loading ytmusicapi headers from file")
             with open("headers", "r") as f:
                 headers = json.load(f)
 
         if not __compiled__:
-            self.API = ytmusicapi.YTMusic(headers, requests_session=self.session)
+            self.API = (
+                ytmusicapi.YTMusic(headers, requests_session=self.session)
+                if headers
+                else ytmusicapi.YTMusic(requests_session=self.session)
+            )
         else:
             print(
                 "Compiled mode detected, using locale dir for ytmusicapi at:",

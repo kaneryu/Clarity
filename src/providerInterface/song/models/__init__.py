@@ -1,4 +1,4 @@
-from .playbackData import (
+from src.providerInterface.song.models.playbackData import (
     PlaybackData,
     FormatData,
     HeatmapEntry,
@@ -9,7 +9,7 @@ from .playbackData import (
     YoutubeFormatData,
     YoutubePlaybackData,
 )
-from .songData import (
+from src.providerInterface.song.models.songData import (
     ThumbnailEntry,
     ThumbnailSet,
     PageOwnerDetails,

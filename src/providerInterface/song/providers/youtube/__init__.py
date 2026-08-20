@@ -1,1 +1,1 @@
-from .youtube import YoutubeProvider
+from src.providerInterface.song.providers.youtube.youtube import YoutubeProvider

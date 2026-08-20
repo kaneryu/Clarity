@@ -9,8 +9,8 @@ from datetime import datetime, timezone, timedelta
 import enum
 import typing
 
-from .HandlerEnum import HandlerType, Handlers
-from .NowPlayingProtocol import NowPlaying
+from src.nowPlaying.HandlerEnum import HandlerType, Handlers
+from src.nowPlaying.NowPlayingProtocol import NowPlaying
 
 
 class WinSMTC(NowPlaying):

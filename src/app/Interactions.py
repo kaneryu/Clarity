@@ -14,7 +14,7 @@ from PySide6.QtQml import (
     QmlElement,
 )
 from PySide6.QtCore import Property
-from providerInterface.globalModels.identifier import (
+from src.providerInterface.globalModels.identifier import (
     NamespacedIdentifier,
     NamespacedTypedIdentifier,
     SimpleIdentifier,
