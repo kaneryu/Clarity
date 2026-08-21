@@ -1,5 +1,6 @@
 # Changes Since Last Release
 
+- (0.61.0) add theme settings for color scheme, dark mode, and contrast options -- kaneryu on 2026-08-21
 - (0.60.0) Implement ListenRepository and ListenEvent for tracking listening sessions, add ability to restore downloads -- kaneryu on 2026-06-26
 MacOS port, part one. -- kaneryu on 2026-08-19
 update import paths to use absolute references -- kaneryu on 2026-08-20

@@ -28,7 +28,6 @@ from src.providerInterface.song.models.songListModel import (
     SongProxyListModel,
 )
 
-
 QML_IMPORT_NAME = "Backend"
 QML_IMPORT_MAJOR_VERSION = 1
 QML_IMPORT_MINOR_VERSION = 0

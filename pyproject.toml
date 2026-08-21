@@ -1,5 +1,5 @@
 [project]
-version = "0.60.2"
+version = "0.61.0"
 name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -84,4 +84,7 @@ test = [
   "austin-python",
   "austin-tui",
   "austin-web",
+]
+ci = [
+  "python-semantic-release",
 ]

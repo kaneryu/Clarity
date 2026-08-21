@@ -81,7 +81,7 @@ def main():
     backend = Backend.Backend()
     interactions = Interactions.Interactions()
     theme = materialInterface.Theme.getInstance()
-    theme.get_dynamicColors(0x1A1D1D, True, 0.0)
+    theme.get_dynamicColors(0x1A1D1D)
     engineSetup(engine, theme, backend, interactions)
 
     myappid = "oss.clarity.music_player"
@@ -119,7 +119,7 @@ def debug():
     backend = Backend.Backend()
     interactions = Interactions.Interactions()
     theme = materialInterface.Theme.getInstance()
-    theme.get_dynamicColors(0x1A1D1D, True, 0.0)
+    theme.get_dynamicColors(0x1A1D1D)
     engineSetup(engine, theme, backend, interactions)
 
     myappid = "oss.clarity.music_player"

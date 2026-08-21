@@ -49,6 +49,40 @@
             "secure": false,
             "dropdownOptions": ["vlc", "qt", "mpv"],
             "visualDropdownOptions": ["VLC (Recommended)", "Qt (Stable)",  "MPV (Experimental)"]
+        },
+
+        "themeScheme": {
+            "value": "TonalSpot",
+            "type": "dropdown",
+            "description": "How colors are derived from the current song's cover art. Tonal Spot is the Material You default.",
+            "group": "Appearance",
+            "hidden": false,
+            "name": "Color Scheme",
+            "secure": false,
+            "dropdownOptions": ["Content", "Expressive", "Fidelity", "FruitSalad", "Monochrome", "Neutral", "Rainbow", "TonalSpot", "Vibrant"],
+            "visualDropdownOptions": ["Content", "Expressive", "Fidelity", "Fruit Salad", "Monochrome", "Neutral", "Rainbow", "Tonal Spot (Default)", "Vibrant"]
+        },
+        "themeDarkMode": {
+            "value": "dark",
+            "type": "dropdown",
+            "description": "Whether the interface uses a dark or light palette.",
+            "group": "Appearance",
+            "hidden": false,
+            "name": "Dark Mode",
+            "secure": false,
+            "dropdownOptions": ["dark", "light"],
+            "visualDropdownOptions": ["Dark", "Light"]
+        },
+        "themeContrast": {
+            "value": "0",
+            "type": "dropdown",
+            "description": "How far apart foreground and background colors are pushed. Higher contrast is easier to read.",
+            "group": "Appearance",
+            "hidden": false,
+            "name": "Contrast",
+            "secure": false,
+            "dropdownOptions": ["0", "0.5", "1"],
+            "visualDropdownOptions": ["Standard", "Medium", "High"]
         }
     }
 }

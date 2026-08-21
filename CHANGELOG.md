@@ -1,3 +1,10 @@
+# 0.61.0
+
+## New Features
+
+- add theme settings for color scheme, dark mode, and contrast options -- kaneryu on 2026-08-21
+
+
 # 0.60.0
 
 ## New Features
