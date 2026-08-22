@@ -1,4 +1,5 @@
 from enum import Enum
+import inspect
 import typing
 
 
@@ -10,7 +11,15 @@ class HandlerType(Enum):
     PREVIOUS = "previous"
     SEEK = "seek"
     REWIND = "rewind"
-    FAST_FORWARD = "fast_forward"
+    FAST_FORWARD = "fastForward"
+
+    # basically macos specific. doesn't matter if not implemented on other platforms
+    LIKE = "like"
+    DISLIKE = "dislike"
+    BOOKMARK = "bookmark"
+    SHUFFLE_MODE = "shuffleMode"
+    REPEAT_MODE = "repeatMode"
+    TOGGLE_PLAY_PAUSE = "togglePlayPause"
 
 
 class Handlers:
@@ -22,24 +31,23 @@ class Handlers:
         self.previous: typing.Callable | None = None
         self.seek: typing.Callable | None = None
         self.rewind: typing.Callable | None = None
-        self.fast_forward: typing.Callable | None = None
+        self.fastForward: typing.Callable | None = None
+        self.like: typing.Callable | None = None
+        self.dislike: typing.Callable | None = None
+        self.bookmark: typing.Callable | None = None
+        self.shuffleMode: typing.Callable | None = None
+        self.repeatMode: typing.Callable | None = None
+        self.togglePlayPause: typing.Callable | None = None
 
     def setHandler(self, type: HandlerType, function: typing.Callable):
-        if not function.__code__.co_argcount in (1, 2):
+        try:
+            argcount = len(inspect.signature(function).parameters)
+        except (TypeError, ValueError):
+            # Bound builtins, partials and C callables aren't introspectable --
+            # trust the caller rather than rejecting a valid handler.
+            argcount = None
+        if argcount is not None and argcount not in (1, 2):
             raise ValueError("Handler function must accept 1 or 2 arguments.")
-        if type == HandlerType.PLAY:
-            self.play = function
-        elif type == HandlerType.PAUSE:
-            self.pause = function
-        elif type == HandlerType.STOP:
-            self.stop = function
-        elif type == HandlerType.NEXT:
-            self.next = function
-        elif type == HandlerType.PREVIOUS:
-            self.previous = function
-        elif type == HandlerType.SEEK:
-            self.seek = function
-        elif type == HandlerType.FAST_FORWARD:
-            self.fast_forward = function
-        elif type == HandlerType.REWIND:
-            self.rewind = function
+        if HandlerType._value2member_map_.get(type.value) is None:
+            raise ValueError(f"Invalid handler type: {type}")
+        setattr(self, type.value, function)

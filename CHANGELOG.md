@@ -1,3 +1,10 @@
+# 0.62.0
+
+## New Features
+
+- MacOS port part two, finished nowPlaying for macos, cleaned up bugs, added macos build options and icon, etc. -- kaneryu on 2026-08-21
+
+
 # 0.61.0
 
 ## New Features

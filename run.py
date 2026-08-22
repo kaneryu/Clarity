@@ -11,14 +11,28 @@
 # nuitka-project: --include-data-file=./version.txt=./compiled.txt
 # nuitka-project: --include-data-file=./phantomjs.exe=./phantomjs.exe
 # nuitka-project: --include-data-file=./src/databaseInterface/schema.sql=./assets/database/schema.sql
-# nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
 
-# nuitka-project: --file-description="Clarity v0.61.0"
+# nuitka-project: --file-description="Clarity v0.62.0"
 # nuitka-project: --copyright="This is free and open-source software — GNU GPL v3"
-# nuitka-project: --windows-product-name="Clarity"
 
-# nuitka-project: --product-version=0.61.0
-# nuitka-project: --file-version=0.61.0
+# nuitka-project: --product-version=0.62.0
+# nuitka-project: --file-version=0.62.0
+
+# nuitka-project-if: {OS} == "Windows":
+#    nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico
+#    nuitka-project: --windows-product-name="Clarity"
+
+# macOS needs a real .app bundle: Control Center looks the Now Playing badge up
+# from CFBundleIdentifier (set by --macos-signed-app-name) via LaunchServices,
+# so a loose executable shows a blank placeholder no matter what we publish to
+# MPNowPlayingInfoCenter.
+# nuitka-project-if: {OS} == "Darwin":
+#    nuitka-project: --macos-create-app-bundle
+#    nuitka-project: --macos-app-icon={MAIN_DIRECTORY}/nuitkaAssets/Logo.icns
+#    nuitka-project: --macos-app-name="Clarity"
+#    nuitka-project: --macos-signed-app-name="com.kaneryu.clarity"
+#    nuitka-project: --macos-app-version=0.61.0
+#    nuitka-project: --macos-app-mode=gui
 
 # nuitka-project: --output-filename=Clarity
 # nuitka-project: --user-package-configuration-file=./nuitka-fix.config.yml

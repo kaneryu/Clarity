@@ -62,6 +62,7 @@ class QueueIdsList(list):
                 return True  # we do this so we get the equality check of the custom identifiers
         return False
 
+
 from src.nowPlaying.entrypoint import NowPlayingHandler
 from src.nowPlaying.HandlerEnum import HandlerType
 
@@ -221,11 +222,16 @@ class Queue(QObject):
         self.nowPlaying.set_handler(HandlerType.PAUSE, lambda x, y: self.pause())
         self.nowPlaying.set_handler(HandlerType.STOP, lambda x, y: self.stop())
         self.nowPlaying.set_handler(
+            HandlerType.TOGGLE_PLAY_PAUSE, lambda x, y: self.togglePlayPause()
+        )
+        self.nowPlaying.set_handler(
             HandlerType.NEXT, lambda x, y: self.nextSongSignal.emit()
         )
         self.nowPlaying.set_handler(
             HandlerType.PREVIOUS, lambda x, y: self.prevSongSignal.emit()
         )
+        # y is an absolute position in seconds (macOS scrubber drag)
+        self.nowPlaying.set_handler(HandlerType.SEEK, lambda x, y: self.seek(int(y)))
 
         # Presence and state
         self.purgetries = {}
@@ -385,8 +391,8 @@ class Queue(QObject):
     def _on_time_changed(self, seconds: int):
         # Update SMTC timeline and bubble the signal
         self.nowPlaying.update_timeline(
-            duration_s=self.currentSongDuration,  # type: ignore[arg-type]
-            position_s=self.currentSongTime,  # type: ignore[arg-type]
+            duration=self.currentSongDuration,  # type: ignore[arg-type]
+            position=self.currentSongTime,  # type: ignore[arg-type]
         )
         self.timeChanged.emit(seconds)
 
@@ -568,6 +574,13 @@ class Queue(QObject):
 
         self.pointer = self.queueIds.index(str(id))  # type: ignore[attr-defined]
         self.play()
+
+    @Slot()
+    def togglePlayPause(self):
+        if self.isPlaying:
+            self.pause()
+        else:
+            self.resume()
 
     @Slot()
     def pause(self):

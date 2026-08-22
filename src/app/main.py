@@ -32,6 +32,7 @@ import src.app.materialInterface as materialInterface
 import src.universal as universal
 from src.app import Backend, Interactions, fonts
 from src.misc import cleanup
+from src.misc.platform import applyMacBundleIdentity
 from src.misc.compiled import __compiled__
 
 
@@ -65,6 +66,10 @@ def main():
     def appQuitOverride():
         engine.exit.emit(1)
         cleanup.runCleanup()
+
+    # Must precede QApplication: constructing it starts NSApplication,
+    # after which the bundle info dictionary is already read.
+    applyMacBundleIdentity()
 
     app = QApplication(sys.argv)
     app.aboutToQuit.connect(appQuitOverride)
@@ -103,6 +108,10 @@ def debug():
         cleanup.runCleanup()
 
     QQmlDebuggingEnabler.enableDebugging(True)
+
+    # Must precede QApplication: constructing it starts NSApplication,
+    # after which the bundle info dictionary is already read.
+    applyMacBundleIdentity()
 
     app = QApplication(sys.argv)
     app.aboutToQuit.connect(appQuitOverride)

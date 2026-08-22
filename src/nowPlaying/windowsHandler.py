@@ -13,7 +13,7 @@ from src.nowPlaying.HandlerEnum import HandlerType, Handlers
 from src.nowPlaying.NowPlayingProtocol import NowPlaying
 
 
-class WinSMTC(NowPlaying):
+class windowsHandler(NowPlaying):
 
     def __init__(self):
         self._player: wmp.MediaPlayer = self._get_player()
