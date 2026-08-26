@@ -14,7 +14,7 @@ from src.misc.enumerations.Cache import EvictionMethod, ErrorLevel
 from hashlib import md5
 import logging
 from dataclasses import dataclass, asdict
-from threading import Lock
+from threading import RLock
 
 
 def ghash(thing):
@@ -97,7 +97,10 @@ class CacheManager:
         else:
             self.directory = os.path.abspath(directory)
 
-        self._lock = Lock()
+        # RLock, not Lock: get(), put() and getKeyPath() all call delete()/evict()
+        # from inside their own `with self._lock` block. With a plain Lock that is
+        # an unconditional hang -- see tests/test_cache_manager.py.
+        self._lock = RLock()
         self._metadata_dirty = False
         self.plevel = ErrorLevel.WARNING
 

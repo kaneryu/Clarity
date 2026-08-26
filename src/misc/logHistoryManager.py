@@ -149,6 +149,20 @@ class NotifyingLogModel(LogHistoryModel):
             log["name"] = ""
         return super().addLog(log)
 
+    @Slot(int, result=bool)
+    def dismiss(self, row: int) -> bool:
+        """Remove a notification by row, in response to the user clicking it.
+
+        Main thread only -- called from QML. A log dismissed this way is still
+        sitting in the expiration queue; `removeLog` will simply not find it.
+        """
+        if not 0 <= row < len(self._logs):
+            return False
+        self.beginRemoveRows(QModelIndex(), row, row)
+        del self._logs[row]
+        self.endRemoveRows()
+        return True
+
 
 class JSONFormatter(logging.Formatter):
     def formatTime(self, record, datefmt=None):
@@ -216,7 +230,13 @@ class LoggingBridge(QObject):
     notifyingLogExpired = Signal(dict)
     logRemoved = Signal(dict)
     logHistoryChanged = Signal()
-    # Signal to safely request log removal from the main thread
+    # Signals to safely marshal model mutation onto the main thread.
+    # QAbstractListModel may only be mutated from the thread that owns it, and
+    # logging happens on whatever thread called logger.x() -- including the
+    # background worker threads. Emitting is thread-safe; an AutoConnection to a
+    # slot on this (main-thread) object queues when the emitter is elsewhere and
+    # stays synchronous when it is already the main thread.
+    _requestLogAppend = Signal(dict)
     _requestNotifyingLogRemoval = Signal(dict)
 
     def __init__(self, parent=None):
@@ -237,6 +257,8 @@ class LoggingBridge(QObject):
             logging.ERROR
         )  # The level at which logs will be added to the notifying model.
 
+        self._requestLogAppend.connect(self._appendLog)
+
         # --- Thread-based expiration handling ---
         self._expiration_queue: queue.Queue = queue.Queue()
         self._requestNotifyingLogRemoval.connect(self.notifyingLogExipry)
@@ -246,54 +268,58 @@ class LoggingBridge(QObject):
         )
         self._expiration_thread.start()
 
-    def addLog(self, log: str, args: typing.Optional[dict] = None):
-        """Accepts a JSON formatted log string (preferred) or legacy plain string."""
-        log_dict: dict
+    @staticmethod
+    def _parseLog(log: str, args: typing.Optional[dict] = None) -> dict:
+        """Turn a formatted log line into a dict. Pure -- safe on any thread."""
+        parsedArgs = args if isinstance(args, dict) else {}
         if log.startswith("{"):
             try:
                 parsed = json.loads(log)
-                log_dict = {
+                return {
                     "time": parsed.get("ts", ""),
                     "name": parsed.get("logger", ""),
                     "level": parsed.get("level", ""),
                     "message": parsed.get("msg", ""),
-                    "args": args if isinstance(args, dict) else {},
+                    "args": parsedArgs,
                 }
             except Exception:
-                parts = log.split(" - ")
-                log_dict = {
-                    "time": parts[0] if len(parts) > 0 else "",
-                    "name": parts[1] if len(parts) > 1 else "",
-                    "level": parts[2] if len(parts) > 2 else "",
-                    "message": (
-                        " - ".join(parts[3:]).strip().replace("\n", " ")
-                        if len(parts) > 3
-                        else ""
-                    ),
-                    "args": args if isinstance(args, dict) else {},
-                }
-        else:
-            parts = log.split(" - ")
-            log_dict = {
-                "time": parts[0] if len(parts) > 0 else "",
-                "name": parts[1] if len(parts) > 1 else "",
-                "level": parts[2] if len(parts) > 2 else "",
-                "message": (
-                    " - ".join(parts[3:]).strip().replace("\n", " ")
-                    if len(parts) > 3
-                    else ""
-                ),
-                "args": args if isinstance(args, dict) else {},
-            }
+                pass
+        parts = log.split(" - ")
+        return {
+            "time": parts[0] if len(parts) > 0 else "",
+            "name": parts[1] if len(parts) > 1 else "",
+            "level": parts[2] if len(parts) > 2 else "",
+            "message": (
+                " - ".join(parts[3:]).strip().replace("\n", " ")
+                if len(parts) > 3
+                else ""
+            ),
+            "args": parsedArgs,
+        }
+
+    def _shouldNotify(self, log_dict: dict) -> bool:
+        notifying = log_dict.get("args", {}).get("notifying", False)
+        return (
+            logging._nameToLevel.get(log_dict["level"], 0) >= self.notifyingLevel
+            and notifying is not False
+        ) or notifying is True
+
+    def addLog(self, log: str, args: typing.Optional[dict] = None):
+        """Accepts a JSON formatted log string (preferred) or legacy plain string.
+
+        Callable from any thread. Parsing happens here; every model mutation is
+        handed to the main thread via `_requestLogAppend`.
+        """
+        self._requestLogAppend.emit(self._parseLog(log, args))
+
+    @Slot(dict)
+    def _appendLog(self, log_dict: dict):
+        """Main thread only. Everything below this line touches a model."""
         self.historyModel.addLog(log_dict)
         # Emit structured dict (keeping previous signal type but now dict already)
         self.logAdded.emit(log_dict)
         self.logHistoryChanged.emit()
-        notifying = log_dict.get("args", {"notifying": False}).get("notifying", False)
-        if (
-            logging._nameToLevel.get(log_dict["level"], 0) >= self.notifyingLevel
-            and notifying is not False
-        ) or notifying is True:
+        if self._shouldNotify(log_dict):
             self.notifyingModel.addLog(log_dict)
             self.notifyingLogAdded.emit(log_dict)
             timeToRemoveInSeconds = 10

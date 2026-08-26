@@ -1,5 +1,5 @@
 [project]
-version = "0.62.0"
+version = "0.63.0"
 name = "Clarity"
 requires-python = ">=3.12"
 readme = "README.md"
@@ -85,6 +85,24 @@ test = [
   "austin-tui",
   "austin-web",
 ]
+dev = [
+  "black",
+  "isort",
+  "mypy",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+  "pytest-mock",
+  "pytest-xdist",
+  "tox",
+]
 ci = [
   "python-semantic-release",
 ]
+
+[tool.pytest.ini_options]
+addopts = "-ra -q --tb=short"
+testpaths = ["tests"]
+# tests import as `src.<pkg>`; keeps a bare `pytest` working without an
+# editable install having been done first.
+pythonpath = ["."]

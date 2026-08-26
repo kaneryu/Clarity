@@ -12,11 +12,11 @@
 # nuitka-project: --include-data-file=./phantomjs.exe=./phantomjs.exe
 # nuitka-project: --include-data-file=./src/databaseInterface/schema.sql=./assets/database/schema.sql
 
-# nuitka-project: --file-description="Clarity v0.62.0"
+# nuitka-project: --file-description="Clarity v0.63.0"
 # nuitka-project: --copyright="This is free and open-source software — GNU GPL v3"
 
-# nuitka-project: --product-version=0.62.0
-# nuitka-project: --file-version=0.62.0
+# nuitka-project: --product-version=0.63.0
+# nuitka-project: --file-version=0.63.0
 
 # nuitka-project-if: {OS} == "Windows":
 #    nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/nuitkaAssets/Logo.ico

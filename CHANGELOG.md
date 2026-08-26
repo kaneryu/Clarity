@@ -1,3 +1,10 @@
+# 0.63.0
+
+## New Features
+
+- enhance cache manager and logging bridge with new features and tests -- kaneryu on 2026-08-25
+
+
 # 0.62.0
 
 ## New Features

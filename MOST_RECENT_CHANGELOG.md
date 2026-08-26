@@ -1,5 +1,6 @@
 # Changes Since Last Release
 
+- (0.63.0) enhance cache manager and logging bridge with new features and tests -- kaneryu on 2026-08-25
 - (0.62.0) MacOS port part two, finished nowPlaying for macos, cleaned up bugs, added macos build options and icon, etc. -- kaneryu on 2026-08-21
 - (0.61.0) add theme settings for color scheme, dark mode, and contrast options -- kaneryu on 2026-08-21
 - (0.60.0) Implement ListenRepository and ListenEvent for tracking listening sessions, add ability to restore downloads -- kaneryu on 2026-06-26

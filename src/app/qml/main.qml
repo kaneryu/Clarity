@@ -46,16 +46,9 @@ ApplicationWindow {
         anchors.right: parent.right
         anchors.topMargin: 10
         anchors.rightMargin: 10
+        anchors.bottomMargin: 10
         width: 300
-        height: parent.height
 
-        MouseArea {
-            anchors.fill: parent
-            propagateComposedEvents: true
-            onClicked: {
-                mouse.accepted = false // Allow clicks to pass through to the main window
-            }
-        }
         z: 1000 // Ensure it is above other elements
     }
     
